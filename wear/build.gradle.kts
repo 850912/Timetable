@@ -123,6 +123,7 @@ dependencies {
 
     // KotlinX 扩展与辅助工具
     implementation(libs.kotlinx.datetime)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.aboutlibraries.compose.m3)
 
