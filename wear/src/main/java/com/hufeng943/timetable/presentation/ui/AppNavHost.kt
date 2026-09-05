@@ -6,7 +6,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.navigation.NavType
-import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.material3.AppScaffold
@@ -79,16 +78,14 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
 
                 navigation(
                     startDestination = NavRoutes.EDIT_COURSE_MAIN,
-                    route = NavRoutes.EDIT_COURSE,
-                    arguments = listOf(
-                        navArgument(NavArgs.TABLE_ID) {
-                            type = NavType.LongType
-                        },
-                        navArgument(NavArgs.COURSE_ID) {
-                            type = NavType.LongType
-                        }
-                    )
+                    route = NavRoutes.EDIT_COURSE
                 ) {
+                    argument(NavArgs.TABLE_ID) {
+                        type = NavType.LongType
+                    }
+                    argument(NavArgs.COURSE_ID) {
+                        type = NavType.LongType
+                    }
                     composable(NavRoutes.EDIT_COURSE_MAIN) { backStackEntry ->
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry(NavRoutes.EDIT_COURSE)
