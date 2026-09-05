@@ -36,11 +36,25 @@ object NavRoutes {
         "edit_course/$timetableId/${courseId ?: -1L}"
 
     const val EDIT_COURSE_MAIN = "edit_course/main"
-    const val EDIT_COURSE_NAME = "edit_course/name"
-    const val EDIT_COURSE_LOCATION = "edit_course/location"
-    const val EDIT_COURSE_TEACHER = "edit_course/teacher"
-    const val EDIT_COURSE_COLOR = "edit_course/color"
-    const val EDIT_COURSE_DELETE_CONFIRM = "edit_course/delete_confirm"
+
+    // 子页面路由模板（带参数，用于 composable 匹配）
+    const val EDIT_COURSE_NAME = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/name"
+    const val EDIT_COURSE_LOCATION = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/location"
+    const val EDIT_COURSE_TEACHER = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/teacher"
+    const val EDIT_COURSE_COLOR = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/color"
+    const val EDIT_COURSE_DELETE_CONFIRM = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/delete_confirm"
+
+    // 子页面导航函数（供 navigate 调用）
+    fun editCourseName(timetableId: Long, courseId: Long) =
+        "edit_course/$timetableId/$courseId/name"
+    fun editCourseLocation(timetableId: Long, courseId: Long) =
+        "edit_course/$timetableId/$courseId/location"
+    fun editCourseTeacher(timetableId: Long, courseId: Long) =
+        "edit_course/$timetableId/$courseId/teacher"
+    fun editCourseColor(timetableId: Long, courseId: Long) =
+        "edit_course/$timetableId/$courseId/color"
+    fun editCourseDeleteConfirm(timetableId: Long, courseId: Long) =
+        "edit_course/$timetableId/$courseId/delete_confirm"
 
     //----------------------------------
     const val LIST_TIMESLOT = "list_timeslot/{${NavArgs.COURSE_ID}}"

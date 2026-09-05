@@ -21,12 +21,17 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EditCourseViewModel @Inject constructor(
-    private val repository: TimetableRepository, savedStateHandle: SavedStateHandle
+    private val repository: TimetableRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val cId: Long? =
         savedStateHandle.get<Long>(NavArgs.COURSE_ID)?.takeUnless { it == -1L }
     private val tId: Long? =
         savedStateHandle.get<Long>(NavArgs.TABLE_ID)
+
+    // 暴露 tableId 供 UI 层使用（用于导航到子页面时携带参数）
+    val tableId: Long? = tId
+
     private val _uiState = MutableStateFlow<UiState<CourseUi>>(UiState.Loading)
     val uiState = _uiState.asStateFlow()
 
@@ -49,7 +54,6 @@ class EditCourseViewModel @Inject constructor(
             is EditCourseAction.UpdateColor -> updateSuccessState {
                 it.copy(color = action.color ?: Color.Unspecified)
             }
-
             EditCourseAction.Upsert -> upsertCourse()
             EditCourseAction.Delete -> deleteCourse()
         }
@@ -68,7 +72,6 @@ class EditCourseViewModel @Inject constructor(
                 val currentUi =
                     (uiState.value as? UiState.Success)?.data ?: throw AppError.UnexpectedEmpty()
                 val tableId = tId ?: throw AppError.InvalidParameter(NavArgs.TABLE_ID)
-
                 repository.upsertCourse(currentUi.toCourse(), tableId)
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)

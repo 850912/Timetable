@@ -29,9 +29,13 @@ fun EditCourseScreen(
 fun EditCourseMainScreen(viewModel: EditCourseViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val navController = LocalNavController.current
+    // 从 ViewModel 获取 tableId（而不是从 CourseUi）
+    val tableId = viewModel.tableId ?: 0L
 
     HandleEditUiState(uiState) { course ->
         DynamicSubTheme(seedColor = course.color) {
+            val courseId = course.id
+
             EditCourseMainPager(
                 course = course,
                 onSave = {
@@ -39,28 +43,28 @@ fun EditCourseMainScreen(viewModel: EditCourseViewModel) {
                     navController.popSafe()
                 },
                 onNameClick = {
-                    navController.navigateSingle(NavRoutes.EDIT_COURSE_NAME)
+                    navController.navigateSingle(NavRoutes.editCourseName(tableId, courseId))
                 },
                 onLocationClick = {
-                    navController.navigateSingle(NavRoutes.EDIT_COURSE_LOCATION)
+                    navController.navigateSingle(NavRoutes.editCourseLocation(tableId, courseId))
                 },
                 onLocationLongClick = {
                     viewModel.onAction(EditCourseAction.UpdateLocation())
                 },
                 onTeacherClick = {
-                    navController.navigateSingle(NavRoutes.EDIT_COURSE_TEACHER)
+                    navController.navigateSingle(NavRoutes.editCourseTeacher(tableId, courseId))
                 },
                 onTeacherLongClick = {
                     viewModel.onAction(EditCourseAction.UpdateTeacher())
                 },
                 onColorClick = {
-                    navController.navigateSingle(NavRoutes.EDIT_COURSE_COLOR)
+                    navController.navigateSingle(NavRoutes.editCourseColor(tableId, courseId))
                 },
                 onColorLongClick = {
                     viewModel.onAction(EditCourseAction.UpdateColor())
                 },
                 onDelete = {
-                    navController.navigateSingle(NavRoutes.EDIT_COURSE_DELETE_CONFIRM)
+                    navController.navigateSingle(NavRoutes.editCourseDeleteConfirm(tableId, courseId))
                 }
             )
         }
@@ -149,8 +153,8 @@ fun EditCourseDeleteConfirmScreen(viewModel: EditCourseViewModel) {
                 ),
                 onConfirm = {
                     viewModel.onAction(EditCourseAction.Delete)
-                    navController.popBackStack()
-                    navController.popBackStack()
+                    // 直接返回到 ListCourse，清除中间所有栈
+                    navController.popBackStack(NavRoutes.LIST_COURSE, inclusive = false)
                 },
                 onCancel = {
                     navController.popSafe()

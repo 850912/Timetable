@@ -71,7 +71,6 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     TimetableListScreen()
                 }
 
-
                 composable(NavRoutes.LIST_COURSE) {
                     CourseListScreen()
                 }
@@ -86,6 +85,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     argument(NavArgs.COURSE_ID) {
                         type = NavType.LongType
                     }
+
                     composable(NavRoutes.EDIT_COURSE_MAIN) { backStackEntry ->
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry(NavRoutes.EDIT_COURSE)
@@ -95,6 +95,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                         EditCourseMainScreen(viewModel)
                     }
 
+                    // 子页面路由改为带参数的模板
                     composable(NavRoutes.EDIT_COURSE_NAME) { backStackEntry ->
                         val parentEntry = remember(backStackEntry) {
                             navController.getBackStackEntry(NavRoutes.EDIT_COURSE)
@@ -140,7 +141,6 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                         EditCourseDeleteConfirmScreen(viewModel)
                     }
                 }
-
 
                 composable(NavRoutes.LIST_TIMESLOT) {
                     TimeSlotListScreen()
