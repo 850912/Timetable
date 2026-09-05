@@ -70,15 +70,33 @@ fun SettingScreen(
         }
 
         composable(InternalNavRoutes.LANGUAGE_SELECT) {
-            LanguageSelectPager(config = config, onLanguageSelect = { appConfigViewModel.updateLanguage(it) })
+            LanguageSelectPager(
+                config = config,
+                onLanguageSelect = {
+                    appConfigViewModel.updateLanguage(it)
+                    internalNavController.popBackStack()
+                }
+            )
         }
 
         composable(InternalNavRoutes.TIME_FORMAT_SELECT) {
-            TimeFormatSelectPager(config = config, onTimeFormatSelect = { appConfigViewModel.updateFormat(it) })
+            TimeFormatSelectPager(
+                config = config,
+                onTimeFormatSelect = {
+                    appConfigViewModel.updateFormat(it)
+                    internalNavController.popBackStack()
+                }
+            )
         }
 
         composable(InternalNavRoutes.FIRST_DAY_SELECT) {
-            FirstDaySelectPager(config) { appConfigViewModel.updateFirstDayOfTheWeek(it) }
+            FirstDaySelectPager(
+                config = config,
+                onFirstDaySelect = {
+                    appConfigViewModel.updateFirstDayOfTheWeek(it)
+                    internalNavController.popBackStack()
+                }
+            )
         }
     }
 }
