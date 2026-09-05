@@ -20,11 +20,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EditTimeSlotViewModel @Inject constructor(
-    private val repository: TimetableRepository, savedStateHandle: SavedStateHandle
+    private val repository: TimetableRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val cId: Long? = savedStateHandle.get<String>(NavArgs.COURSE_ID)?.toLongOrNull()
-    private val sId: Long? = savedStateHandle.get<String>(NavArgs.TIME_SLOT_ID)?.toLongOrNull()
+    // 使用 get<Long>() 直接获取 Long 类型参数（更简洁、类型安全）
+    private val cId: Long? = savedStateHandle.get<Long>(NavArgs.COURSE_ID)
+    private val sId: Long? = savedStateHandle.get<Long>(NavArgs.TIME_SLOT_ID)
 
     private val _uiState = MutableStateFlow<UiState<TimeSlotUi>>(UiState.Loading)
     val uiState = _uiState.asStateFlow()

@@ -42,32 +42,42 @@ fun EditTimeSlotScreen(
     val internalNavController = rememberSwipeDismissableNavController()
     val config = LocalAppConfig.current
 
-
     SwipeDismissableNavHost(
-        navController = internalNavController, startDestination = InternalNavRoutes.MAIN
+        navController = internalNavController,
+        startDestination = InternalNavRoutes.MAIN
     ) {
         composable(InternalNavRoutes.MAIN) {
             HandleEditUiState(uiState) { timeSlot ->
                 DynamicSubTheme(seedColor = timeSlot.color) {
                     Log.d("timeSlot", "timeSlot: $timeSlot")
-                    EditTimeSlotMainPager(timeSlot = timeSlot, onSave = {
-                        viewModel.onAction(EditTimeSlotAction.Upsert)
-                        navController.popSafe()
-                    }, onStartTimeClick = {
-                        internalNavController.navigateSingle(InternalNavRoutes.START_TIME)
-                    }, onEndTimeClick = {
-                        internalNavController.navigateSingle(InternalNavRoutes.END_TIME)
-                    }, onDayOfWeekClick = {
-                        internalNavController.navigateSingle(InternalNavRoutes.WEEK_DAY)
-                    }, onRecurrenceClick = {
-                        internalNavController.navigateSingle(InternalNavRoutes.RECURRENCE)
-                    }, onRemarkClick = {
-                        internalNavController.navigateSingle(InternalNavRoutes.NAME)
-                    }, onRemarkLongClick = {
-                        viewModel.onAction(EditTimeSlotAction.UpdateRemark(null))
-                    }, onDelete = {
-                        internalNavController.navigateSingle(InternalNavRoutes.DELETE_CONFIRM)
-                    })
+                    EditTimeSlotMainPager(
+                        timeSlot = timeSlot,
+                        onSave = {
+                            viewModel.onAction(EditTimeSlotAction.Upsert)
+                            navController.popSafe()
+                        },
+                        onStartTimeClick = {
+                            internalNavController.navigateSingle(InternalNavRoutes.START_TIME)
+                        },
+                        onEndTimeClick = {
+                            internalNavController.navigateSingle(InternalNavRoutes.END_TIME)
+                        },
+                        onDayOfWeekClick = {
+                            internalNavController.navigateSingle(InternalNavRoutes.WEEK_DAY)
+                        },
+                        onRecurrenceClick = {
+                            internalNavController.navigateSingle(InternalNavRoutes.RECURRENCE)
+                        },
+                        onRemarkClick = {
+                            internalNavController.navigateSingle(InternalNavRoutes.NAME)
+                        },
+                        onRemarkLongClick = {
+                            viewModel.onAction(EditTimeSlotAction.UpdateRemark(null))
+                        },
+                        onDelete = {
+                            internalNavController.navigateSingle(InternalNavRoutes.DELETE_CONFIRM)
+                        }
+                    )
                 }
             }
         }
@@ -79,10 +89,12 @@ fun EditTimeSlotScreen(
                         TimePicker(
                             initialTime = (timeSlot.startTime ?: Clock.System.now().toLocalDateTime(
                                 TimeZone.currentSystemDefault()
-                            ).time).toJavaLocalTime(), onTimePicked = { newTime ->
+                            ).time).toJavaLocalTime(),
+                            onTimePicked = { newTime ->
                                 viewModel.onAction(EditTimeSlotAction.UpdateStartTime(newTime.toKotlinLocalTime()))
                                 internalNavController.popSafe()
-                            }, timePickerType = if (config.is24HourFormat) {
+                            },
+                            timePickerType = if (config.is24HourFormat) {
                                 TimePickerType.HoursMinutes24H
                             } else {
                                 TimePickerType.HoursMinutesAmPm12H
@@ -100,10 +112,12 @@ fun EditTimeSlotScreen(
                         TimePicker(
                             initialTime = (timeSlot.endTime ?: Clock.System.now().toLocalDateTime(
                                 TimeZone.currentSystemDefault()
-                            ).time).toJavaLocalTime(), onTimePicked = { newTime ->
+                            ).time).toJavaLocalTime(),
+                            onTimePicked = { newTime ->
                                 viewModel.onAction(EditTimeSlotAction.UpdateEndTime(newTime.toKotlinLocalTime()))
                                 internalNavController.popSafe()
-                            }, timePickerType = if (config.is24HourFormat) {
+                            },
+                            timePickerType = if (config.is24HourFormat) {
                                 TimePickerType.HoursMinutes24H
                             } else {
                                 TimePickerType.HoursMinutesAmPm12H
@@ -122,7 +136,8 @@ fun EditTimeSlotScreen(
                             .toLocalDateTime(TimeZone.currentSystemDefault()).date.dayOfWeek,
                         onDaySelected = { day ->
                             viewModel.onAction(EditTimeSlotAction.UpdateDayOfWeek(day))
-                        })
+                        }
+                    )
                 }
             }
         }
@@ -131,9 +146,11 @@ fun EditTimeSlotScreen(
             HandleEditUiState(uiState) { timeSlot ->
                 DynamicSubTheme(seedColor = timeSlot.color) {
                     RecurrenceSelectionScreen(
-                        initialPattern = timeSlot.recurrence, onPatternSelected = { pattern ->
+                        initialPattern = timeSlot.recurrence,
+                        onPatternSelected = { pattern ->
                             viewModel.onAction(EditTimeSlotAction.UpdateRecurrence(pattern))
-                        })
+                        }
+                    )
                 }
             }
         }
@@ -157,17 +174,19 @@ fun EditTimeSlotScreen(
                 DynamicSubTheme(seedColor = timeSlot.color) {
                     DeleteConfirmScreen(
                         detail = stringResource(
-                        R.string.edit_timeslot_display_name,
-                        timeSlot.startTime ?: stringResource(R.string.unknown),
-                        timeSlot.endTime ?: stringResource(R.string.unknown)
-                    ), onConfirm = {
-                        viewModel.onAction(EditTimeSlotAction.Delete)
-                            if (!navController.popBackStack(NavRoutes.COURSE_DETAIL, true)) {
-                                navController.popSafe()
-                            }
-                    }, onCancel = {
-                        internalNavController.popSafe()
-                    })
+                            R.string.edit_timeslot_display_name,
+                            timeSlot.startTime ?: stringResource(R.string.unknown),
+                            timeSlot.endTime ?: stringResource(R.string.unknown)
+                        ),
+                        onConfirm = {
+                            viewModel.onAction(EditTimeSlotAction.Delete)
+                            // 删除后返回到 TimeSlotListScreen，与保存行为一致
+                            navController.popSafe()
+                        },
+                        onCancel = {
+                            internalNavController.popSafe()
+                        }
+                    )
                 }
             }
         }
