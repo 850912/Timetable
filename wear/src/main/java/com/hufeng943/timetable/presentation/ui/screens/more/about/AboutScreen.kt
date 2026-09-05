@@ -197,7 +197,46 @@ fun AboutScreen() {
                                 text = stringResource(R.string.about_changelog_expand_hint),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp, bottom = 8.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ============================================================
+            // Stage 8: 贡献者卡片（黑白君）
+            // ============================================================
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
+                    transformation = SurfaceTransformation(transformationSpec),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.EmojiPeople,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "黑白君",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "二次开发与维护 · UI/UX 重构与优化",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
