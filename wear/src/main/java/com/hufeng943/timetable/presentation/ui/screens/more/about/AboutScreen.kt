@@ -197,7 +197,7 @@ fun AboutScreen() {
                                 text = stringResource(R.string.about_changelog_expand_hint),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 16.dp, bottom = 8.dp)
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
                             )
                         }
                     }
