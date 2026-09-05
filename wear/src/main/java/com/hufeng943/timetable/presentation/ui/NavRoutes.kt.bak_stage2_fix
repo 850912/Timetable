@@ -1,0 +1,57 @@
+package com.hufeng943.timetable.presentation.ui
+
+object NavArgs {
+    const val TIME_SLOT_ID = "timeSlotId"
+    const val TABLE_ID = "tableId"
+    const val COURSE_ID = "courseId"
+}
+
+object NavRoutes {
+    const val MAIN = "main"
+
+    //----------------------------------
+    const val COURSE_DETAIL = "course_detail/{${NavArgs.TIME_SLOT_ID}}"
+    fun courseDetail(timeSlotId: Long) = "course_detail/$timeSlotId"
+
+    //----------------------------------
+    const val LIST_TIMETABLE = "list_timetable"
+
+    // Nested graph
+    const val EDIT_TIMETABLE = "edit_timetable/{${NavArgs.TABLE_ID}}"
+    fun editTimetable(timetableId: Long? = null) = "edit_timetable/$timetableId"
+
+    const val EDIT_TIMETABLE_MAIN = "edit_timetable/main"
+    const val EDIT_TIMETABLE_NAME = "edit_timetable/name"
+    const val EDIT_TIMETABLE_START_DATE = "edit_timetable/start_date"
+    const val EDIT_TIMETABLE_END_DATE = "edit_timetable/end_date"
+    const val EDIT_TIMETABLE_COLOR = "edit_timetable/color"
+    const val EDIT_TIMETABLE_DELETE_CONFIRM = "edit_timetable/delete_confirm"
+
+    //----------------------------------
+    const val LIST_COURSE = "list_course/{${NavArgs.TABLE_ID}}"
+    fun listCourse(timetableId: Long) = "list_course/$timetableId"
+
+    const val EDIT_COURSE = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}"
+    fun editCourse(timetableId: Long, courseId: Long? = null) =
+        "edit_course/$timetableId/$courseId"
+
+    const val EDIT_COURSE_MAIN = "edit_course/main"
+    const val EDIT_COURSE_NAME = "edit_course/name"
+    const val EDIT_COURSE_LOCATION = "edit_course/location"
+    const val EDIT_COURSE_TEACHER = "edit_course/teacher"
+    const val EDIT_COURSE_COLOR = "edit_course/color"
+    const val EDIT_COURSE_DELETE_CONFIRM = "edit_course/delete_confirm"
+
+    //----------------------------------
+    const val LIST_TIMESLOT = "list_timeslot/{${NavArgs.COURSE_ID}}"
+    fun listTimeSlot(courseId: Long) = "list_timeslot/$courseId"
+
+    const val EDIT_TIMESLOT = "edit_timeslot/{${NavArgs.COURSE_ID}}/{${NavArgs.TIME_SLOT_ID}}"
+    fun editTimeSlot(courseId: Long, timeSlotId: Long? = null) =
+        "edit_timeslot/$courseId/$timeSlotId"
+
+    //----------------------------------
+    const val MORE_ABOUT = "more/about"
+    const val MORE_ABOUT_LIBRARIES = "more/about/libraries"
+    const val MORE_SETTINGS = "more/settings"
+}

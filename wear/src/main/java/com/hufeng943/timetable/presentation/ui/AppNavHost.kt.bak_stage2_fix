@@ -1,0 +1,246 @@
+package com.hufeng943.timetable.presentation.ui
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.navigation.compose.navigation
+import androidx.wear.compose.material3.AppScaffold
+import androidx.wear.compose.material3.TimeText
+import androidx.wear.compose.material3.TimeTextDefaults.rememberTimeSource
+import androidx.wear.compose.navigation.SwipeDismissableNavHost
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.common.LocalNavController
+import com.hufeng943.timetable.presentation.ui.screens.detail.CourseDetailScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.course.CourseListScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.course.EditCourseColorScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.course.EditCourseDeleteConfirmScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.course.EditCourseLocationScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.course.EditCourseMainScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.course.EditCourseNameScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.course.EditCourseTeacherScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.timeslot.EditTimeSlotScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.timeslot.TimeSlotListScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableColorScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableDeleteConfirmScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableEndDateScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableMainScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableNameScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableStartDateScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.TimetableListScreen
+import com.hufeng943.timetable.presentation.ui.screens.home.HomeScreen
+import com.hufeng943.timetable.presentation.ui.screens.more.about.AboutLibrariesScreen
+import com.hufeng943.timetable.presentation.ui.screens.more.about.AboutScreen
+import com.hufeng943.timetable.presentation.ui.screens.more.settings.SettingScreen
+import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
+import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
+import com.hufeng943.timetable.presentation.viewmodel.edit.timetable.EditTimetableViewModel
+
+@Composable
+fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
+    val navController = rememberSwipeDismissableNavController()
+    val config by appConfigViewModel.appConfig.collectAsState()
+
+    AppScaffold(
+        timeText = {
+            TimeText(
+                timeSource = if (config.is24HourFormat) {
+                    rememberTimeSource("HH:mm")
+                } else {
+                    rememberTimeSource("h:mm")
+                }
+            )
+        }
+    ) {
+        CompositionLocalProvider(
+            LocalNavController provides navController,
+            LocalAppConfig provides config
+        ) {
+            SwipeDismissableNavHost(
+                navController = navController,
+                startDestination = NavRoutes.MAIN
+            ) {
+                composable(NavRoutes.MAIN) {
+                    HomeScreen()
+                }
+
+                composable(NavRoutes.COURSE_DETAIL) {
+                    CourseDetailScreen()
+                }
+
+                composable(NavRoutes.LIST_TIMETABLE) {
+                    TimetableListScreen()
+                }
+
+
+                composable(NavRoutes.LIST_COURSE) {
+                    CourseListScreen()
+                }
+
+                navigation(
+                    startDestination = NavRoutes.EDIT_COURSE_MAIN,
+                    route = NavRoutes.EDIT_COURSE,
+                    arguments = listOf(
+                        navArgument(NavArgs.TABLE_ID) {
+                            type = NavType.StringType
+                        },
+                        navArgument(NavArgs.COURSE_ID) {
+                            type = NavType.StringType
+                        }
+                    )
+                ) {
+                    composable(NavRoutes.EDIT_COURSE_MAIN) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_COURSE)
+                        }
+                        val viewModel: EditCourseViewModel =
+                            hiltViewModel(parentEntry)
+                        EditCourseMainScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_COURSE_NAME) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_COURSE)
+                        }
+                        val viewModel: EditCourseViewModel =
+                            hiltViewModel(parentEntry)
+                        EditCourseNameScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_COURSE_LOCATION) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_COURSE)
+                        }
+                        val viewModel: EditCourseViewModel =
+                            hiltViewModel(parentEntry)
+                        EditCourseLocationScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_COURSE_TEACHER) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_COURSE)
+                        }
+                        val viewModel: EditCourseViewModel =
+                            hiltViewModel(parentEntry)
+                        EditCourseTeacherScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_COURSE_COLOR) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_COURSE)
+                        }
+                        val viewModel: EditCourseViewModel =
+                            hiltViewModel(parentEntry)
+                        EditCourseColorScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_COURSE_DELETE_CONFIRM) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_COURSE)
+                        }
+                        val viewModel: EditCourseViewModel =
+                            hiltViewModel(parentEntry)
+                        EditCourseDeleteConfirmScreen(viewModel)
+                    }
+                }
+
+
+                composable(NavRoutes.LIST_TIMESLOT) {
+                    TimeSlotListScreen()
+                }
+
+                composable(NavRoutes.EDIT_TIMESLOT) {
+                    EditTimeSlotScreen()
+                }
+
+                composable(NavRoutes.MORE_ABOUT) {
+                    AboutScreen()
+                }
+
+                composable(NavRoutes.MORE_ABOUT_LIBRARIES) {
+                    AboutLibrariesScreen()
+                }
+
+                composable(NavRoutes.MORE_SETTINGS) {
+                    SettingScreen()
+                }
+
+                navigation(
+                    startDestination = NavRoutes.EDIT_TIMETABLE_MAIN,
+                    route = NavRoutes.EDIT_TIMETABLE,
+                    arguments = listOf(
+                        navArgument(NavArgs.TABLE_ID) {
+                            type = NavType.StringType
+                        }
+                    )
+                ) {
+                    composable(NavRoutes.EDIT_TIMETABLE_MAIN) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE)
+                        }
+                        val viewModel: EditTimetableViewModel =
+                            hiltViewModel(parentEntry)
+
+                        EditTimetableMainScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_TIMETABLE_NAME) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE)
+                        }
+                        val viewModel: EditTimetableViewModel =
+                            hiltViewModel(parentEntry)
+
+                        EditTimetableNameScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_TIMETABLE_START_DATE) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE)
+                        }
+                        val viewModel: EditTimetableViewModel =
+                            hiltViewModel(parentEntry)
+
+                        EditTimetableStartDateScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_TIMETABLE_END_DATE) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE)
+                        }
+                        val viewModel: EditTimetableViewModel =
+                            hiltViewModel(parentEntry)
+
+                        EditTimetableEndDateScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_TIMETABLE_COLOR) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE)
+                        }
+                        val viewModel: EditTimetableViewModel =
+                            hiltViewModel(parentEntry)
+
+                        EditTimetableColorScreen(viewModel)
+                    }
+
+                    composable(NavRoutes.EDIT_TIMETABLE_DELETE_CONFIRM) { backStackEntry ->
+                        val parentEntry = remember(backStackEntry) {
+                            navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE)
+                        }
+                        val viewModel: EditTimetableViewModel =
+                            hiltViewModel(parentEntry)
+
+                        EditTimetableDeleteConfirmScreen(viewModel)
+                    }
+                }
+            }
+        }
+    }
+}

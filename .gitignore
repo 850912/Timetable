@@ -1,0 +1,40 @@
+*.iml
+.gradle
+/.idea/
+
+/local.properties
+local.properties
+
+/build
+/captures
+
+# 库克最爱
+.DS_Store
+
+.externalNativeBuild
+.cxx
+errors/
+# Local / build environment
+local.properties
+*.log
+
+# Backup files
+*.bak
+*.before-*
+*.orig
+
+# Local signing keys
+*.jks
+*.keystore
+
+# Temporary scripts / diagnostics
+e\ --show-toplevel
+ort
+phase1_scan_report.txt
+import_export_theme_dump.txt
+import_export_theme_refs.txt
+timetable_inspection_report.md
+
+# Temporary patch scripts
+do_patch*.sh
+strict_patcher.py

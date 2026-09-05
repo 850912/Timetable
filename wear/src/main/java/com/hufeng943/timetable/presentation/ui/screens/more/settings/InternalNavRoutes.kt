@@ -1,0 +1,11 @@
+package com.hufeng943.timetable.presentation.ui.screens.more.settings
+
+object InternalNavRoutes {
+    const val MAIN = "main"
+    const val LANGUAGE_SELECT = "language_select"
+    const val TIME_FORMAT_SELECT = "time_format_select"
+    const val FIRST_DAY_SELECT = "first_day_select"
+    const val EXPORT = "export"
+    const val IMPORT = "import"
+    const val THEME_SELECT = "theme_select"
+}
