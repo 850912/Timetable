@@ -15,6 +15,7 @@ import com.hufeng943.timetable.shared.export.IcsExporter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.guava.await
 import java.io.ByteArrayOutputStream
 import java.util.Locale
 import java.util.UUID

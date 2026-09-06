@@ -81,6 +81,7 @@ kotlin {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
     // 核心基础与 AndroidX
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.splashscreen)

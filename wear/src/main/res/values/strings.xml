@@ -1,4 +1,6 @@
 <resources>
+    <string name="about_license_title">开源许可证</string>
+    <string name="about_license_subtitle">本应用使用的开源库许可证信息</string>
     <string name="app_name" translatable="false">Timetable</string>
     <!--
     This string is used for square devices and overridden by hello_world in
