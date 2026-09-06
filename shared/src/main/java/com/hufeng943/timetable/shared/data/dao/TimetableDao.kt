@@ -58,6 +58,10 @@ interface TimetableDao {
     // ------查询-------
 
     // 查询所有课表
+
+    @Query("SELECT id FROM time_tables WHERE semesterName = :semesterName AND semesterStartEpochDay = :startEpochDay LIMIT 1")
+    suspend fun findTimetableIdByIdentity(semesterName: String, startEpochDay: Long): Long?
+
     @Transaction
     @Query("SELECT * FROM time_tables")
     fun getTimetables(): Flow<List<TimetableWithCourses>>

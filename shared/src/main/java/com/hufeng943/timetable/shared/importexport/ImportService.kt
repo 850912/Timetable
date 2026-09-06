@@ -15,14 +15,32 @@ class ImportService @Inject constructor(
 ) {
     suspend fun importAtomic(timetables: List<Timetable>) {
         db.withTransaction {
-            for (tt in timetables) {
-                val newTtId = dao.insertTimetable(tt.toTimetableEntity().copy(id = 0))
-                for (course in tt.allCourses) {
-                    val newCourseId = dao.insertCourse(course.toCourseEntity(newTtId).copy(id = 0))
-                    for (slot in course.timeSlots) {
-                        dao.insertTimeSlot(slot.toTimeSlotEntity(newCourseId).copy(id = 0))
-                    }
-                }
+            timetables.forEach { insertTimetableGraph(it) }
+        }
+    }
+
+    /**
+     * Phone initiated sync should be repeatable without creating duplicates on Wear.
+     * A timetable is treated as the same logical timetable when its name and start date match.
+     */
+    suspend fun importReplacingMatchesAtomic(timetables: List<Timetable>) {
+        db.withTransaction {
+            timetables.forEach { timetable ->
+                dao.findTimetableIdByIdentity(
+                    timetable.semesterName,
+                    timetable.semesterStart.toEpochDays().toLong()
+                )?.let { dao.deleteTimetableById(it) }
+                insertTimetableGraph(timetable)
+            }
+        }
+    }
+
+    private suspend fun insertTimetableGraph(tt: Timetable) {
+        val newTtId = dao.insertTimetable(tt.toTimetableEntity().copy(id = 0))
+        for (course in tt.allCourses) {
+            val newCourseId = dao.insertCourse(course.toCourseEntity(newTtId).copy(id = 0))
+            for (slot in course.timeSlots) {
+                dao.insertTimeSlot(slot.toTimeSlotEntity(newCourseId).copy(id = 0))
             }
         }
     }

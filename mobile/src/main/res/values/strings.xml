@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Timetable</string>
+    <string name="mobile_title">Timetable 手机端</string>
+    <string name="mobile_subtitle">创建、导入并同步课表到 Wear OS</string>
+    <string name="manual_create">手动创建课表</string>
+    <string name="quick_create">快速文本创建</string>
+    <string name="import_file">导入 JSON / ICS / CSV</string>
+    <string name="sync_all_to_watch">全部同步到手表</string>
+    <string name="my_timetables">我的课表</string>
+    <string name="no_timetables">还没有课表，可以从上方开始创建。</string>
 </resources>

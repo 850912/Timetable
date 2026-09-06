@@ -14,6 +14,7 @@ object WearFileTransferProtocol {
 
     const val KIND_WEAR_EXPORT = "wear_export"
     const val KIND_PHONE_IMPORT_RESULT = "phone_import_result"
+    const val KIND_PHONE_PUSH_TIMETABLES = "phone_push_timetables"
 
     const val URI_SCHEME = "timetable"
     const val URI_HOST = "transfer"

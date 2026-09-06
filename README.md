@@ -37,3 +37,6 @@
 - Room 数据库集成
 - Compose 性能优化
 - Wear OS 开发经验分享
+## Mobile timetable creation
+
+The phone app now supports manual timetable/course creation, quick text creation, JSON/ICS/CSV import, local timetable management, and push sync to a connected Wear OS device. Phone-initiated sync replaces the matching Wear timetable (same name and semester start date) to avoid duplicate copies on repeated sync.
