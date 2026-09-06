@@ -7,7 +7,7 @@ plugins {
 
 configure<ApplicationExtension> {
     namespace = "com.hufeng943.timetable"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.hufeng943.timetable"
