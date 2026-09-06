@@ -61,25 +61,35 @@ jobs:
           done
 
           cert_digest() {
-            "$APKSIGNER" verify --print-certs "$1" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1
+            "$APKSIGNER" verify --print-certs "$1" \
+              | sed -n 's/^.*certificate SHA-256 digest: //p' \
+              | head -n 1
           }
 
           MOBILE_CERT="$(cert_digest "${MOBILE_APKS[0]}")"
-          WEAR_CERT="$(cert_digest "${WEAR_APKS[0]}")"
 
-          if [ -z "$MOBILE_CERT" ] || [ -z "$WEAR_CERT" ]; then
-            echo "Unable to read APK signing certificate digest." >&2
+          if [ -z "$MOBILE_CERT" ]; then
+            echo "Unable to read mobile APK signing certificate digest." >&2
             exit 1
           fi
 
-          if [ "$MOBILE_CERT" != "$WEAR_CERT" ]; then
-            echo "Phone and watch APKs are signed with different certificates." >&2
-            echo "Mobile: $MOBILE_CERT" >&2
-            echo "Wear:   $WEAR_CERT" >&2
-            exit 1
-          fi
+          for apk in "${WEAR_APKS[@]}"; do
+            WEAR_CERT="$(cert_digest "$apk")"
 
-          echo "Phone and watch APK signatures match: $MOBILE_CERT"
+            if [ -z "$WEAR_CERT" ]; then
+              echo "Unable to read signing certificate digest for $apk" >&2
+              exit 1
+            fi
+
+            if [ "$MOBILE_CERT" != "$WEAR_CERT" ]; then
+              echo "Phone and watch APKs are signed with different certificates." >&2
+              echo "Mobile: $MOBILE_CERT" >&2
+              echo "Wear ($apk): $WEAR_CERT" >&2
+              exit 1
+            fi
+          done
+
+          echo "Phone and all watch APK signatures match: $MOBILE_CERT"
 
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
