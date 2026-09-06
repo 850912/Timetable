@@ -1,19 +1,28 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.about
 
 import android.util.Log
-import androidx.compose.animation.*
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
@@ -23,13 +32,31 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
-import androidx.wear.compose.material3.*
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.EdgeButton
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.ListHeader
+import androidx.wear.compose.material3.ListHeaderDefaults
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.SurfaceTransformation
+import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Star
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
+import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
+import com.hufeng943.timetable.presentation.ui.components.OneUiInfoCapsule
 import kotlinx.coroutines.launch
 
 @Composable
@@ -39,6 +66,8 @@ fun AboutScreen() {
     val navController = LocalNavController.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var changelogExpanded by remember { mutableStateOf(false) }
+    var versionTapCount by remember { mutableStateOf(0) }
 
     val versionName = remember {
         try {
@@ -50,8 +79,7 @@ fun AboutScreen() {
     } ?: stringResource(R.string.unknown)
 
     val icon = remember {
-        val drawable = context.packageManager.getApplicationIcon(context.packageName)
-        drawable.toBitmap().asImageBitmap()
+        context.packageManager.getApplicationIcon(context.packageName).toBitmap().asImageBitmap()
     }
 
     ScreenScaffold(
@@ -65,296 +93,115 @@ fun AboutScreen() {
         TransformingLazyColumn(
             state = scrollState,
             contentPadding = contentPadding,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {
-            // 标题
             item {
                 ListHeader(
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec)
-                ) {
-                    Text(stringResource(R.string.more_menu_about))
-                }
+                    transformation = SurfaceTransformation(transformationSpec),
+                ) { Text(stringResource(R.string.more_menu_about)) }
             }
 
-            // 应用信息卡片（图标、名称、版本）
             item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
+                Column(
+                    modifier = Modifier.fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    shape = RoundedCornerShape(16.dp)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Image(
-                            painter = BitmapPainter(icon),
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = versionName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
-
-            // 描述卡片
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
+                    Image(BitmapPainter(icon), contentDescription = null, modifier = Modifier.size(58.dp))
+                    Spacer(Modifier.height(6.dp))
+                    Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                     Text(
-                        text = stringResource(R.string.about_description),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                        text = versionName,
+                        modifier = Modifier.clickable {
+                            versionTapCount += 1
+                            if (versionTapCount >= 7) {
+                                versionTapCount = 0
+                                navController.navigateSingle(NavRoutes.MORE_ABOUT_DEVELOPER)
+                            }
+                        }.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
-            // 当前实际功能
             item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Rounded.Star, contentDescription = null, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                stringResource(R.string.about_features_title),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                        Text(
-                            stringResource(R.string.about_features_text).trimMargin(),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-            }
-
-            // 更新日志卡片（可展开）
-            item {
-                var expanded by remember { mutableStateOf(false) }
-                val rotation by animateFloatAsState(
-                    targetValue = if (expanded) 180f else 0f,
-                    label = "Rotation",
-                    animationSpec = spring(stiffness = Spring.StiffnessMedium)
+                OneUiInfoCapsule(
+                    icon = Icons.Rounded.Info,
+                    text = stringResource(R.string.about_description),
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
+            }
 
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    shape = RoundedCornerShape(16.dp),
-                    onClick = { expanded = !expanded }
+            item {
+                OneUiInfoCapsule(
+                    icon = Icons.Rounded.Star,
+                    text = stringResource(R.string.about_features_text).trimMargin(),
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.about_changelog_title),
+                    subtitle = if (changelogExpanded) null else stringResource(R.string.about_changelog_expand_hint),
+                    icon = Icons.Rounded.History,
+                    emphasize = changelogExpanded,
+                    onClick = { changelogExpanded = !changelogExpanded },
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                AnimatedVisibility(
+                    visible = changelogExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.History,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = stringResource(R.string.about_changelog_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(
-                                imageVector = Icons.Rounded.KeyboardArrowDown,
-                                contentDescription = null,
-                                modifier = Modifier.rotate(rotation)
-                            )
-                        }
-                        AnimatedVisibility(
-                            visible = expanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.about_changelog),
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .fillMaxWidth()
-                            )
-                        }
-                        if (!expanded) {
-                            Text(
-                                text = stringResource(R.string.about_changelog_expand_hint),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
-                            )
-                        }
-                    }
+                    OneUiInfoCapsule(
+                        icon = Icons.Rounded.History,
+                        text = stringResource(R.string.about_changelog),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
 
-            // ============================================================
-            // Stage 8: 贡献者卡片（黑白君）
-            // ============================================================
             item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.EmojiPeople,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "黑白君",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "二次开发与维护 · UI/UX 重构与优化",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.about_developer_name),
+                    subtitle = stringResource(R.string.about_developer_subtitle),
+                    icon = Icons.Rounded.Person,
+                    emphasize = true,
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
             }
 
-            // 声明卡片
             item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Info,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = stringResource(R.string.about_declaration_title),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                        Text(
-                            text = stringResource(R.string.about_declaration_text).trimMargin(),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .fillMaxWidth()
-                        )
-                    }
-                }
+                OneUiInfoCapsule(
+                    icon = Icons.Rounded.Info,
+                    text = stringResource(R.string.about_declaration_text).trimMargin(),
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
             }
 
-            // 开源许可卡片
             item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    shape = RoundedCornerShape(16.dp),
-                    onClick = {
-                        navController.navigateSingle(NavRoutes.MORE_ABOUT_LIBRARIES)
-                    }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Description,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = stringResource(R.string.about_license_title),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = stringResource(R.string.about_license_subtitle),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.about_license_title),
+                    subtitle = stringResource(R.string.about_license_subtitle),
+                    icon = Icons.Rounded.Description,
+                    onClick = { navController.navigateSingle(NavRoutes.MORE_ABOUT_LIBRARIES) },
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
             }
         }
     }

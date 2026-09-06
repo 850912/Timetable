@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.ButtonDefaults
-import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.ListHeaderDefaults
@@ -40,6 +39,7 @@ import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.DynamicSubTheme
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
+import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.ColorBox
 import com.hufeng943.timetable.presentation.ui.components.TimeText
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
@@ -204,28 +204,18 @@ fun DetailsPager(
                 item { Spacer(modifier = Modifier.height(16.dp)) }
 
                 item {
-                    FilledTonalButton(
+                    OneUiCapsuleSurface(
+                        title = stringResource(R.string.edit_course_edit),
+                        subtitle = stringResource(R.string.edit_course_long_press_hint),
+                        icon = Icons.Rounded.Edit,
+                        emphasize = true,
                         onClick = onCourseClick,
                         onLongClick = onCourseLongClick,
                         modifier = Modifier
                             .fillMaxWidth()
                             .transformedHeight(this, transformationSpec)
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                        transformation = SurfaceTransformation(transformationSpec),
-                        icon = {
-                            Icon(imageVector = Icons.Rounded.Edit, contentDescription = null)
-                        },
-                        label = {
-                            Column(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.edit_course_edit))
-                                Text(
-                                    stringResource(R.string.edit_course_long_press_hint),
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            }
-                        })
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                    )
                 }
             }
         }

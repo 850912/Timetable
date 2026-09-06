@@ -119,13 +119,26 @@
     <string name="about_changelog_title">Changelog</string>
     <string name="about_changelog_expand_hint">Tap to expand</string>
     <string name="about_changelog">
-        " · Improved Wear navigation and editing flows\n"
-        " · Added multi-timetable export and full backup support\n"
-        " · Added compatibility with legacy JSON timetable backups\n"
-        " · Added theme presets and Wear OS watch-face dynamic colors\n"
-        " · Added ICS calendar and CSV spreadsheet export\n"
-        " · Added Wear Tile and Complication support"
+        " · Phone ↔ Watch bidirectional timetable file transfer\n"
+        " · ICS / CSV / JSON import and export\n"
+        " · Samsung Tile powered by live timetable data\n"
+        " · Wear OS Complication support\n"
+        " · Unified One UI 8 Watch capsule interface\n"
+        " · Lightweight Galaxy AI-inspired ambient effects\n"
+        " · AMOLED black background with accent-color themes"
     </string>
+    <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
+    <string name="about_developer_subtitle">Developer · Timetable 2.0.0</string>
+    <string name="developer_options_title">Developer Options</string>
+    <string name="developer_version_title">App version</string>
+    <string name="developer_transfer_title">File-transfer protocol</string>
+    <string name="developer_formats_title">Supported formats</string>
+    <string name="developer_tile_title">Samsung Tile</string>
+    <string name="developer_tile_subtitle">Live timetable data · today / next class</string>
+    <string name="developer_complication_title">Complication</string>
+    <string name="developer_complication_subtitle">Watch-face timetable entry is enabled</string>
+    <string name="developer_effects_title">Galaxy AI effects</string>
+    <string name="developer_effects_subtitle">Lightweight ambient gradient · Watch7 optimized</string>
     <!-- Common -->
     <string name="today">Today</string>
     <string name="delete_confirm">Are you sure you want to delete?</string>

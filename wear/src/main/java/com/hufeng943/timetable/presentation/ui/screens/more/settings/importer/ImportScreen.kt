@@ -7,7 +7,9 @@ import android.content.IntentFilter
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.FileOpen
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -30,10 +32,10 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
-import androidx.wear.compose.material3.TitleCard
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import kotlinx.coroutines.launch
 
 @Composable
@@ -80,127 +82,92 @@ fun ImportScreen(
         onDispose { context.unregisterReceiver(receiver) }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadBackupFiles(context)
-    }
+    LaunchedEffect(Unit) { viewModel.loadBackupFiles(context) }
 
     LaunchedEffect(importState) {
         when (val s = importState) {
             is ImportState.Success -> {
-                Toast.makeText(
-                    context,
-                    "成功导入 ${s.count} 门课表！",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(context, "成功导入 ${s.count} 门课表！", Toast.LENGTH_SHORT).show()
                 viewModel.resetState()
                 onNavigateBack()
             }
-
             is ImportState.Error -> {
-                Toast.makeText(
-                    context,
-                    s.message,
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(context, s.message, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
             }
-
             else -> Unit
         }
     }
 
     ScreenScaffold(
         scrollState = scrollState,
-        timeText = {
-            if (config.isShowTopTime) {
-                TimeText()
-            }
-        },
+        timeText = { if (config.isShowTopTime) TimeText() },
         edgeButton = {
-            EdgeButton(
-                onClick = {
-                    scope.launch {
-                        scrollState.animateScrollToItem(0)
-                    }
-                }
-            ) {
-                Icon(
-                    Icons.Rounded.KeyboardArrowUp,
-                    contentDescription = null
-                )
+            EdgeButton(onClick = { scope.launch { scrollState.animateScrollToItem(0) } }) {
+                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = null)
             }
         }
     ) { contentPadding ->
-        TransformingLazyColumn(
-            state = scrollState,
-            contentPadding = contentPadding
-        ) {
+        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(
-                            ListHeaderDefaults.minimumTopListContentPadding
-                        ),
+                        .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
-                ) {
-                    Text("导入本地课表")
-                }
+                ) { Text("导入课表") }
             }
 
             item {
-                TitleCard(
+                OneUiCapsuleSurface(
+                    title = if (importState is ImportState.Importing) "正在导入…" else "从 Galaxy 手机选择文件",
+                    subtitle = "在 S25+ 上选择 .json / .ics / .csv，自动发送到 Watch7",
+                    icon = Icons.Rounded.PhoneAndroid,
+                    emphasize = true,
                     onClick = {
-                        scope.launch {
-                            val launched = com.hufeng943.timetable.data.WearFileTransfer
-                                .requestImportFromPhone(context)
-                            if (!launched) {
-                                Toast.makeText(
-                                    context,
-                                    "无法连接手机，请确认手机端 Timetable 已安装",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                        if (importState !is ImportState.Importing) {
+                            scope.launch {
+                                val launched = com.hufeng943.timetable.data.WearFileTransfer
+                                    .requestImportFromPhone(context)
+                                if (!launched) {
+                                    Toast.makeText(
+                                        context,
+                                        "无法连接手机，请确认手机端 Timetable 已安装",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(
-                            ButtonDefaults.minimumVerticalListContentPadding
-                        ),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    title = {
-                        Text("从手机选择课表文件")
-                    }
-                ) {
-                    Text("手机打开文件选择器；选择 .json / .ics / .csv 后自动发送到手表")
-                }
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                )
             }
 
             if (backupFiles.isNotEmpty()) {
+                item {
+                    ListHeader(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .transformedHeight(this, transformationSpec),
+                        transformation = SurfaceTransformation(transformationSpec)
+                    ) { Text("手表本地备份") }
+                }
+
                 items(backupFiles) { file ->
-                    TitleCard(
-                        onClick = {
-                            viewModel.importFromFile(file)
-                        },
+                    OneUiCapsuleSurface(
+                        title = file.name,
+                        subtitle = "${file.extension.uppercase()} · ${(file.length() / 1024).coerceAtLeast(1)} KB",
+                        icon = Icons.Rounded.FileOpen,
+                        onClick = { viewModel.importFromFile(file) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .transformedHeight(this, transformationSpec)
-                            .minimumVerticalContentPadding(
-                                ButtonDefaults.minimumVerticalListContentPadding
-                            ),
-                        transformation = SurfaceTransformation(transformationSpec),
-                        title = {
-                            Text(file.name)
-                        }
-                    ) {
-                        Text(
-                            "${file.extension.uppercase()} 格式 • " +
-                                "${(file.length() / 1024).coerceAtLeast(1)} KB"
-                        )
-                    }
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                    )
                 }
             }
         }

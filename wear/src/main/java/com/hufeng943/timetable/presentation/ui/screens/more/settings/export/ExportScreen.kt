@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
-import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.Icon
@@ -44,11 +43,11 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
-import androidx.wear.compose.material3.TitleCard
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import kotlinx.coroutines.launch
 
 @Composable
@@ -163,110 +162,76 @@ fun ExportScreen(
             }
 
             item {
-                TitleCard(
+                OneUiCapsuleSurface(
+                    title = "日历 (.ics)",
+                    subtitle = "流式实例导出 · 可导入系统日历",
+                    selected = selectedFormat == ExportFormat.ICS,
+                    emphasize = selectedFormat == ExportFormat.ICS,
                     onClick = { selectedFormat = ExportFormat.ICS },
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (selectedFormat == ExportFormat.ICS) {
-                                Icon(Icons.Rounded.Check, contentDescription = null, tint = AppTheme.colors.primary)
-                                Spacer(modifier = Modifier.width(6.dp))
-                            }
-                            Text("日历 (.ics)")
-                        }
-                    }
-                ) {
-                    Text("流式实例导出")
-                }
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                )
             }
 
             item {
-                TitleCard(
+                OneUiCapsuleSurface(
+                    title = "表格 (.csv)",
+                    subtitle = "UTF-8 BOM · 适合 Excel / Numbers",
+                    selected = selectedFormat == ExportFormat.CSV,
                     onClick = { selectedFormat = ExportFormat.CSV },
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (selectedFormat == ExportFormat.CSV) {
-                                Icon(Icons.Rounded.Check, contentDescription = null, tint = AppTheme.colors.primary)
-                                Spacer(modifier = Modifier.width(6.dp))
-                            }
-                            Text("表格 (.csv)")
-                        }
-                    }
-                ) {
-                    Text("UTF-8 BOM 表格")
-                }
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                )
             }
 
             item {
-                TitleCard(
+                OneUiCapsuleSurface(
+                    title = "一键备份 (.json)",
+                    subtitle = "完整课表数据备份 · 推荐迁移时使用",
+                    selected = selectedFormat == ExportFormat.JSON_BACKUP,
                     onClick = { selectedFormat = ExportFormat.JSON_BACKUP },
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (selectedFormat == ExportFormat.JSON_BACKUP) {
-                                Icon(Icons.Rounded.Check, contentDescription = null, tint = AppTheme.colors.primary)
-                                Spacer(modifier = Modifier.width(6.dp))
-                            }
-                            Text("一键备份 (.json)")
-                        }
-                    }
-                ) {
-                    Text("完整数据 DTO 备份")
-                }
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                )
             }
 
             item {
-                TitleCard(
+                OneUiCapsuleSurface(
+                    title = if (selectedScope == ExportScope.CURRENT) "当前学期" else "全部学期",
+                    subtitle = if (selectedScope == ExportScope.CURRENT) "仅导出当前活跃学期 · 点击切换" else "包含所有历史学期 · 点击切换",
+                    selected = selectedScope == ExportScope.ALL,
                     onClick = {
-                        val newScope = if (selectedScope == ExportScope.CURRENT) {
-                            ExportScope.ALL
-                        } else {
-                            ExportScope.CURRENT
-                        }
+                        val newScope = if (selectedScope == ExportScope.CURRENT) ExportScope.ALL else ExportScope.CURRENT
                         selectedScope = newScope
                         viewModel.updatePreview(newScope)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    title = {
-                        Text(if (selectedScope == ExportScope.CURRENT) "范围: 当前学期" else "范围: 全部学期")
-                    }
-                ) {
-                    Text(if (selectedScope == ExportScope.CURRENT) "仅导出当前活跃学期" else "导出所有历史学期")
-                }
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                )
             }
 
             item {
-                Button(
-                    onClick = {
+                OneUiCapsuleSurface(
+                    title = if (exportState is ExportState.Exporting) "正在发送到手机…" else "发送到 Galaxy 手机",
+                    subtitle = if (exportState is ExportState.Exporting) "请保持 Watch7 与手机连接" else "通过 Wear Data Layer 安全传输",
+                    icon = Icons.Rounded.FileDownload,
+                    emphasize = true,
+                    onClick = if (exportState is ExportState.Exporting) null else ({
                         viewModel.executePhoneExport(context, selectedFormat, selectedScope)
-                    },
-                    enabled = exportState !is ExportState.Exporting,
+                    }),
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                    icon = { Icon(Icons.Rounded.FileDownload, contentDescription = null) }
-                ) {
-                    Text(if (exportState is ExportState.Exporting) "正在发送..." else "发送到手机")
-                }
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                )
             }
         }
     }

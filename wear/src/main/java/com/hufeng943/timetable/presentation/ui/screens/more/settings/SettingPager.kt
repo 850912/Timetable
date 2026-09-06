@@ -1,10 +1,7 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.settings
 
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.ColorLens
@@ -21,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
@@ -35,7 +31,6 @@ import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.SwitchButton
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
-import androidx.wear.compose.material3.TitleCard
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
@@ -43,6 +38,7 @@ import com.hufeng943.timetable.R
 import com.hufeng943.timetable.data.FirstDayOfTheWeek
 import com.hufeng943.timetable.data.TimeFormat
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
+import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleButton
 import com.hufeng943.timetable.presentation.ui.theme.ThemePreset
 import kotlinx.coroutines.launch
 
@@ -210,21 +206,15 @@ private fun TransformingLazyColumnItemScope.SettingItemCard(
     transformationSpec: TransformationSpec,
     onClick: () -> Unit
 ) {
-    TitleCard(
+    OneUiCapsuleButton(
+        icon = icon,
+        label = title,
+        secondaryLabel = value,
+        emphasize = title == "导入课表" || title == "导出课表",
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .transformedHeight(this, transformationSpec)
             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-        transformation = SurfaceTransformation(transformationSpec),
-        title = {
-            Row {
-                Icon(imageVector = icon, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(title)
-            }
-        }
-    ) {
-        Text(value)
-    }
+    )
 }

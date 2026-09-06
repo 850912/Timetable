@@ -107,13 +107,26 @@
     <string name="about_changelog_title">更新内容</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
-        " · 改进 Wear 导航与编辑流程\n"
-        " · 支持多课表导出与完整备份\n"
-        " · 兼容旧版 JSON 课表备份文件\n"
-        " · 增加主题预设与 Wear OS 表盘动态配色\n"
-        " · 支持 ICS 日历导出与 CSV 表格导出\n"
-        " · 支持 Wear Tile 与 Complication"
+        " · 手机 ↔ 手表双向课表文件传输\n"
+        " · 支持 ICS / CSV / JSON 导入导出\n"
+        " · Samsung Tile 接入真实课表数据\n"
+        " · 支持 Wear OS Complication\n"
+        " · One UI 8 Watch 胶囊界面统一改造\n"
+        " · Galaxy AI 风格轻量环境光效\n"
+        " · AMOLED 黑背景与主题强调色体系"
     </string>
+    <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
+    <string name="about_developer_subtitle">开发者 · Timetable 2.0.0</string>
+    <string name="developer_options_title">开发者选项</string>
+    <string name="developer_version_title">应用版本</string>
+    <string name="developer_transfer_title">文件传输协议</string>
+    <string name="developer_formats_title">支持格式</string>
+    <string name="developer_tile_title">Samsung Tile</string>
+    <string name="developer_tile_subtitle">真实课表数据 · 今日/下一节课程</string>
+    <string name="developer_complication_title">Complication</string>
+    <string name="developer_complication_subtitle">表盘课程信息入口已启用</string>
+    <string name="developer_effects_title">Galaxy AI 光效</string>
+    <string name="developer_effects_subtitle">轻量环境渐变 · Watch7 优化</string>
     <!-- Common -->
     <string name="today">今日</string>
     <string name="delete_confirm">确定删除吗？</string>
