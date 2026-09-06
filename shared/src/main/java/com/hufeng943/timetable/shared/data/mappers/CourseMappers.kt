@@ -1,5 +1,6 @@
 package com.hufeng943.timetable.shared.data.mappers
 
+import java.util.UUID
 import com.hufeng943.timetable.shared.data.entities.CourseEntity
 import com.hufeng943.timetable.shared.data.relations.CourseWithSlots
 import com.hufeng943.timetable.shared.model.Course
@@ -11,13 +12,14 @@ fun CourseWithSlots.toCourse(): Course {
         location = this.course.location,
         color = this.course.color,
         teacher = this.course.teacher,
-        timeSlots = this.timeSlots.map { it.toTimeSlot() }
+        timeSlots = this.timeSlots.filter { it.deletedAt == null }.map { it.toTimeSlot() }
     )
 }
 
 fun Course.toCourseEntity(timetableId: Long): CourseEntity {
     return CourseEntity(
         id = this.id,
+        syncId = UUID.randomUUID().toString(),
         timetableId = timetableId, // 关联到父课表
         name = this.name,
         location = this.location,

@@ -37,7 +37,7 @@
         <meta-data android:name="com.google.android.wearable.standalone" android:value="true" />
 
         <service
-            android:name=".transfer.WearDataLayerTransferService"
+            android:name=".sync.WearOsSyncReceiverService"
             android:exported="true"
             android:permission="com.google.android.gms.wearable.BIND_LISTENER">
             <intent-filter>

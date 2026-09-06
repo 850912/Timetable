@@ -3,6 +3,7 @@ package com.hufeng943.timetable
 import android.content.Context
 import androidx.room.Room
 import com.hufeng943.timetable.shared.data.database.AppDatabase
+import com.hufeng943.timetable.shared.data.database.AppDatabaseMigrations
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.data.repository.TimetableRepositoryImpl
 import com.hufeng943.timetable.shared.importexport.ImportService
@@ -16,11 +17,20 @@ object TimetableDatabaseProvider {
             context.applicationContext,
             AppDatabase::class.java,
             "timetable.db"
-        ).build().also { database = it }
+        )
+            .addMigrations(
+                AppDatabaseMigrations.MIGRATION_1_2,
+                AppDatabaseMigrations.MIGRATION_2_3,
+                AppDatabaseMigrations.MIGRATION_3_4,
+                AppDatabaseMigrations.MIGRATION_4_5,
+                AppDatabaseMigrations.MIGRATION_5_6,
+            )
+            .build()
+            .also { database = it }
     }
 
     fun repository(context: Context): TimetableRepository =
-        TimetableRepositoryImpl(database(context).timetableDao())
+        TimetableRepositoryImpl(database(context), DeviceIdProvider.get(context))
 
     fun importService(context: Context): ImportService {
         val db = database(context)

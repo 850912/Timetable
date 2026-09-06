@@ -29,7 +29,12 @@ class ImportService @Inject constructor(
                 dao.findTimetableIdByIdentity(
                     timetable.semesterName,
                     timetable.semesterStart.toEpochDays().toLong()
-                )?.let { dao.deleteTimetableById(it) }
+                )?.let { timetableId ->
+                    val now = System.currentTimeMillis()
+                    dao.softDeleteTimeSlotsForImport(timetableId, now)
+                    dao.softDeleteCoursesForImport(timetableId, now)
+                    dao.softDeleteTimetableForImport(timetableId, now)
+                }
                 insertTimetableGraph(timetable)
             }
         }

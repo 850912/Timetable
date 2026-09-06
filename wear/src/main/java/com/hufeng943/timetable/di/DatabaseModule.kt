@@ -2,8 +2,10 @@ package com.hufeng943.timetable.di
 
 import android.content.Context
 import androidx.room.Room
+import com.hufeng943.timetable.DeviceIdProvider
 import com.hufeng943.timetable.shared.data.dao.TimetableDao
 import com.hufeng943.timetable.shared.data.database.AppDatabase
+import com.hufeng943.timetable.shared.data.database.AppDatabaseMigrations
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.data.repository.TimetableRepositoryImpl
 import dagger.Module
@@ -22,17 +24,24 @@ object DatabaseModule {
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(
             context, AppDatabase::class.java, "timetable_db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .addMigrations(
+                AppDatabaseMigrations.MIGRATION_1_2,
+                AppDatabaseMigrations.MIGRATION_2_3,
+                AppDatabaseMigrations.MIGRATION_3_4,
+                AppDatabaseMigrations.MIGRATION_4_5,
+                AppDatabaseMigrations.MIGRATION_5_6,
+            )
+            .build()
     }
 
     @Provides
-    fun provideTimetableDao(db: AppDatabase): TimetableDao {
-        return db.timetableDao()
-    }
+    fun provideTimetableDao(db: AppDatabase): TimetableDao = db.timetableDao()
 
     @Provides
     @Singleton
-    fun provideRepository(dao: TimetableDao): TimetableRepository {
-        return TimetableRepositoryImpl(dao)
-    }
+    fun provideRepository(
+        db: AppDatabase,
+        @ApplicationContext context: Context,
+    ): TimetableRepository = TimetableRepositoryImpl(db, DeviceIdProvider.get(context))
 }

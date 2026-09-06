@@ -1,0 +1,186 @@
+package com.hufeng943.timetable.sync
+
+import android.content.Intent
+import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.DataEvent
+import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.DataMap
+import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.Wearable
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.WearableListenerService
+import com.hufeng943.timetable.shared.importexport.ImportService
+import com.hufeng943.timetable.shared.importexport.TimetableFileParser
+import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
+import com.hufeng943.timetable.shared.data.database.AppDatabase
+import com.hufeng943.timetable.shared.sync.SyncAck
+import com.hufeng943.timetable.shared.sync.SyncApplier
+import com.hufeng943.timetable.shared.sync.SyncEnvelope
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import javax.inject.Inject
+
+/**
+ * Wear-side endpoint for phone initiated timetable sync.
+ *
+ * This service is deliberately transport-facing: it validates routing,
+ * decodes the Data Layer Asset, and hands the timetable graph to ImportService.
+ */
+@AndroidEntryPoint
+class WearOsSyncReceiverService : WearableListenerService() {
+
+    @Inject
+    lateinit var importService: ImportService
+
+    @Inject
+    lateinit var database: AppDatabase
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    override fun onDataChanged(dataEvents: DataEventBuffer) {
+        dataEvents.forEach { event ->
+            if (event.type != DataEvent.TYPE_CHANGED ||
+                event.dataItem.uri.path != WearFileTransferProtocol.PATH
+            ) return@forEach
+
+            val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
+            if (!isForThisNode(dataMap)) return@forEach
+
+            val kind = dataMap.getString(WearFileTransferProtocol.KEY_KIND)
+            when (kind) {
+                WearFileTransferProtocol.KIND_SYNC_ACK -> {
+                    val success = processSyncAck(dataMap)
+                    if (success) deleteDataItem(event)
+                }
+                WearFileTransferProtocol.KIND_SYNC_BATCH -> {
+                    val success = processSyncBatch(dataMap)
+                    if (success) deleteDataItem(event)
+                }
+                WearFileTransferProtocol.KIND_PHONE_PUSH_TIMETABLES,
+                WearFileTransferProtocol.KIND_PHONE_IMPORT_RESULT -> {
+                    val success = processIncomingTransfer(dataMap)
+                    if (success) {
+                        runCatching {
+                            Tasks.await(
+                                Wearable.getDataClient(this).deleteDataItems(event.dataItem.uri)
+                            )
+                        }
+                    }
+                }
+                else -> return@forEach
+            }
+        }
+    }
+
+    private fun processSyncAck(dataMap: DataMap): Boolean {
+        return runCatching {
+            val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET) ?: error("缺少 ACK")
+            val bytes = Tasks.await(Wearable.getDataClient(this).getFdForAsset(asset))?.inputStream?.use { it.readBytes() }
+                ?: throw IllegalStateException("无法读取 ACK")
+            val ack = json.decodeFromString<SyncAck>(bytes.toString(Charsets.UTF_8))
+            if (ack.appliedRecordIds.isNotEmpty()) kotlinx.coroutines.runBlocking(Dispatchers.IO) { database.syncRecordDao().markSynced(ack.appliedRecordIds) }
+            true
+        }.isSuccess
+    }
+
+    private fun processSyncBatch(dataMap: DataMap): Boolean {
+        return runCatching {
+            val sourceNodeId = dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID)
+                ?: throw IllegalStateException("同步请求缺少源节点")
+            val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET)
+                ?: throw IllegalStateException("同步请求缺少数据")
+            val bytes = Tasks.await(Wearable.getDataClient(this).getFdForAsset(asset))
+                ?.inputStream?.use { it.readBytes() }
+                ?: throw IllegalStateException("无法读取同步数据")
+            val envelope = json.decodeFromString<SyncEnvelope>(bytes.toString(Charsets.UTF_8))
+            val applied = kotlinx.coroutines.runBlocking(Dispatchers.IO) { SyncApplier(database).apply(envelope.records) }
+            val localRecords = kotlinx.coroutines.runBlocking(Dispatchers.IO) { database.syncRecordDao().pending().map { com.hufeng943.timetable.shared.sync.SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) } }
+            sendSyncAck(sourceNodeId, envelope.requestId, applied, localRecords)
+            val complete = applied.size == envelope.records.size
+            sendResultBroadcast(complete, if (complete) null else "部分同步等待重试")
+            complete
+        }.onFailure { sendResultBroadcast(false, it.message ?: "增量同步失败") }.isSuccess
+    }
+
+    private fun sendSyncAck(targetNodeId: String, requestId: String, appliedIds: List<Long>, records: List<com.hufeng943.timetable.shared.sync.SyncRecordPayload> = emptyList()) {
+        val localNodeId = runCatching { Tasks.await(Wearable.getNodeClient(this).localNode).id }.getOrNull() ?: return
+        val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds, records = records)
+        val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
+        val request = PutDataMapRequest.create(WearFileTransferProtocol.PATH).apply {
+            dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_SYNC_ACK)
+            dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)
+            dataMap.putString(WearFileTransferProtocol.KEY_TARGET_NODE_ID, targetNodeId)
+            dataMap.putString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID, localNodeId)
+            dataMap.putAsset(WearFileTransferProtocol.KEY_ASSET, Asset.createFromBytes(bytes))
+        }.asPutDataRequest().setUrgent()
+        Tasks.await(Wearable.getDataClient(this).putDataItem(request))
+    }
+
+    private fun deleteDataItem(event: DataEvent) {
+        runCatching { Tasks.await(Wearable.getDataClient(this).deleteDataItems(event.dataItem.uri)) }
+    }
+
+    private fun isForThisNode(dataMap: DataMap): Boolean {
+        val targetNodeId = dataMap.getString(WearFileTransferProtocol.KEY_TARGET_NODE_ID)
+            ?: return true
+        val localNodeId = runCatching {
+            Tasks.await(Wearable.getNodeClient(this).localNode).id
+        }.getOrNull()
+        return targetNodeId == localNodeId
+    }
+
+    private fun processIncomingTransfer(dataMap: DataMap): Boolean {
+        return runCatching {
+            val errorMessage = dataMap.getString(WearFileTransferProtocol.KEY_ERROR_MESSAGE)
+            if (!errorMessage.isNullOrBlank()) throw IllegalStateException(errorMessage)
+
+            val kind = dataMap.getString(WearFileTransferProtocol.KEY_KIND)
+            importAsset(
+                dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET),
+                replaceMatching = kind == WearFileTransferProtocol.KIND_PHONE_PUSH_TIMETABLES
+            )
+        }.onSuccess {
+            sendResultBroadcast(true, null)
+        }.onFailure { error ->
+            sendResultBroadcast(false, error.message ?: "同步失败")
+        }.isSuccess
+    }
+
+    private fun importAsset(asset: Asset?, replaceMatching: Boolean) {
+        requireNotNull(asset) { "同步数据缺少文件内容" }
+        val bytes = Tasks.await(Wearable.getDataClient(this).getFdForAsset(asset))
+            ?.inputStream
+            ?.use { it.readBytes() }
+            ?: throw IllegalStateException("无法读取手机发送的同步数据")
+
+        val timetables = TimetableFileParser.parse(bytes)
+        runBlocking(Dispatchers.IO) {
+            if (replaceMatching) {
+                importService.importReplacingMatchesAtomic(timetables)
+            } else {
+                importService.importAtomic(timetables)
+            }
+        }
+    }
+
+    private fun sendResultBroadcast(success: Boolean, message: String?) {
+        sendBroadcast(Intent(ACTION_SYNC_RESULT).apply {
+            setPackage(packageName)
+            putExtra(EXTRA_SUCCESS, success)
+            if (message != null) putExtra(EXTRA_MESSAGE, message)
+        })
+    }
+
+    companion object {
+        const val ACTION_SYNC_RESULT = "com.hufeng943.timetable.action.SYNC_RESULT"
+
+        // Compatibility names kept for the existing import screen.
+        const val ACTION_IMPORT_RESULT = ACTION_SYNC_RESULT
+        const val EXTRA_SUCCESS = "success"
+        const val EXTRA_MESSAGE = "message"
+    }
+}

@@ -1,5 +1,6 @@
 package com.hufeng943.timetable.shared.data.mappers
 
+import java.util.UUID
 import com.hufeng943.timetable.shared.data.entities.TimeSlotEntity
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.WeekPattern
@@ -8,18 +9,28 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.isoDayNumber
 
 fun TimeSlot.toTimeSlotEntity(courseId: Long): TimeSlotEntity {
+    // LocalTime/DayOfWeek are nullable in the UI model. Reject malformed writes
+    // explicitly instead of leaking a KotlinNullPointerException into Room.
+    val startTime = requireNotNull(this.startTime) { "开始时间不能为空" }
+    val endTime = requireNotNull(this.endTime) { "结束时间不能为空" }
+    val dayOfWeek = requireNotNull(this.dayOfWeek) { "星期不能为空" }
+
     // LocalTime -> Int (分钟数)
-    val startMinute = this.startTime!!.hour * 60 + this.startTime.minute
-    val endMinute = this.endTime!!.hour * 60 + this.endTime.minute
+    val startMinute = startTime.hour * 60 + startTime.minute
+    val endMinute = endTime.hour * 60 + endTime.minute
 
     // DayOfWeek -> Int (isoDayNumber)
-    val dayOfWeekInt = this.dayOfWeek!!.isoDayNumber
+    val dayOfWeekInt = dayOfWeek.isoDayNumber
+    require(startMinute in 0..1439) { "开始时间无效" }
+    require(endMinute in 0..1439) { "结束时间无效" }
+    require(startMinute != endMinute) { "课程开始和结束时间不能相同" }
 
     // WeekPattern -> Int (ordinal)
     val recurrenceInt = this.recurrence.ordinal
 
     return TimeSlotEntity(
         id = this.id,
+        syncId = UUID.randomUUID().toString(),
         courseId = courseId,
         dayOfWeek = dayOfWeekInt,
         startMinute = startMinute,

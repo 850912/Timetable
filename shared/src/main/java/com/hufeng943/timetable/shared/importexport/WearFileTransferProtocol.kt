@@ -7,6 +7,7 @@ object WearFileTransferProtocol {
     const val KEY_KIND = "kind"
     const val KEY_REQUEST_ID = "requestId"
     const val KEY_TARGET_NODE_ID = "targetNodeId"
+    const val KEY_SOURCE_NODE_ID = "sourceNodeId"
     const val KEY_FILE_NAME = "fileName"
     const val KEY_MIME_TYPE = "mimeType"
     const val KEY_ASSET = "asset"
@@ -15,6 +16,8 @@ object WearFileTransferProtocol {
     const val KIND_WEAR_EXPORT = "wear_export"
     const val KIND_PHONE_IMPORT_RESULT = "phone_import_result"
     const val KIND_PHONE_PUSH_TIMETABLES = "phone_push_timetables"
+    const val KIND_SYNC_BATCH = "sync_batch"
+    const val KIND_SYNC_ACK = "sync_ack"
 
     const val URI_SCHEME = "timetable"
     const val URI_HOST = "transfer"

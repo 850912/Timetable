@@ -1,8 +1,8 @@
 package com.hufeng943.timetable.shared.data.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
 import androidx.room.Delete
+import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TimetableDao {
-
     @Insert
     suspend fun insertTimetable(timetable: TimetableEntity): Long
 
@@ -25,74 +24,85 @@ interface TimetableDao {
     @Insert
     suspend fun insertTimeSlot(slot: TimeSlotEntity): Long
 
-    // ------更新------
     @Upsert
-    suspend fun upsertTimetable(timetable: TimetableEntity): Long
-
-    @Upsert
-    suspend fun upsertCourse(course: CourseEntity): Long
+    suspend fun upsertTimetable(timetable: TimetableEntity)
 
     @Upsert
-    suspend fun upsertTimeSlot(slot: TimeSlotEntity): Long
+    suspend fun upsertCourse(course: CourseEntity)
 
-    // ------删除------
-    @Delete
-    suspend fun deleteTimetable(timetable: TimetableEntity)
+    @Upsert
+    suspend fun upsertTimeSlot(slot: TimeSlotEntity)
 
-    @Delete
-    suspend fun deleteCourse(course: CourseEntity)
 
-    @Delete
-    suspend fun deleteTimeSlot(timeSlot: TimeSlotEntity)
+    @Query("UPDATE time_tables SET deletedAt = :deletedAt WHERE id = :id AND deletedAt IS NULL")
+    suspend fun softDeleteTimetableForImport(id: Long, deletedAt: Long)
 
-    // 按 ID 删除
-    @Query("DELETE FROM time_tables WHERE id = :id")
-    suspend fun deleteTimetableById(id: Long)
+    @Query("UPDATE courses SET deletedAt = :deletedAt WHERE timetableId = :timetableId AND deletedAt IS NULL")
+    suspend fun softDeleteCoursesForImport(timetableId: Long, deletedAt: Long)
 
-    @Query("DELETE FROM courses WHERE id = :courseId")
-    suspend fun deleteCourseById(courseId: Long)
+    @Query("UPDATE time_slots SET deletedAt = :deletedAt WHERE courseId IN (SELECT id FROM courses WHERE timetableId = :timetableId) AND deletedAt IS NULL")
+    suspend fun softDeleteTimeSlotsForImport(timetableId: Long, deletedAt: Long)
 
-    @Query("DELETE FROM time_slots WHERE id = :timeSlotId")
-    suspend fun deleteTimeSlotById(timeSlotId: Long)
+    @Query("SELECT * FROM courses WHERE timetableId = :timetableId AND deletedAt IS NULL")
+    suspend fun getCourseEntitiesByTimetableId(timetableId: Long): List<CourseEntity>
 
-    // ------查询-------
+    @Query("SELECT * FROM time_slots WHERE courseId = :courseId AND deletedAt IS NULL")
+    suspend fun getTimeSlotEntitiesByCourseId(courseId: Long): List<TimeSlotEntity>
 
-    // 查询所有课表
+    @Query("UPDATE time_tables SET updatedAt = :updatedAt, revision = :revision, modifiedBy = :modifiedBy, deletedAt = :deletedAt WHERE id = :id")
+    suspend fun markTimetableDeleted(id: Long, updatedAt: Long, revision: Long, modifiedBy: String, deletedAt: Long)
 
-    @Query("SELECT id FROM time_tables WHERE semesterName = :semesterName AND semesterStartEpochDay = :startEpochDay LIMIT 1")
+    @Query("UPDATE courses SET updatedAt = :updatedAt, revision = :revision, modifiedBy = :modifiedBy, deletedAt = :deletedAt WHERE id = :id")
+    suspend fun markCourseDeleted(id: Long, updatedAt: Long, revision: Long, modifiedBy: String, deletedAt: Long)
+
+    @Query("UPDATE time_slots SET updatedAt = :updatedAt, revision = :revision, modifiedBy = :modifiedBy, deletedAt = :deletedAt WHERE id = :id")
+    suspend fun markTimeSlotDeleted(id: Long, updatedAt: Long, revision: Long, modifiedBy: String, deletedAt: Long)
+
+    @Query("SELECT * FROM time_tables WHERE syncId = :syncId LIMIT 1")
+    suspend fun getTimetableEntityBySyncId(syncId: String): TimetableEntity?
+
+    @Query("SELECT * FROM courses WHERE syncId = :syncId LIMIT 1")
+    suspend fun getCourseEntityBySyncId(syncId: String): CourseEntity?
+
+    @Query("SELECT * FROM time_slots WHERE syncId = :syncId LIMIT 1")
+    suspend fun getTimeSlotEntityBySyncId(syncId: String): TimeSlotEntity?
+
+    @Query("SELECT * FROM time_tables WHERE syncId = :syncId LIMIT 1")
+    suspend fun getTimetableBySyncId(syncId: String): TimetableEntity?
+
+    @Query("SELECT * FROM time_tables WHERE id = :id LIMIT 1")
+    suspend fun getTimetableEntityById(id: Long): TimetableEntity?
+
+    @Query("SELECT * FROM courses WHERE id = :id LIMIT 1")
+    suspend fun getCourseEntityById(id: Long): CourseEntity?
+
+    @Query("SELECT * FROM time_slots WHERE id = :id LIMIT 1")
+    suspend fun getTimeSlotEntityById(id: Long): TimeSlotEntity?
+
+    @Query("SELECT id FROM time_tables WHERE semesterName = :semesterName AND semesterStartEpochDay = :startEpochDay AND deletedAt IS NULL LIMIT 1")
     suspend fun findTimetableIdByIdentity(semesterName: String, startEpochDay: Long): Long?
 
     @Transaction
-    @Query("SELECT * FROM time_tables")
+    @Query("SELECT * FROM time_tables WHERE deletedAt IS NULL")
     fun getTimetables(): Flow<List<TimetableWithCourses>>
 
     @Transaction
-    @Query("SELECT * FROM time_tables WHERE id = :id")
+    @Query("SELECT * FROM time_tables WHERE id = :id AND deletedAt IS NULL")
     fun getTimetableById(id: Long): Flow<TimetableWithCourses?>
 
     @Transaction
-    @Query("SELECT * FROM courses WHERE id = :courseId")
+    @Query("SELECT * FROM courses WHERE id = :courseId AND deletedAt IS NULL")
     fun getCourseById(courseId: Long): Flow<CourseWithSlots?>
 
     @Transaction
-    @Query("SELECT * FROM time_slots WHERE id = :slotId")
+    @Query("SELECT * FROM time_slots WHERE id = :slotId AND deletedAt IS NULL")
     fun getTimeSlotById(slotId: Long): Flow<TimeSlotEntity?>
 
     @Transaction
-    @Query(
-        """
-        SELECT * FROM courses 
-        WHERE id = (SELECT courseId FROM time_slots WHERE id = :slotId)
-    """
-    )
+    @Query("SELECT * FROM courses WHERE id = (SELECT courseId FROM time_slots WHERE id = :slotId AND deletedAt IS NULL) AND deletedAt IS NULL")
     fun getCourseByTimeSlotId(slotId: Long): Flow<CourseWithSlots?>
 
     @Transaction
-    @Query(
-        """
-    SELECT * FROM time_tables 
-    WHERE id = (SELECT timetableId FROM courses WHERE id = :courseId)
-"""
-    )
+    @Query("SELECT * FROM time_tables WHERE id = (SELECT timetableId FROM courses WHERE id = :courseId AND deletedAt IS NULL) AND deletedAt IS NULL")
     fun getTimetableByCourseId(courseId: Long): Flow<TimetableWithCourses?>
 }

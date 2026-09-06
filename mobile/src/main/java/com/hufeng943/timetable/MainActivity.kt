@@ -28,7 +28,9 @@ import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.model.WeekPattern
-import com.hufeng943.timetable.transfer.PhoneWearSyncManager
+import com.hufeng943.timetable.shared.sync.SyncManager
+import com.hufeng943.timetable.shared.sync.SyncRecordPayload
+import com.hufeng943.timetable.sync.WearOsTransport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -44,6 +46,7 @@ import kotlin.time.Clock
 class MainActivity : AppCompatActivity() {
     private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var repository: TimetableRepository
+    private lateinit var syncManager: SyncManager
     private lateinit var timetableContainer: LinearLayout
     private lateinit var emptyText: TextView
     private var currentTimetables: List<Timetable> = emptyList()
@@ -63,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         repository = TimetableDatabaseProvider.repository(this)
+        syncManager = SyncManager(listOf(WearOsTransport(this)))
         timetableContainer = findViewById(R.id.timetableContainer)
         emptyText = findViewById(R.id.emptyText)
 
@@ -76,7 +80,7 @@ class MainActivity : AppCompatActivity() {
             openDocument.launch(arrayOf("application/json", "text/csv", "text/calendar", "text/*"))
         }
         findViewById<MaterialButton>(R.id.buttonSyncAll).setOnClickListener {
-            syncToWatch(currentTimetables)
+            syncToWatch()
         }
 
         observeTimetables()
@@ -141,7 +145,7 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, dp(8), 0, 0)
             }
             actions.addView(actionButton("添加课程") { showAddCourseDialog(timetable) })
-            actions.addView(actionButton("同步") { syncToWatch(listOf(timetable)) })
+            actions.addView(actionButton("同步") { syncToWatch() })
             actions.addView(actionButton("删除") { confirmDelete(timetable) })
             card.addView(actions)
             timetableContainer.addView(card)
@@ -405,18 +409,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun syncToWatch(timetables: List<Timetable>) {
-        if (timetables.isEmpty()) {
-            toast("没有可同步的课表")
-            return
-        }
+    private fun syncToWatch() {
         uiScope.launch {
-            runCatching {
-                withContext(Dispatchers.IO) {
-                    PhoneWearSyncManager.send(this@MainActivity, timetables)
-                }
-            }.onSuccess { device -> toast("已发送到 $device") }
-                .onFailure { toast(it.message ?: "同步失败") }
+            val result = withContext(Dispatchers.IO) {
+                val records = TimetableDatabaseProvider.database(this@MainActivity).syncRecordDao().pending()
+                    .map { SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) }
+                syncManager.syncRecords(records)
+            }
+            when (result) {
+                com.hufeng943.timetable.shared.sync.SyncResult.Success -> toast("同步请求已发送，等待手表确认")
+                is com.hufeng943.timetable.shared.sync.SyncResult.Failed -> toast(result.message)
+            }
         }
     }
 

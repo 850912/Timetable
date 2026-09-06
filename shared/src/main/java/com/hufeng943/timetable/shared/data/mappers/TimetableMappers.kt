@@ -1,5 +1,6 @@
 package com.hufeng943.timetable.shared.data.mappers
 
+import java.util.UUID
 import com.hufeng943.timetable.shared.data.entities.TimetableEntity
 import com.hufeng943.timetable.shared.data.relations.TimetableWithCourses
 import com.hufeng943.timetable.shared.model.Timetable
@@ -22,13 +23,14 @@ fun TimetableWithCourses.toTimetable(): Timetable {
         createdAt = createdAt,
         semesterStart = semesterStart,
         semesterEnd = semesterEnd,
-        allCourses = this.courses.map { it.toCourse() },
+        allCourses = this.courses.filter { it.course.deletedAt == null }.map { it.toCourse() },
         color = tableEntity.color,
     )
 }
 
 fun Timetable.toTimetableEntity(): TimetableEntity = TimetableEntity(
     id = this.timetableId,
+    syncId = UUID.randomUUID().toString(),
     semesterName = this.semesterName,
     createdAtMillis = this.createdAt.toEpochMilliseconds(),
     semesterStartEpochDay = this.semesterStart.toEpochDays(),

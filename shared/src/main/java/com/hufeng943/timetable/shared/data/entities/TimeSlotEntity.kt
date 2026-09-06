@@ -1,5 +1,6 @@
 package com.hufeng943.timetable.shared.data.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -21,11 +22,13 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )// 与CourseEntity绑定
     ],
-    indices = [Index("courseId")]
+    indices = [Index("courseId"), Index(value = ["syncId"], unique = true)]
 )
 data class TimeSlotEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    @ColumnInfo(defaultValue = "''")
+    val syncId: String = "",
     val courseId: Long,
     val dayOfWeek: Int,
     /* (start|end)Minute是由LocalTime类型的(start|end)Time
@@ -34,5 +37,12 @@ data class TimeSlotEntity(
     val startMinute: Int,
     val endMinute: Int,
     val recurrence: Int,
-    val remark: String?
+    val remark: String?,
+    @ColumnInfo(defaultValue = "0")
+    val updatedAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "0")
+    val revision: Long = 0,
+    @ColumnInfo(defaultValue = "'UNKNOWN'")
+    val modifiedBy: String = "UNKNOWN",
+    val deletedAt: Long? = null
 )
