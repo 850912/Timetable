@@ -65,7 +65,10 @@ fun DeveloperOptionsScreen() {
                     subtitle = versionName,
                     icon = Icons.Rounded.Build,
                     emphasize = true,
-                    modifier = capsuleModifier(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
 
@@ -74,7 +77,10 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_transfer_title),
                     subtitle = "/timetable/file-transfer/v1",
                     icon = Icons.Rounded.CloudSync,
-                    modifier = capsuleModifier(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
 
@@ -83,7 +89,10 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_formats_title),
                     subtitle = "ICS · CSV · JSON",
                     icon = Icons.Rounded.Storage,
-                    modifier = capsuleModifier(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
 
@@ -92,7 +101,10 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_tile_title),
                     subtitle = stringResource(R.string.developer_tile_subtitle),
                     icon = Icons.Rounded.GridView,
-                    modifier = capsuleModifier(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
 
@@ -101,7 +113,10 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_complication_title),
                     subtitle = stringResource(R.string.developer_complication_subtitle),
                     icon = Icons.Rounded.Schedule,
-                    modifier = capsuleModifier(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
 
@@ -111,13 +126,12 @@ fun DeveloperOptionsScreen() {
                     subtitle = stringResource(R.string.developer_effects_subtitle),
                     icon = Icons.Rounded.AutoAwesome,
                     emphasize = true,
-                    modifier = capsuleModifier(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
         }
     }
 }
-
-private fun Modifier.capsuleModifier(): Modifier =
-    this.fillMaxWidth()
-        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)

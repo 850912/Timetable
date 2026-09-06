@@ -26,7 +26,7 @@ fun GalaxyAiAmbientLayer(
 ) {
     val primary = AppTheme.colors.primary
     val secondary = AppTheme.colors.secondary
-    val alpha = strength.coerceIn(0f, 1f)
+    val effectAlpha = strength.coerceIn(0f, 1f)
 
     Box(
         modifier = modifier
@@ -35,10 +35,10 @@ fun GalaxyAiAmbientLayer(
             .background(
                 Brush.linearGradient(
                     colorStops = arrayOf(
-                        0.00f to primary.copy(alpha = 0.28f * alpha),
-                        0.34f to Color(0xFF8B5CF6).copy(alpha = 0.17f * alpha),
-                        0.68f to Color(0xFF35D7FF).copy(alpha = 0.13f * alpha),
-                        1.00f to secondary.copy(alpha = 0.04f * alpha),
+                        0.00f to primary.copy(alpha = 0.28f * effectAlpha),
+                        0.34f to Color(0xFF8B5CF6).copy(alpha = 0.17f * effectAlpha),
+                        0.68f to Color(0xFF35D7FF).copy(alpha = 0.13f * effectAlpha),
+                        1.00f to secondary.copy(alpha = 0.04f * effectAlpha),
                     ),
                     start = Offset.Zero,
                     end = Offset(520f, 180f),

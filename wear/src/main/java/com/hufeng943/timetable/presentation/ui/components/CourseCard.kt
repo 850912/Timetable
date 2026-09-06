@@ -32,7 +32,7 @@ import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 import com.hufeng943.timetable.presentation.ui.theme.galaxyAiAccentBrush
 
-private val OneUiCapsuleShape = RoundedCornerShape(28.dp)
+private val CourseCapsuleShape = RoundedCornerShape(28.dp)
 
 @Composable
 fun CourseCard(
@@ -50,7 +50,7 @@ fun CourseCard(
         onClick = onClick,
         modifier = modifier,
         transformation = transformation,
-        shape = OneUiCapsuleShape,
+        shape = CourseCapsuleShape,
         colors = CardDefaults.cardColors(
             containerColor = colors.surfaceContainer,
             contentColor = colors.textPrimary,
@@ -61,10 +61,10 @@ fun CourseCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 72.dp)
-                .clip(OneUiCapsuleShape)
+                .clip(CourseCapsuleShape)
         ) {
             GalaxyAiAmbientLayer(
-                shape = OneUiCapsuleShape,
+                shape = CourseCapsuleShape,
                 strength = 0.55f,
             )
 

@@ -239,7 +239,8 @@ private fun List<Timetable>.coursesForDate(date: LocalDate): List<TileCourse> = 
 }.sortedBy { it.start }
 
 private fun Timetable.weekIndex(date: LocalDate): Int {
-    if (date < semesterStart || (semesterEnd != null && date > semesterEnd)) return 0
+    val endDate = semesterEnd
+    if (date < semesterStart || (endDate != null && date > endDate)) return 0
     val offsetDays = (semesterStart.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
     val semesterMonday = semesterStart.minus(offsetDays.toLong(), DateTimeUnit.DAY)
     val dateOffset = (date.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
