@@ -25,6 +25,9 @@ configure<ApplicationExtension> {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
+            // Keep the phone and watch release APKs signed with the same certificate.
+            // This is required for reliable Wear Data Layer app pairing.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

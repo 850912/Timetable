@@ -40,6 +40,47 @@ jobs:
       - name: Build Wear Release
         run: ./gradlew :wear:assembleRelease --no-daemon
 
+      - name: Verify APK signatures
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS_VERSION="$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)"
+          APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+
+          mapfile -t MOBILE_APKS < <(find mobile/build/outputs/apk/release -type f -name '*.apk' | sort)
+          mapfile -t WEAR_APKS < <(find wear/build/outputs/apk/release -type f -name '*.apk' | sort)
+
+          if [ "${#MOBILE_APKS[@]}" -eq 0 ] || [ "${#WEAR_APKS[@]}" -eq 0 ]; then
+            echo "Release APK not found." >&2
+            exit 1
+          fi
+
+          for apk in "${MOBILE_APKS[@]}" "${WEAR_APKS[@]}"; do
+            echo "Verifying $apk"
+            "$APKSIGNER" verify --verbose --print-certs "$apk"
+          done
+
+          cert_digest() {
+            "$APKSIGNER" verify --print-certs "$1" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1
+          }
+
+          MOBILE_CERT="$(cert_digest "${MOBILE_APKS[0]}")"
+          WEAR_CERT="$(cert_digest "${WEAR_APKS[0]}")"
+
+          if [ -z "$MOBILE_CERT" ] || [ -z "$WEAR_CERT" ]; then
+            echo "Unable to read APK signing certificate digest." >&2
+            exit 1
+          fi
+
+          if [ "$MOBILE_CERT" != "$WEAR_CERT" ]; then
+            echo "Phone and watch APKs are signed with different certificates." >&2
+            echo "Mobile: $MOBILE_CERT" >&2
+            echo "Wear:   $WEAR_CERT" >&2
+            exit 1
+          fi
+
+          echo "Phone and watch APK signatures match: $MOBILE_CERT"
+
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
         with:
