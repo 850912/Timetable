@@ -20,7 +20,7 @@ import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 @Composable
 fun EmptyPager(onAddClick: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 44.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {

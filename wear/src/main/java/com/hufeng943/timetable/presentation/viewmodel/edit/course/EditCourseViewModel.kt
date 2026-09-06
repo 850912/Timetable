@@ -25,9 +25,9 @@ class EditCourseViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val cId: Long? =
-        savedStateHandle.get<Long>(NavArgs.COURSE_ID)?.takeUnless { it == -1L }
+        savedStateHandle.longArg(NavArgs.COURSE_ID)?.takeUnless { it == -1L }
     private val tId: Long? =
-        savedStateHandle.get<Long>(NavArgs.TABLE_ID)
+        savedStateHandle.longArg(NavArgs.TABLE_ID)
 
     // 暴露 tableId 供 UI 层使用（用于导航到子页面时携带参数）
     val tableId: Long? = tId
@@ -94,4 +94,12 @@ class EditCourseViewModel @Inject constructor(
             }
         }
     }
+}
+
+
+private fun SavedStateHandle.longArg(key: String): Long? = when (val value = this[key]) {
+    is Long -> value
+    is Int -> value.toLong()
+    is String -> value.toLongOrNull()
+    else -> null
 }

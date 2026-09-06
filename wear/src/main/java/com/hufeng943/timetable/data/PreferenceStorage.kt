@@ -67,7 +67,7 @@ class PreferenceStorage @Inject constructor(
             firstDayOfTheWeekSetting = firstDaySetting,
             effectiveFirstDayOfTheWeek = effectiveFirstDay,
             isDynamicColorEnabled = prefs[Keys.DYNAMIC_COLOR_ENABLED] ?: true,
-            isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: true
+            isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false
         )
     }
 

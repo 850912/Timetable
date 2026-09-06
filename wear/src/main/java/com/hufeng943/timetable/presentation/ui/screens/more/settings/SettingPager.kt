@@ -158,7 +158,7 @@ fun SettingPager(
                     },
                     secondaryLabel = {
                         Text(
-                            "在屏幕顶部常驻悬浮当前系统时间",
+                            "显示课程页面中的当前时间辅助信息，不影响系统时间",
                             modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
                         )
                     }

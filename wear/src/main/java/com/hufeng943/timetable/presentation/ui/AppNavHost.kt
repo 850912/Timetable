@@ -43,13 +43,15 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
 
     AppScaffold(
         timeText = {
-            TimeText(
-                timeSource = if (config.is24HourFormat) {
-                    rememberTimeSource("HH:mm")
-                } else {
-                    rememberTimeSource("h:mm")
-                }
-            )
+            if (config.isShowTopTime) {
+                TimeText(
+                    timeSource = if (config.is24HourFormat) {
+                        rememberTimeSource("HH:mm")
+                    } else {
+                        rememberTimeSource("h:mm")
+                    }
+                )
+            }
         }
     ) {
         CompositionLocalProvider(

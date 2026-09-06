@@ -25,8 +25,8 @@ class EditTimeSlotViewModel @Inject constructor(
 ) : ViewModel() {
 
     // 使用 get<Long>() 直接获取 Long 类型参数（更简洁、类型安全）
-    private val cId: Long? = savedStateHandle.get<Long>(NavArgs.COURSE_ID)
-    private val sId: Long? = savedStateHandle.get<Long>(NavArgs.TIME_SLOT_ID)
+    private val cId: Long? = savedStateHandle.longArg(NavArgs.COURSE_ID)
+    private val sId: Long? = savedStateHandle.longArg(NavArgs.TIME_SLOT_ID)
 
     private val _uiState = MutableStateFlow<UiState<TimeSlotUi>>(UiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -103,4 +103,12 @@ class EditTimeSlotViewModel @Inject constructor(
             }
         }
     }
+}
+
+
+private fun SavedStateHandle.longArg(key: String): Long? = when (val value = this[key]) {
+    is Long -> value
+    is Int -> value.toLong()
+    is String -> value.toLongOrNull()
+    else -> null
 }

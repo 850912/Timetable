@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -48,6 +49,7 @@ import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
 import com.hufeng943.timetable.presentation.ui.components.CourseCard
 import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
 import com.hufeng943.timetable.presentation.ui.components.PullToDatePicker
+import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.PullToDatePickerState
 import com.hufeng943.timetable.presentation.ui.components.pullToDatePickerDrag
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToDatePickerState
@@ -155,10 +157,16 @@ private fun EmptyCoursePager(
                     .pullToDatePickerDrag(state),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = stringResource(R.string.home_empty_course_hint),
-                    style = MaterialTheme.typography.titleMedium
-                )
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier.padding(top = 28.dp)
+                ) {
+                    OneUiCapsuleSurface(
+                        title = stringResource(R.string.home_empty_course_hint),
+                        subtitle = stringResource(R.string.home_no_course_today),
+                        icon = androidx.compose.material.icons.Icons.Rounded.CalendarMonth,
+                        emphasize = true,
+                    )
+                }
             }
         }
     }

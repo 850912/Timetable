@@ -12,7 +12,7 @@ data class AppConfig(
     val firstDayOfTheWeekSetting: FirstDayOfTheWeek = FirstDayOfTheWeek.SYSTEM,
     val effectiveFirstDayOfTheWeek: DayOfWeek = DayOfWeek.MONDAY,
     val isDynamicColorEnabled: Boolean = true,
-    val isShowTopTime: Boolean = true
+    val isShowTopTime: Boolean = false
 )
 
 val LocalAppConfig = staticCompositionLocalOf { AppConfig() }
