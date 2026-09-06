@@ -1,8 +1,5 @@
 package com.hufeng943.timetable.presentation.ui.screens.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -199,11 +196,7 @@ private fun CourseListPager(
     ScreenScaffold(
         scrollState = scrollState,
         scrollIndicator = {
-            AnimatedVisibility(
-                visible = state.dragOffset == 0f,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
+            if (state.dragOffset == 0f) {
                 ScrollIndicator(state = scrollState)
             }
         }

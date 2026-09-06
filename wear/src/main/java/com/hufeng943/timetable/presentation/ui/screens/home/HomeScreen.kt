@@ -1,10 +1,5 @@
 package com.hufeng943.timetable.presentation.ui.screens.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -38,8 +33,7 @@ fun HomeScreen() {
         // 页面指示器
         AnimatedVisibility(
             visible = !isDatePickerOpen, // 当时间选择器关闭时显示
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            // Wear OS 6 / One UI Watch 8: avoid re-layout animation during page changes.
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 6.dp)

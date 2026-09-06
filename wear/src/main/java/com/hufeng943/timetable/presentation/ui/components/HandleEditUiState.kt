@@ -1,11 +1,8 @@
 package com.hufeng943.timetable.presentation.ui.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -45,27 +42,14 @@ fun <T> HandleEditUiState(
         }
     }
 
+    // Keep state swaps layout-stable on Wear OS 6. Scaling transitions can overlap
+    // with Lazy transformations while the item height is being recalculated.
     AnimatedContent(
         targetState = uiState,
         contentKey = { state -> state::class },
-        transitionSpec = {
-            if (targetState is UiState.Loading || initialState is UiState.Loading) {
-                // 淡入 + 从 92% 放大到 100%
-                (fadeIn(animationSpec = tween(220)) + scaleIn(
-                    initialScale = 0.92f, animationSpec = tween(220)
-                ))
-                    // 淡出 + 缩小到 92%
-                    .togetherWith(
-                        fadeOut(animationSpec = tween(180)) + scaleOut(
-                            targetScale = 0.92f, animationSpec = tween(180)
-                        )
-                    )
-            } else {
-                fadeIn(tween(0)) togetherWith fadeOut(tween(0))
-            }
-        },
+        transitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
         label = "UiStateTransition"
-    ) { targetState ->
+    ){ targetState ->
         when (targetState) {
             is UiState.Loading -> {
                 if (showLoadingActual) {

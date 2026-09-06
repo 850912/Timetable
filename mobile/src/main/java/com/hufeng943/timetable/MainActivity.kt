@@ -232,8 +232,10 @@ class MainActivity : AppCompatActivity() {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 runCatching {
                     val courseName = name.text().ifBlank { throw IllegalArgumentException("请输入课程名称") }
-                    val startTime = LocalTime.parse(start.text())
-                    val endTime = LocalTime.parse(end.text())
+                    val startTime = runCatching { LocalTime.parse(start.text()) }
+                        .getOrElse { throw IllegalArgumentException("开始时间格式错误") }
+                    val endTime = runCatching { LocalTime.parse(end.text()) }
+                        .getOrElse { throw IllegalArgumentException("结束时间格式错误") }
                     if (endTime <= startTime) throw IllegalArgumentException("结束时间必须晚于开始时间")
                     val slot = TimeSlot(
                         startTime = startTime,
@@ -251,7 +253,9 @@ class MainActivity : AppCompatActivity() {
                     uiScope.launch {
                         withContext(Dispatchers.IO) {
                             val courseId = repository.upsertCourse(course, timetable.timetableId)
-                            repository.upsertTimeSlot(course.timeSlots.first(), courseId)
+                            course.timeSlots.firstOrNull()?.let { slot ->
+                                repository.upsertTimeSlot(slot, courseId)
+                            } ?: throw IllegalStateException("课程时间不能为空")
                         }
                         dialog.dismiss()
                         toast("课程已添加")
