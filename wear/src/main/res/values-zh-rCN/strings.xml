@@ -82,12 +82,23 @@
     <string name="apperror_unexpectedempty">意外的空状态</string>
     <string name="apperror_unknown">发生了未知的错误：%1$s</string>
     <!-- About -->
-    <string name="about_description">"    一个为智能手表设计的课程表应用，专注于提供简洁直观的课程查看体验"</string>
+    <string name="about_description">    一款面向 Wear OS 的课程表应用，支持多课表管理、课程与课时编辑，以及每日课程查看。</string>
+    <string name="about_features_title">主要功能</string>
+    <string name="about_features_text">
+        " · 多课表管理\n"
+        " · 课程与课时编辑\n"
+        " · ICS 日历导出 / CSV 表格导出\n"
+        " · JSON 完整备份与恢复\n"
+        " · Wear Tile 与 Complication\n"
+        " · 主题预设与 Wear OS 动态配色\n"
+        " · 12/24 小时制与每周起始日设置\n"
+        " · 中文 / English 界面"
+    </string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
-        " · 本应用由 HuFeng943 开发，并借助生成式 AI 辅助\n"
-        " · 目前仍在持续完善中，部分功能可能尚未完整实现\n"
-        " · 开发过程中参考了社区开源项目，在此致谢"
+        " · Wear OS 应用，当前版本 2.0.0\n"
+        " · 基于 HuFeng943/Timetable 代码库持续维护与扩展\n"
+        " · 部分开发与维护工作借助生成式 AI 完成"
     </string>
     <string name="about_library">第三方库</string>
     <string name="about_library_open_source">✔ 开源协议</string>
@@ -96,19 +107,12 @@
     <string name="about_changelog_title">更新内容</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
-        " · 为部分界面组件添加动画、优化UI\n"
-        " · 增加基于内容的动态主题色功能\n"
-        " · 修复无法下拉日期选择器的问题\n"
-        " · 修复在课程详情页删除课程报错的问题\n"
-        " · 重构部分组件至使用 MD3 设计"
-</string>
-    <string name="about_license_title">开源协议</string>
-    <string name="about_license_subtitle">单击以查看使用到的第三方库</string>
-    <string name="about_license_description">
-        " · 本项目采用 MIT License + Commons Clause 双协议\n"
-        " · MIT License 允许自由使用、修改和分发，但须保留版权声明\n"
-        " · Commons Clause 附加限制：不得将本软件或其功能作为付费产品或服务的核心价值进行售卖\n"
-        " · 详细条款请查阅项目中的 LICENSE 文件"
+        " · 改进 Wear 导航与编辑流程\n"
+        " · 支持多课表导出与完整备份\n"
+        " · 兼容旧版 JSON 课表备份文件\n"
+        " · 增加主题预设与 Wear OS 表盘动态配色\n"
+        " · 支持 ICS 日历导出与 CSV 表格导出\n"
+        " · 支持 Wear Tile 与 Complication"
     </string>
     <!-- Common -->
     <string name="today">今日</string>
@@ -127,8 +131,8 @@
     <string name="settings_first_day_monday">星期一</string>
     <string name="settings_first_day_sunday">星期日</string>
     <string name="settings_first_day_saturday">星期六</string>
-    <string name="settings_dynamic_color">基于内容的主题色</string>
-    <string name="settings_dynamic_color_summary">界面主题色随课程颜色自动变化</string>
+    <string name="settings_dynamic_color">Material You 动态配色</string>
+    <string name="settings_dynamic_color_summary">跟随当前 Wear OS 表盘颜色；课程卡片同时支持按课程颜色生成局部强调色</string>
     <!-- Language -->
     <string-array name="language_labels">
         <item>跟随系统</item>

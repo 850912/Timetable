@@ -67,12 +67,6 @@ fun ExportScreen(
     var selectedFormat by remember { mutableStateOf(ExportFormat.ICS) }
     var selectedScope by remember { mutableStateOf(ExportScope.CURRENT) }
 
-    val createDocLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("*/*")
-    ) { uri ->
-        if (uri != null) { viewModel.executeDirectExport(context, uri, selectedFormat, selectedScope) }
-    }
-
 
     LaunchedEffect(exportState) {
         when (val s = exportState) {
@@ -237,8 +231,13 @@ fun ExportScreen(
             item {
                 TitleCard(
                     onClick = {
-                        selectedScope = if (selectedScope == ExportScope.CURRENT) ExportScope.ALL else ExportScope.CURRENT
-                        viewModel.updatePreview(selectedScope)
+                        val newScope = if (selectedScope == ExportScope.CURRENT) {
+                            ExportScope.ALL
+                        } else {
+                            ExportScope.CURRENT
+                        }
+                        selectedScope = newScope
+                        viewModel.updatePreview(newScope)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -256,9 +255,7 @@ fun ExportScreen(
             item {
                 Button(
                     onClick = {
-                        val ext = when (selectedFormat) { ExportFormat.ICS -> "ics"; ExportFormat.CSV -> "csv"; ExportFormat.JSON_BACKUP -> "json" }
-                        val timeStamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
-                        createDocLauncher.launch("Timetable_Export_${timeStamp}.${ext}")
+                        viewModel.executePhoneExport(context, selectedFormat, selectedScope)
                     },
                     enabled = exportState !is ExportState.Exporting,
                     modifier = Modifier
@@ -268,7 +265,7 @@ fun ExportScreen(
                     transformation = SurfaceTransformation(transformationSpec),
                     icon = { Icon(Icons.Rounded.FileDownload, contentDescription = null) }
                 ) {
-                    Text(if (exportState is ExportState.Exporting) "正在导出..." else "直接保存到本机")
+                    Text(if (exportState is ExportState.Exporting) "正在发送..." else "发送到手机")
                 }
             }
         }

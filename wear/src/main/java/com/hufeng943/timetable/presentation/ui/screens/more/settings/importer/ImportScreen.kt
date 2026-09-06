@@ -1,16 +1,22 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.settings.importer
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
@@ -44,14 +50,35 @@ fun ImportScreen(
     val importState by viewModel.state.collectAsState()
     val backupFiles by viewModel.backupFiles.collectAsState()
 
-    val openDocLauncher =
-        androidx.activity.compose.rememberLauncherForActivityResult(
-            androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
-        ) { uri ->
-            if (uri != null) {
-                viewModel.importFromUri(context, uri)
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action != com.hufeng943.timetable.transfer.WearDataLayerTransferService.ACTION_IMPORT_RESULT) return
+                val success = intent.getBooleanExtra(
+                    com.hufeng943.timetable.transfer.WearDataLayerTransferService.EXTRA_SUCCESS,
+                    false
+                )
+                if (success) {
+                    Toast.makeText(context, "成功导入手机中的课表", Toast.LENGTH_SHORT).show()
+                    onNavigateBack()
+                } else {
+                    Toast.makeText(
+                        context,
+                        intent.getStringExtra(com.hufeng943.timetable.transfer.WearDataLayerTransferService.EXTRA_MESSAGE)
+                            ?: "导入失败",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(com.hufeng943.timetable.transfer.WearDataLayerTransferService.ACTION_IMPORT_RESULT),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        onDispose { context.unregisterReceiver(receiver) }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadBackupFiles(context)
@@ -125,7 +152,17 @@ fun ImportScreen(
             item {
                 TitleCard(
                     onClick = {
-                        openDocLauncher.launch(arrayOf("*/*"))
+                        scope.launch {
+                            val launched = com.hufeng943.timetable.data.WearFileTransfer
+                                .requestImportFromPhone(context)
+                            if (!launched) {
+                                Toast.makeText(
+                                    context,
+                                    "无法连接手机，请确认手机端 Timetable 已安装",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -135,10 +172,10 @@ fun ImportScreen(
                         ),
                     transformation = SurfaceTransformation(transformationSpec),
                     title = {
-                        Text("打开系统文件浏览器")
+                        Text("从手机选择课表文件")
                     }
                 ) {
-                    Text("支持 .json / .ics / .csv；重装后请用此入口选择文件")
+                    Text("手机打开文件选择器；选择 .json / .ics / .csv 后自动发送到手表")
                 }
             }
 

@@ -1,6 +1,5 @@
 package com.hufeng943.timetable.presentation.ui.theme
 
-import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
@@ -128,11 +127,7 @@ fun TimetableTheme(
     val context = LocalContext.current
     val colorScheme = when (themePreset) {
         ThemePreset.SYSTEM_DYNAMIC -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                dynamicColorScheme(context) ?: AmoledBlackColorScheme
-            } else {
-                AmoledBlackColorScheme
-            }
+            dynamicColorScheme(context) ?: AmoledBlackColorScheme
         }
         ThemePreset.AMOLED_BLACK -> AmoledBlackColorScheme
         ThemePreset.DEEP_BLUE -> DeepBlueColorScheme

@@ -110,6 +110,43 @@ class ExportViewModel @Inject constructor(
         }
     }
 
+    fun executePhoneExport(
+        context: Context,
+        format: ExportFormat,
+        scope: ExportScope
+    ) {
+        viewModelScope.launch {
+            _state.value = ExportState.Exporting
+            try {
+                val timetables = withContext(Dispatchers.IO) {
+                    repository.getAllTimetables().firstOrNull() ?: emptyList()
+                }
+                if (timetables.isEmpty()) {
+                    throw IllegalStateException("未找到可导出的课表数据")
+                }
+
+                val targets = resolveExportTargets(scope, timetables)
+                if (scope == ExportScope.CURRENT && targets.isEmpty()) {
+                    throw IllegalStateException("当前日期未处于任何有效学期内")
+                }
+
+                val transferFormat = when (format) {
+                    ExportFormat.ICS -> com.hufeng943.timetable.data.ExportFormatForPhone.ICS
+                    ExportFormat.CSV -> com.hufeng943.timetable.data.ExportFormatForPhone.CSV
+                    ExportFormat.JSON_BACKUP -> com.hufeng943.timetable.data.ExportFormatForPhone.JSON_BACKUP
+                }
+                com.hufeng943.timetable.data.WearFileTransfer.exportToPhone(
+                    context = context,
+                    format = transferFormat,
+                    timetables = targets
+                )
+                _state.value = ExportState.Success("已发送到手机")
+            } catch (e: Exception) {
+                _state.value = ExportState.Error(e.message ?: "导出失败")
+            }
+        }
+    }
+
     fun executeDirectExport(
         context: Context,
         uri: Uri,

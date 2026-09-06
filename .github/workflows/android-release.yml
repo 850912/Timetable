@@ -1,0 +1,55 @@
+name: Android Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Android APKs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Run shared tests
+        run: ./gradlew :shared:test
+
+      - name: Build Mobile Release
+        run: ./gradlew :mobile:assembleRelease --no-daemon
+
+      - name: Build Wear Release
+        run: ./gradlew :wear:assembleRelease --no-daemon
+
+      - name: Upload Mobile APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-release
+          path: mobile/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload Wear APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: wear-release
+          path: wear/build/outputs/apk/release/*.apk
+          if-no-files-found: error
