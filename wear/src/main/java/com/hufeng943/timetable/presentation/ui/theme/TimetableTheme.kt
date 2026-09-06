@@ -9,17 +9,17 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.dynamicColorScheme
 
 val AmoledBlackColorScheme = ColorScheme(
-    primary = Color(0xFFBB86FC),
-    primaryContainer = Color(0xFF3700B3),
-    secondary = Color(0xFF03DAC6),
-    secondaryContainer = Color(0xFF018786),
+    primary = Color(0xFFE8EAED),
+    primaryContainer = Color(0xFF25272B),
+    secondary = Color(0xFFAEB4BC),
+    secondaryContainer = Color(0xFF23262A),
     background = Color.Black,
-    surfaceContainer = Color(0xFF121212),
+    surfaceContainer = Color(0xFF1A1B1F),
     onPrimary = Color.Black,
     onSecondary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White,
-    onSurfaceVariant = Color(0xFFCACACA)
+    onSurfaceVariant = Color(0xFFB8BDC5)
 )
 
 val DeepBlueColorScheme = ColorScheme(

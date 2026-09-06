@@ -97,7 +97,9 @@
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
         " · Wear OS 应用，当前版本 2.0.0\n"
-        " · 基于 HuFeng943/Timetable 代码库持续维护与扩展\n"
+        " · 原项目：HuFeng943 / Timetable\n"
+        " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
+        " · 当前版本在原项目基础上持续维护与扩展\n"
         " · 部分开发与维护工作借助生成式 AI 完成"
     </string>
     <string name="about_library">第三方库</string>
@@ -115,8 +117,10 @@
         " · Galaxy AI 风格轻量环境光效\n"
         " · AMOLED 黑背景与主题强调色体系"
     </string>
+    <string name="about_original_author_name">HuFeng943</string>
+    <string name="about_original_author_subtitle">原作者 · 原始项目 Timetable</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
-    <string name="about_developer_subtitle">开发者 · Timetable 2.0.0</string>
+    <string name="about_developer_subtitle">二次开发与维护 · Timetable 2.0.0</string>
     <string name="developer_options_title">开发者选项</string>
     <string name="developer_version_title">应用版本</string>
     <string name="developer_transfer_title">文件传输协议</string>

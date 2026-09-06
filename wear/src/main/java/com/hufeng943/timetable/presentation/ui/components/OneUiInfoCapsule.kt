@@ -26,6 +26,7 @@ fun OneUiInfoCapsule(
     icon: ImageVector,
     text: String,
     modifier: Modifier = Modifier,
+    maxLines: Int = Int.MAX_VALUE,
 ) {
     val colors = AppTheme.colors
     Row(
@@ -50,8 +51,8 @@ fun OneUiInfoCapsule(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = colors.textPrimary,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
+            maxLines = maxLines,
+            overflow = TextOverflow.Clip,
         )
     }
 }

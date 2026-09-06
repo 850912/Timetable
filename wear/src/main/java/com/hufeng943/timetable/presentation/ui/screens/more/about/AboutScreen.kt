@@ -175,6 +175,16 @@ fun AboutScreen() {
 
             item {
                 OneUiCapsuleSurface(
+                    title = stringResource(R.string.about_original_author_name),
+                    subtitle = stringResource(R.string.about_original_author_subtitle),
+                    icon = Icons.Rounded.Code,
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
                     title = stringResource(R.string.about_developer_name),
                     subtitle = stringResource(R.string.about_developer_subtitle),
                     icon = Icons.Rounded.Person,

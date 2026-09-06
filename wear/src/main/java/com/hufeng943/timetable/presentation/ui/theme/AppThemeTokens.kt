@@ -32,18 +32,18 @@ data class TimetableColors(
 )
 
 val AmoledBlackColors = TimetableColors(
-    primary = Color(0xFF90CAF9),
-    primaryContainer = Color(0xFF1E3A5F),
-    secondary = Color(0xFF81D4FA),
+    primary = Color(0xFFE8EAED),
+    primaryContainer = Color(0xFF25272B),
+    secondary = Color(0xFFAEB4BC),
     background = Color(0xFF000000),
-    surface = Color(0xFF121212),
-    surfaceContainer = Color(0xFF1E1E1E),
+    surface = Color(0xFF101113),
+    surfaceContainer = Color(0xFF1A1B1F),
     courseCurrent = Color(0xFF1B5E20),
-    courseNext = Color(0xFF0D47A1),
+    courseNext = Color(0xFF263238),
     courseFinished = Color(0xFF262626),
     textPrimary = Color(0xFFFFFFFF),
     textSecondary = Color(0xFFB0B0B0),
-    badgeActive = Color(0xFF4CAF50),
+    badgeActive = Color(0xFFB8C7DA),
     weekend = Color(0xFFFFB74D)
 )
 

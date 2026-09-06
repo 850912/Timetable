@@ -80,7 +80,7 @@ fun CourseCard(
                         .fillMaxHeight()
                         .heightIn(min = 48.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(galaxyAiAccentBrush(courseColor, colors.primary))
+                        .background(galaxyAiAccentBrush(courseColor, colors.primary, colors.secondary))
                 )
 
                 Spacer(Modifier.width(9.dp))

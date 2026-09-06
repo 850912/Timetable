@@ -109,7 +109,9 @@
     <string name="about_declaration_subtitle" translatable="false">https://github.com/HuFeng943/Timetable</string>
     <string name="about_declaration_text">
         " · Wear OS app, version 2.0.0\n"
-        " · This project is based on the HuFeng943/Timetable codebase and is being actively maintained and extended\n"
+        " · Original project: HuFeng943 / Timetable\n"
+        " · Secondary development &amp; maintenance: 黑白君 (HeiBaiJun)\n"
+        " · This version continues development on top of the original project\n"
         " · Some development and maintenance work is assisted by generative AI"
     </string>
     <string name="about_library">Third-party Libraries</string>
@@ -127,8 +129,10 @@
         " · Lightweight Galaxy AI-inspired ambient effects\n"
         " · AMOLED black background with accent-color themes"
     </string>
+    <string name="about_original_author_name">HuFeng943</string>
+    <string name="about_original_author_subtitle">Original author · Timetable project</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
-    <string name="about_developer_subtitle">Developer · Timetable 2.0.0</string>
+    <string name="about_developer_subtitle">Secondary development &amp; maintenance · Timetable 2.0.0</string>
     <string name="developer_options_title">Developer Options</string>
     <string name="developer_version_title">App version</string>
     <string name="developer_transfer_title">File-transfer protocol</string>
