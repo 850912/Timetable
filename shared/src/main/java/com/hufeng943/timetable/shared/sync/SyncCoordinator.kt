@@ -35,7 +35,7 @@ class SyncCoordinator(
                 }
                 is SyncResult.Failed -> {
                     dao.markFailed(
-                        records.map { it.id },
+                        records.map { it.sourceRecordId },
                         System.currentTimeMillis(),
                         result.message
                     )
@@ -44,7 +44,7 @@ class SyncCoordinator(
             }
         } catch (e: Exception) {
             dao.markFailed(
-                records.map { it.id },
+                records.map { it.sourceRecordId },
                 System.currentTimeMillis(),
                 e.message ?: "同步异常"
             )
