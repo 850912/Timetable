@@ -122,7 +122,7 @@ class PhoneFileTransferActivity : Activity() {
 
         val request =
             PutDataMapRequest.create(
-                WearFileTransferProtocol.PATH
+                WearFileTransferProtocol.path(requestId)
             ).apply {
                 dataMap.putString(
                     WearFileTransferProtocol.KEY_KIND,
@@ -170,7 +170,7 @@ class PhoneFileTransferActivity : Activity() {
 
         val request =
             PutDataMapRequest.create(
-                WearFileTransferProtocol.PATH
+                WearFileTransferProtocol.path(requestId)
             ).apply {
                 dataMap.putString(
                     WearFileTransferProtocol.KEY_KIND,

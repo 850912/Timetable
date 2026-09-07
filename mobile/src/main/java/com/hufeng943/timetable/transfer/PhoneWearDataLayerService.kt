@@ -18,13 +18,16 @@ import com.hufeng943.timetable.shared.sync.SyncRecordPayload
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 
 class PhoneWearDataLayerService : WearableListenerService() {
     private val json = Json { ignoreUnknownKeys = true }
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
+            val dataPath = event.dataItem.uri.path
             if (event.type != DataEvent.TYPE_CHANGED ||
-                event.dataItem.uri.path != WearFileTransferProtocol.PATH
+                dataPath == null ||
+                !dataPath.startsWith("${WearFileTransferProtocol.PATH_PREFIX}/")
             ) return@forEach
 
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
@@ -71,7 +74,9 @@ class PhoneWearDataLayerService : WearableListenerService() {
         val localNodeId = runCatching { Tasks.await(Wearable.getNodeClient(this).localNode).id }.getOrNull() ?: return
         val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds)
         val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
-        val request = com.google.android.gms.wearable.PutDataMapRequest.create(WearFileTransferProtocol.PATH).apply {
+        val request = com.google.android.gms.wearable.PutDataMapRequest.create(
+            WearFileTransferProtocol.path(requestId)
+        ).apply {
             dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_SYNC_ACK)
             dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)
             dataMap.putString(WearFileTransferProtocol.KEY_TARGET_NODE_ID, targetNodeId)
@@ -122,9 +127,12 @@ class PhoneWearDataLayerService : WearableListenerService() {
         }
     }
 
-    private fun readAsset(asset: Asset) =
-        Tasks.await(Wearable.getDataClient(this).getFdForAsset(asset))?.inputStream
-            ?: throw IOException("无法读取 Wear 导出资源")
+    private fun readAsset(asset: Asset): InputStream {
+        val response = Tasks.await(
+            Wearable.getDataClient(this).getFdForAsset(asset)
+        )
+        return response.inputStream
+    }
 
     private fun sanitizeFileName(name: String): String {
         return name.replace(Regex("[\\\\/:*?\"<>|]"), "_").ifBlank { "Timetable_Export" }

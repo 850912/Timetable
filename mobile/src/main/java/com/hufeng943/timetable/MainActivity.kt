@@ -358,7 +358,7 @@ class MainActivity : AppCompatActivity() {
         return rows.groupBy { Triple(it.name, it.location, it.teacher) }
             .values
             .map { sameCourseRows ->
-                sameCourseRows.firstOrNull()?.copy(
+                sameCourseRows.first().copy(
                     timeSlots = sameCourseRows.flatMap { it.timeSlots }
                 )
             }
