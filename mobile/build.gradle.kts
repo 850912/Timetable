@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val releaseStoreFile = rootProject.file("signing/timetable-release.jks")
+val releaseStorePassword = "Timetable2026!"
+val releaseKeyAlias = "timetable-release"
+val releaseKeyPassword = "Timetable2026!"
+
 configure<ApplicationExtension> {
     namespace = "com.hufeng943.timetable"
     compileSdk = 37
@@ -20,8 +25,18 @@ configure<ApplicationExtension> {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = releaseStoreFile
+            storePassword = releaseStorePassword
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"

@@ -20,6 +20,11 @@ plugins {
     alias(libs.plugins.aboutLibraries)
 }
 
+val releaseStoreFile = rootProject.file("signing/timetable-release.jks")
+val releaseStorePassword = "Timetable2026!"
+val releaseKeyAlias = "timetable-release"
+val releaseKeyPassword = "Timetable2026!"
+
 configure<ApplicationExtension> {
     namespace = "com.hufeng943.timetable"
     compileSdk = 37
@@ -47,11 +52,21 @@ configure<ApplicationExtension> {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = releaseStoreFile
+            storePassword = releaseStorePassword
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
         }
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
