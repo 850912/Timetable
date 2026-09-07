@@ -99,9 +99,12 @@ class EditCourseViewModel @Inject constructor(
 }
 
 
-private fun SavedStateHandle.longArg(key: String): Long? = when (val value = this[key]) {
-    is Long -> value
-    is Int -> value.toLong()
-    is String -> value.toLongOrNull()
-    else -> null
+private fun SavedStateHandle.longArg(key: String): Long? {
+    val value: Any? = get<Any?>(key)
+    return when (value) {
+        is Long -> value
+        is Int -> value.toLong()
+        is String -> value.toLongOrNull()
+        else -> null
+    }
 }
