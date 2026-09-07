@@ -163,7 +163,7 @@ private fun EmptyCoursePager(
                 ) {
                     OneUiCapsuleSurface(
                         title = stringResource(R.string.home_empty_course_hint),
-                        subtitle = stringResource(R.string.home_no_course_today),
+                        subtitle = stringResource(R.string.home_empty_course_hint),
                         icon = null,
                         emphasize = true,
                     )

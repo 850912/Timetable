@@ -35,9 +35,12 @@ class EditTimeSlotViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val domainData =
-                    sId?.let { repository.getTimeSlotById(it).first() } ?: TimeSlot()
-                val courseUi = cId?.let { repository.getCourseById(it).first() }
-                    ?: throw AppError.CourseNotFound(cId)
+                    sId?.let { id ->
+                        repository.getTimeSlotById(id).first() ?: TimeSlot()
+                    } ?: TimeSlot()
+                val courseUi = cId?.let { id ->
+                    repository.getCourseById(id).first()
+                } ?: throw AppError.CourseNotFound(cId)
                 _uiState.value = UiState.Success(domainData.toTimeSlotUi(courseUi.color))
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)

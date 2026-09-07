@@ -38,7 +38,9 @@ class EditCourseViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             try {
-                val domainData = cId?.let { repository.getCourseById(it).first() } ?: Course()
+                val domainData: Course = cId?.let { id ->
+                    repository.getCourseById(id).first() ?: Course()
+                } ?: Course()
                 _uiState.value = UiState.Success(domainData.toCourseUi())
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)
