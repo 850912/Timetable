@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
@@ -48,6 +49,7 @@ private data class TileCourse(
     val name: String,
     val start: String,
     val end: String,
+    val startMinutes: Int,
     val location: String?,
     val teacher: String?,
 )
@@ -70,7 +72,7 @@ class MainTileService : SuspendingTileService() {
             repository.getAllTimetables().first().coursesForDate(today)
         }.getOrDefault(emptyList())
 
-        return tile(requestParams, this, courses)
+        return tile(requestParams, this, courses.nextCourseOnly())
     }
 }
 
@@ -124,7 +126,7 @@ private fun tileLayout(
             capsule(
                 context = context,
                 title = "今天没有课程",
-                subtitle = "轻松一点，稍后再回来看看",
+                subtitle = "打开手机同步最新课表",
                 accent = PRIMARY,
                 clickId = "tile_empty",
             )
@@ -255,6 +257,19 @@ private fun TimeSlot.matchesWeek(weekIndex: Int): Boolean = when (recurrence) {
     WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
 }
 
+private fun List<TileCourse>.nextCourseOnly(): List<TileCourse> {
+    if (isEmpty()) return emptyList()
+
+    val now = Clock.System.now()
+    val localNow = now.toLocalDateTime(TimeZone.currentSystemDefault()).time
+    val currentMinutes = localNow.hour * 60 + localNow.minute
+
+    val next = firstOrNull { it.startMinutes >= currentMinutes }
+        ?: firstOrNull()
+
+    return next?.let { listOf(it) }.orEmpty()
+}
+
 private fun Course.toTileCourse(slot: TimeSlot): TileCourse = TileCourse(
     name = name,
     start = slot.startTime?.let { "%02d:%02d".format(it.hour, it.minute) }.orEmpty(),
@@ -270,8 +285,8 @@ fun tilePreview(context: Context) = TilePreviewData({ _: RequestBuilders.Resourc
         it,
         context,
         listOf(
-            TileCourse("高等数学", "08:00", "09:40", "A301", "张老师"),
-            TileCourse("大学英语", "10:20", "12:00", "B205", null),
+            TileCourse("高等数学", "08:00", "09:40", 480, "A301", "张老师"),
+            TileCourse("大学英语", "10:20", "12:00", 620, "B205", null),
         )
     )
 }
