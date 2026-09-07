@@ -35,6 +35,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
+import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
 private const val RESOURCES_VERSION = "2"
@@ -274,6 +275,7 @@ private fun Course.toTileCourse(slot: TimeSlot): TileCourse = TileCourse(
     name = name,
     start = slot.startTime?.let { "%02d:%02d".format(it.hour, it.minute) }.orEmpty(),
     end = slot.endTime?.let { "%02d:%02d".format(it.hour, it.minute) }.orEmpty(),
+    startMinutes = slot.startTime?.let { it.hour * 60 + it.minute } ?: Int.MAX_VALUE,
     location = location,
     teacher = teacher,
 )
