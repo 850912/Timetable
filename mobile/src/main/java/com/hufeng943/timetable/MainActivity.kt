@@ -357,8 +357,8 @@ class MainActivity : AppCompatActivity() {
         // Identical course metadata on multiple lines means one course with multiple time slots.
         return rows.groupBy { Triple(it.name, it.location, it.teacher) }
             .values
-            .map { sameCourseRows ->
-                sameCourseRows.first().copy(
+            .mapNotNull { sameCourseRows ->
+                sameCourseRows.firstOrNull()?.copy(
                     timeSlots = sameCourseRows.flatMap { it.timeSlots }
                 )
             }

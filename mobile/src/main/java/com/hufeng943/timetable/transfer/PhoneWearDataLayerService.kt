@@ -21,7 +21,10 @@ import java.io.IOException
 import java.io.InputStream
 
 class PhoneWearDataLayerService : WearableListenerService() {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
             val dataPath = event.dataItem.uri.path

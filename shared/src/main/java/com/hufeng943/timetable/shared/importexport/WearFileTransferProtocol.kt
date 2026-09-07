@@ -4,6 +4,10 @@ package com.hufeng943.timetable.shared.importexport
 object WearFileTransferProtocol {
     const val PATH_PREFIX = "/timetable/file-transfer/v1"
 
+    // Base Data Layer path used by legacy sync/file-transfer requests.
+    // New requests with unique IDs should use path(requestId).
+    const val PATH = PATH_PREFIX
+
     fun path(requestId: String): String = "$PATH_PREFIX/$requestId"
 
     const val KEY_KIND = "kind"

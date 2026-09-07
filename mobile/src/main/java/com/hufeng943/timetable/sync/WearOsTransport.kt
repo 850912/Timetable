@@ -19,7 +19,10 @@ class WearOsTransport(
     private val context: Context,
 ) : SyncTransport {
     override val name: String = "Wear OS"
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     override suspend fun isAvailable(): Boolean = try {
         Tasks.await(Wearable.getNodeClient(context).connectedNodes).isNotEmpty()
