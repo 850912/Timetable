@@ -109,7 +109,8 @@ object IcsImporter {
 
             val courseGroups = semesterEvents.groupBy { Triple(it.summary, it.location, it.teacher) }
             val courses = courseGroups.entries.map { (_, cEvents) ->
-                val (courseName, cLocation, cTeacher) = Triple(cEvents.first().summary, cEvents.first().location, cEvents.first().teacher)
+                val firstEvent = cEvents.firstOrNull() ?: return@map null
+                val (courseName, cLocation, cTeacher) = Triple(firstEvent.summary, firstEvent.location, firstEvent.teacher)
 
                 val slotGroups = cEvents.groupBy { Triple(it.date.dayOfWeek, it.startTime, it.endTime) }
                 val timeSlots = slotGroups.entries.map { (slotInfo, sEvents) ->

@@ -57,7 +57,7 @@ configure<ApplicationExtension> {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            // Release signing is injected from TIMETABLE_RELEASE_* properties.
         }
     }
 

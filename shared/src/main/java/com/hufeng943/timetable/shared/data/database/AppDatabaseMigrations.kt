@@ -5,7 +5,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Keeps all pre-sync database versions upgradeable without destructive migration.
- * Room schema history in this project is 1 -> 2 -> 3 -> 4 -> 5.
+ * Room schema history in this project is 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7.
  */
 object AppDatabaseMigrations {
     val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -102,8 +102,17 @@ object AppDatabaseMigrations {
             db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_time_tables_syncId ON time_tables(syncId)")
             db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_courses_syncId ON courses(syncId)")
             db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_time_slots_syncId ON time_slots(syncId)")
+            db.execSQL("ALTER TABLE sync_records ADD COLUMN retryCount INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE sync_records ADD COLUMN lastAttemptAt INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE sync_records ADD COLUMN lastError TEXT")
             db.execSQL("CREATE TABLE IF NOT EXISTS sync_tombstones (syncId TEXT NOT NULL, entityType TEXT NOT NULL, revision INTEGER NOT NULL, updatedAt INTEGER NOT NULL, deviceId TEXT NOT NULL, PRIMARY KEY(syncId, entityType))")
             db.execSQL("CREATE INDEX IF NOT EXISTS index_sync_tombstones_updatedAt ON sync_tombstones(updatedAt)")
+        }
+    }
+
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS processed_sync_requests (requestId TEXT NOT NULL PRIMARY KEY, deviceId TEXT NOT NULL, processedAt INTEGER NOT NULL)")
         }
     }
 

@@ -2,7 +2,9 @@ package com.hufeng943.timetable.shared.importexport
 
 /** Shared protocol constants for transferring timetable files through the Wear Data Layer. */
 object WearFileTransferProtocol {
-    const val PATH = "/timetable/file-transfer/v1"
+    const val PATH_PREFIX = "/timetable/file-transfer/v1"
+
+    fun path(requestId: String): String = "$PATH_PREFIX/$requestId"
 
     const val KEY_KIND = "kind"
     const val KEY_REQUEST_ID = "requestId"

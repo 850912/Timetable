@@ -8,6 +8,7 @@ import com.hufeng943.timetable.shared.data.dao.TimetableDao
 import com.hufeng943.timetable.shared.data.entities.CourseEntity
 import com.hufeng943.timetable.shared.data.entities.SyncRecordEntity
 import com.hufeng943.timetable.shared.data.entities.SyncTombstoneEntity
+import com.hufeng943.timetable.shared.data.entities.ProcessedSyncEntity
 import com.hufeng943.timetable.shared.data.entities.TimeSlotEntity
 import com.hufeng943.timetable.shared.data.entities.TimetableEntity
 
@@ -17,13 +18,15 @@ import com.hufeng943.timetable.shared.data.entities.TimetableEntity
         CourseEntity::class,
         TimeSlotEntity::class,
         SyncRecordEntity::class,
-        SyncTombstoneEntity::class
+        SyncTombstoneEntity::class,
+        ProcessedSyncEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun timetableDao(): TimetableDao
     abstract fun syncRecordDao(): SyncRecordDao
     abstract fun syncTombstoneDao(): SyncTombstoneDao
+    abstract fun processedSyncDao(): com.hufeng943.timetable.shared.data.dao.ProcessedSyncDao
 }

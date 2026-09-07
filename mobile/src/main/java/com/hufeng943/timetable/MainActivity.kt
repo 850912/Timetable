@@ -166,8 +166,8 @@ class MainActivity : AppCompatActivity() {
         val name = inputField("课表名称", "例如：2026 秋季学期")
         val start = inputField("开始日期", "YYYY-MM-DD").apply { editText?.setText(todayString()) }
         val end = inputField("结束日期（可留空）", "YYYY-MM-DD")
-        start.editText?.setOnClickListener { showDatePicker(start.editText as EditText) }
-        end.editText?.setOnClickListener { showDatePicker(end.editText as EditText) }
+        start.editText?.setOnClickListener { showDatePicker(start.editText ?: return@setOnClickListener) }
+        end.editText?.setOnClickListener { showDatePicker(end.editText ?: return@setOnClickListener) }
         start.editText?.isFocusable = false
         end.editText?.isFocusable = false
 
@@ -214,8 +214,8 @@ class MainActivity : AppCompatActivity() {
         val end = inputField("结束时间", "09:40").apply { editText?.setText("09:40") }
         start.editText?.isFocusable = false
         end.editText?.isFocusable = false
-        start.editText?.setOnClickListener { showTimePicker(start.editText as EditText) }
-        end.editText?.setOnClickListener { showTimePicker(end.editText as EditText) }
+        start.editText?.setOnClickListener { showTimePicker(start.editText ?: return@setOnClickListener) }
+        end.editText?.setOnClickListener { showTimePicker(end.editText ?: return@setOnClickListener) }
 
         val daySpinner = spinner(listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日"))
         val recurrenceSpinner = spinner(listOf("每周", "单周", "双周"))
@@ -276,8 +276,8 @@ class MainActivity : AppCompatActivity() {
         val end = inputField("结束日期（可留空）", "YYYY-MM-DD")
         start.editText?.isFocusable = false
         end.editText?.isFocusable = false
-        start.editText?.setOnClickListener { showDatePicker(start.editText as EditText) }
-        end.editText?.setOnClickListener { showDatePicker(end.editText as EditText) }
+        start.editText?.setOnClickListener { showDatePicker(start.editText ?: return@setOnClickListener) }
+        end.editText?.setOnClickListener { showDatePicker(end.editText ?: return@setOnClickListener) }
 
         val lines = TextInputLayout(this).apply {
             hint = "每行：课程|星期|时间|地点|教师|重复"
@@ -358,7 +358,7 @@ class MainActivity : AppCompatActivity() {
         return rows.groupBy { Triple(it.name, it.location, it.teacher) }
             .values
             .map { sameCourseRows ->
-                sameCourseRows.first().copy(
+                sameCourseRows.firstOrNull()?.copy(
                     timeSlots = sameCourseRows.flatMap { it.timeSlots }
                 )
             }

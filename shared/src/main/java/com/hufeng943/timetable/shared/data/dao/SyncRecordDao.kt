@@ -10,7 +10,7 @@ interface SyncRecordDao {
     @Insert
     suspend fun insert(record: SyncRecordEntity): Long
 
-    @Query("SELECT * FROM sync_records WHERE synced = 0 ORDER BY updatedAt ASC, id ASC")
+    @Query("SELECT * FROM sync_records WHERE synced = 0 AND retryCount < 5 ORDER BY updatedAt ASC, id ASC")
     suspend fun pending(): List<SyncRecordEntity>
 
     @Query("UPDATE sync_records SET synced = 1 WHERE id = :id")
@@ -24,4 +24,7 @@ interface SyncRecordDao {
 
     @Query("SELECT COUNT(*) FROM sync_records WHERE synced = 0")
     suspend fun pendingCount(): Int
+
+    @Query("UPDATE sync_records SET retryCount = retryCount + 1, lastAttemptAt = :time, lastError = :error WHERE id IN (:ids)")
+    suspend fun markFailed(ids: List<Long>, time: Long, error: String?)
 }

@@ -26,5 +26,10 @@ data class SyncRecordEntity(
     @ColumnInfo(defaultValue = "0")
     val synced: Boolean = false,
     @ColumnInfo(defaultValue = "'{}'")
-    val payloadJson: String = "{}"
+    val payloadJson: String = "{}",
+    @ColumnInfo(defaultValue = "0")
+    val retryCount: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    val lastAttemptAt: Long = 0,
+    val lastError: String? = null
 )
