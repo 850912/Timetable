@@ -4,6 +4,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -163,7 +164,7 @@ private fun EmptyCoursePager(
                     OneUiCapsuleSurface(
                         title = stringResource(R.string.home_empty_course_hint),
                         subtitle = stringResource(R.string.home_no_course_today),
-                        icon = androidx.compose.material.icons.Icons.Rounded.CalendarMonth,
+                        icon = null,
                         emphasize = true,
                     )
                 }

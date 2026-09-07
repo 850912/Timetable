@@ -15,7 +15,7 @@ import com.hufeng943.timetable.shared.model.Course
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -38,7 +38,7 @@ class EditCourseViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             try {
-                val domainData = cId?.let { repository.getCourseById(it).firstOrNull() } ?: Course()
+                val domainData = cId?.let { repository.getCourseById(it).first() } ?: Course()
                 _uiState.value = UiState.Success(domainData.toCourseUi())
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)

@@ -14,7 +14,7 @@ import com.hufeng943.timetable.shared.model.TimeSlot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -35,8 +35,8 @@ class EditTimeSlotViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val domainData =
-                    sId?.let { repository.getTimeSlotById(it).firstOrNull() } ?: TimeSlot()
-                val courseUi = cId?.let { repository.getCourseById(it).firstOrNull() }
+                    sId?.let { repository.getTimeSlotById(it).first() } ?: TimeSlot()
+                val courseUi = cId?.let { repository.getCourseById(it).first() }
                     ?: throw AppError.CourseNotFound(cId)
                 _uiState.value = UiState.Success(domainData.toTimeSlotUi(courseUi.color))
             } catch (e: Exception) {

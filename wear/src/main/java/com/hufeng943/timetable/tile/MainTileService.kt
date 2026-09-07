@@ -67,7 +67,7 @@ class MainTileService : SuspendingTileService() {
     ): TileBuilders.Tile {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         val courses = runCatching {
-            repository.getAllTimetables().firstOrNull()?.coursesForDate(today).orEmpty()
+            repository.getAllTimetables().first().coursesForDate(today)
         }.getOrDefault(emptyList())
 
         return tile(requestParams, this, courses)
