@@ -1,0 +1,27 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-feature android:name="android.hardware.type.watch" android:required="true" />
+    <queries>
+        <package android:name="com.google.android.gms" />
+    </queries>
+    <application
+        android:allowBackup="false"
+        android:label="China Legacy Probe"
+        android:theme="@android:style/Theme.Material.NoActionBar">
+        <uses-library android:name="com.google.android.wearable" android:required="false" />
+        <activity
+            android:name=".LegacyProbeActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <service
+            android:name=".LegacyProbeListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

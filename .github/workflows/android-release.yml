@@ -40,6 +40,9 @@ jobs:
       - name: Build Wear Release
         run: ./gradlew :wear:assembleRelease --no-daemon
 
+      - name: Build China Legacy Probe APKs
+        run: ./gradlew :legacyprobe-mobile:assembleRelease :legacyprobe-wear:assembleRelease --no-daemon
+
       - name: Verify APK signatures
         shell: bash
         run: |
@@ -49,13 +52,15 @@ jobs:
 
           mapfile -t MOBILE_APKS < <(find mobile/build/outputs/apk/release -type f -name '*.apk' | sort)
           mapfile -t WEAR_APKS < <(find wear/build/outputs/apk/release -type f -name '*.apk' | sort)
+          mapfile -t LEGACY_PHONE_APKS < <(find legacyprobe-mobile/build/outputs/apk/release -type f -name '*.apk' | sort)
+          mapfile -t LEGACY_WEAR_APKS < <(find legacyprobe-wear/build/outputs/apk/release -type f -name '*.apk' | sort)
 
-          if [ "${#MOBILE_APKS[@]}" -eq 0 ] || [ "${#WEAR_APKS[@]}" -eq 0 ]; then
-            echo "Release APK not found." >&2
+          if [ "${#MOBILE_APKS[@]}" -eq 0 ] || [ "${#WEAR_APKS[@]}" -eq 0 ] || [ "${#LEGACY_PHONE_APKS[@]}" -eq 0 ] || [ "${#LEGACY_WEAR_APKS[@]}" -eq 0 ]; then
+            echo "One or more release APK sets were not found." >&2
             exit 1
           fi
 
-          for apk in "${MOBILE_APKS[@]}" "${WEAR_APKS[@]}"; do
+          for apk in "${MOBILE_APKS[@]}" "${WEAR_APKS[@]}" "${LEGACY_PHONE_APKS[@]}" "${LEGACY_WEAR_APKS[@]}"; do
             echo "Verifying $apk"
             "$APKSIGNER" verify --verbose --print-certs "$apk"
           done
@@ -73,23 +78,23 @@ jobs:
             exit 1
           fi
 
-          for apk in "${WEAR_APKS[@]}"; do
-            WEAR_CERT="$(cert_digest "$apk")"
+          for apk in "${WEAR_APKS[@]}" "${LEGACY_PHONE_APKS[@]}" "${LEGACY_WEAR_APKS[@]}"; do
+            OTHER_CERT="$(cert_digest "$apk")"
 
-            if [ -z "$WEAR_CERT" ]; then
+            if [ -z "$OTHER_CERT" ]; then
               echo "Unable to read signing certificate digest for $apk" >&2
               exit 1
             fi
 
-            if [ "$MOBILE_CERT" != "$WEAR_CERT" ]; then
-              echo "Phone and watch APKs are signed with different certificates." >&2
-              echo "Mobile: $MOBILE_CERT" >&2
-              echo "Wear ($apk): $WEAR_CERT" >&2
+            if [ "$MOBILE_CERT" != "$OTHER_CERT" ]; then
+              echo "APK signing certificates do not match." >&2
+              echo "Reference mobile: $MOBILE_CERT" >&2
+              echo "Other ($apk): $OTHER_CERT" >&2
               exit 1
             fi
           done
 
-          echo "Phone and all watch APK signatures match: $MOBILE_CERT"
+          echo "All release APK signatures match: $MOBILE_CERT"
 
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
@@ -103,4 +108,13 @@ jobs:
         with:
           name: wear-release
           path: wear/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload China Legacy Probe APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: china-legacy-probe-release
+          path: |
+            legacyprobe-mobile/build/outputs/apk/release/*.apk
+            legacyprobe-wear/build/outputs/apk/release/*.apk
           if-no-files-found: error

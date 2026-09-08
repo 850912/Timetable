@@ -25,3 +25,5 @@ rootProject.name = "Timetable"
 include(":mobile")
 include(":wear")
 include(":shared")
+include(":legacyprobe-mobile")
+include(":legacyprobe-wear")
