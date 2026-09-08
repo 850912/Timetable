@@ -23,17 +23,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.CloudSync
+import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Storage
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
+import com.hufeng943.timetable.presentation.ui.NavRoutes
+import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 
 @Composable
 fun DeveloperOptionsScreen() {
     val scrollState = rememberTransformingLazyColumnState()
     val transformationSpec = rememberTransformationSpec()
     val context = LocalContext.current
+    val navController = LocalNavController.current
 
     val versionName = remember {
         try {
@@ -65,6 +69,20 @@ fun DeveloperOptionsScreen() {
                     subtitle = versionName,
                     icon = Icons.Rounded.Build,
                     emphasize = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
+                    title = "中国区 Wear 通信探针",
+                    subtitle = "检查 GMS · Node · Message · Data",
+                    icon = Icons.Rounded.BugReport,
+                    emphasize = true,
+                    onClick = { navController.navigate(NavRoutes.MORE_ABOUT_DEVELOPER_PROBE) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)

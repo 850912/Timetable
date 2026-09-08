@@ -68,5 +68,6 @@ object NavRoutes {
     const val MORE_ABOUT = "more/about"
     const val MORE_ABOUT_LIBRARIES = "more/about/libraries"
     const val MORE_ABOUT_DEVELOPER = "more/about/developer"
+    const val MORE_ABOUT_DEVELOPER_PROBE = "more/about/developer/probe"
     const val MORE_SETTINGS = "more/settings"
 }

@@ -32,6 +32,7 @@ import com.hufeng943.timetable.presentation.ui.screens.home.HomeScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.about.AboutLibrariesScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.about.AboutScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.about.DeveloperOptionsScreen
+import com.hufeng943.timetable.presentation.ui.screens.more.about.probe.WearProbeScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.settings.SettingScreen
 import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
@@ -161,6 +162,10 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
 
                 composable(NavRoutes.MORE_ABOUT_DEVELOPER) {
                     DeveloperOptionsScreen()
+                }
+
+                composable(NavRoutes.MORE_ABOUT_DEVELOPER_PROBE) {
+                    WearProbeScreen()
                 }
 
                 composable(NavRoutes.MORE_SETTINGS) {

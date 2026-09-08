@@ -3,6 +3,7 @@ package com.hufeng943.timetable
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.graphics.Color
+import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
@@ -31,6 +32,7 @@ import com.hufeng943.timetable.shared.model.WeekPattern
 import com.hufeng943.timetable.shared.sync.SyncManager
 import com.hufeng943.timetable.shared.sync.SyncRecordPayload
 import com.hufeng943.timetable.sync.WearOsTransport
+import com.hufeng943.timetable.probe.WearProbeActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -81,6 +83,9 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.buttonSyncAll).setOnClickListener {
             syncToWatch()
+        }
+        findViewById<MaterialButton>(R.id.buttonWearProbe).setOnClickListener {
+            startActivity(Intent(this, WearProbeActivity::class.java))
         }
 
         observeTimetables()

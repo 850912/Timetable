@@ -7,6 +7,7 @@
     <uses-permission android:name="com.google.android.wearable.permission.URI_REDIRECT_TO_REMOTE" />
 
     <queries>
+        <package android:name="com.google.android.gms" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.BROWSABLE" />
@@ -35,6 +36,17 @@
         <uses-library android:name="wear-sdk" android:required="false" />
 
         <meta-data android:name="com.google.android.wearable.standalone" android:value="true" />
+
+        <service
+            android:name=".probe.WearProbeListenerService"
+            android:exported="true"
+            android:permission="com.google.android.gms.wearable.BIND_LISTENER">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/timetable/probe/v1" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".sync.WearOsSyncReceiverService"
