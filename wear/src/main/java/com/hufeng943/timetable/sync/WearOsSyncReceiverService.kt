@@ -1,13 +1,11 @@
 package com.hufeng943.timetable.sync
 
 import android.content.Intent
-import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.DataMapItem
-import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.WearableListenerService
 import com.hufeng943.timetable.shared.importexport.ImportService
@@ -44,7 +42,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
             if (event.type != DataEvent.TYPE_CHANGED ||
-                !event.dataItem.uri.path.orEmpty().startsWith("${WearFileTransferProtocol.PATH_PREFIX}/")
+                !event.dataItem.uri.path.orEmpty().startsWith("${WearFileTransferProtocol.PATH_PREFIX}/") && event.dataItem.uri.path != WearFileTransferProtocol.PATH
             ) return@forEach
 
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
@@ -65,9 +63,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
                     val success = processIncomingTransfer(dataMap)
                     if (success) {
                         runCatching {
-                            Tasks.await(
-                                Wearable.getDataClient(this).deleteDataItems(event.dataItem.uri)
-                            )
+                            LegacyWearableClient.deleteDataItemsBlocking(this, event.dataItem.uri)
                         }
                     }
                 }
@@ -79,7 +75,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
     private fun processSyncAck(dataMap: DataMap): Boolean {
         return runCatching {
             val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET) ?: error("缺少 ACK")
-            val bytes = Tasks.await(Wearable.getDataClient(this).getFdForAsset(asset))?.inputStream?.use { it.readBytes() }
+            val bytes = LegacyWearableClient.readAssetBlocking(this, asset).use { it.readBytes() }
                 ?: throw IllegalStateException("无法读取 ACK")
             val ack = json.decodeFromString<SyncAck>(bytes.toString(Charsets.UTF_8))
             if (ack.appliedRecordIds.isNotEmpty()) kotlinx.coroutines.runBlocking(Dispatchers.IO) { database.syncRecordDao().markSynced(ack.appliedRecordIds) }
@@ -93,8 +89,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
                 ?: throw IllegalStateException("同步请求缺少源节点")
             val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET)
                 ?: throw IllegalStateException("同步请求缺少数据")
-            val bytes = Tasks.await(Wearable.getDataClient(this).getFdForAsset(asset))
-                ?.inputStream?.use { it.readBytes() }
+            val bytes = LegacyWearableClient.readAssetBlocking(this, asset).use { it.readBytes() }
                 ?: throw IllegalStateException("无法读取同步数据")
             val envelope = json.decodeFromString<SyncEnvelope>(bytes.toString(Charsets.UTF_8))
             val applied = kotlinx.coroutines.runBlocking(Dispatchers.IO) { SyncApplier(database).apply(envelope.records) }
@@ -107,28 +102,28 @@ class WearOsSyncReceiverService : WearableListenerService() {
     }
 
     private fun sendSyncAck(targetNodeId: String, requestId: String, appliedIds: List<Long>, records: List<com.hufeng943.timetable.shared.sync.SyncRecordPayload> = emptyList()) {
-        val localNodeId = runCatching { Tasks.await(Wearable.getNodeClient(this).localNode).id }.getOrNull() ?: return
+        val localNodeId = runCatching { LegacyWearableClient.localNode(this).id }.getOrNull() ?: return
         val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds, records = records)
         val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
-        val request = PutDataMapRequest.create(WearFileTransferProtocol.PATH).apply {
+        val request = PutDataMapRequest.create(WearFileTransferProtocol.path(requestId)).apply {
             dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_SYNC_ACK)
             dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)
             dataMap.putString(WearFileTransferProtocol.KEY_TARGET_NODE_ID, targetNodeId)
             dataMap.putString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID, localNodeId)
             dataMap.putAsset(WearFileTransferProtocol.KEY_ASSET, Asset.createFromBytes(bytes))
         }.asPutDataRequest().setUrgent()
-        Tasks.await(Wearable.getDataClient(this).putDataItem(request))
+        LegacyWearableClient.putDataItemBlocking(this, request)
     }
 
     private fun deleteDataItem(event: DataEvent) {
-        runCatching { Tasks.await(Wearable.getDataClient(this).deleteDataItems(event.dataItem.uri)) }
+        runCatching { LegacyWearableClient.deleteDataItemsBlocking(this, event.dataItem.uri) }
     }
 
     private fun isForThisNode(dataMap: DataMap): Boolean {
         val targetNodeId = dataMap.getString(WearFileTransferProtocol.KEY_TARGET_NODE_ID)
             ?: return true
         val localNodeId = runCatching {
-            Tasks.await(Wearable.getNodeClient(this).localNode).id
+            LegacyWearableClient.localNode(this).id
         }.getOrNull()
         return targetNodeId == localNodeId
     }
@@ -152,9 +147,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
 
     private fun importAsset(asset: Asset?, replaceMatching: Boolean) {
         requireNotNull(asset) { "同步数据缺少文件内容" }
-        val bytes = Tasks.await(Wearable.getDataClient(this).getFdForAsset(asset))
-            ?.inputStream
-            ?.use { it.readBytes() }
+        val bytes = LegacyWearableClient.readAssetBlocking(this, asset).use { it.readBytes() }
             ?: throw IllegalStateException("无法读取手机发送的同步数据")
 
         val timetables = TimetableFileParser.parse(bytes)

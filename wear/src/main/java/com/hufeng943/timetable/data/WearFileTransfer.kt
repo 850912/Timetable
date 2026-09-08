@@ -1,12 +1,12 @@
 package com.hufeng943.timetable.data
 
+import com.hufeng943.timetable.sync.LegacyWearableClient
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
-import com.google.android.gms.wearable.Wearable
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.export.BackupManager
@@ -14,7 +14,6 @@ import com.hufeng943.timetable.shared.export.CsvExporter
 import com.hufeng943.timetable.shared.export.IcsExporter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.guava.await
 import java.io.ByteArrayOutputStream
 import java.util.Locale
@@ -56,13 +55,13 @@ object WearFileTransfer {
             dataMap.putAsset(WearFileTransferProtocol.KEY_ASSET, Asset.createFromBytes(bytes))
         }.asPutDataRequest().setUrgent()
 
-        Wearable.getDataClient(context).putDataItem(request).await()
+        LegacyWearableClient.putDataItem(context, request)
     }
 
     suspend fun requestImportFromPhone(context: Context): Boolean = withContext(Dispatchers.Main) {
         try {
             val requestId = UUID.randomUUID().toString()
-            val sourceNodeId = Wearable.getNodeClient(context).localNode.await().id
+            val sourceNodeId = LegacyWearableClient.localNode(context).id
             val uri = Uri.Builder()
                 .scheme(WearFileTransferProtocol.URI_SCHEME)
                 .authority(WearFileTransferProtocol.URI_HOST)

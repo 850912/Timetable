@@ -1,14 +1,13 @@
 package com.hufeng943.timetable.transfer
 
+import com.hufeng943.timetable.sync.LegacyWearableClient
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
-import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
-import com.google.android.gms.wearable.Wearable
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -155,10 +154,7 @@ class PhoneFileTransferActivity : Activity() {
                 )
             }.asPutDataRequest().setUrgent()
 
-        Tasks.await(
-            Wearable.getDataClient(this)
-                .putDataItem(request)
-        )
+        LegacyWearableClient.putDataItemBlocking(this, request)
     }
 
     private fun sendTransferError(message: String) {
@@ -193,10 +189,7 @@ class PhoneFileTransferActivity : Activity() {
                 )
             }.asPutDataRequest().setUrgent()
 
-        Tasks.await(
-            Wearable.getDataClient(this)
-                .putDataItem(request)
-        )
+        LegacyWearableClient.putDataItemBlocking(this, request)
     }
 
     private fun queryDisplayName(uri: Uri): String? {
