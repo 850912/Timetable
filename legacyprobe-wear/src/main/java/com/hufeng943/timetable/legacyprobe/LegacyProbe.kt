@@ -36,26 +36,21 @@ object LegacyProbe {
     }
 
     fun withClient(context: Context, block: (GoogleApiClient) -> String): String {
-        var last = "CONNECT FAIL"
-        repeat(3) { attempt ->
-            val client = GoogleApiClient.Builder(context.applicationContext)
-                .addApi(Wearable.API)
-                .build()
-            try {
-                val result = client.blockingConnect(12, TimeUnit.SECONDS)
-                if (result.isSuccess && client.hasConnectedApi(Wearable.API)) {
-                    return block(client)
-                }
-                last = "CONNECT FAIL code=${result.errorCode} (${connectionName(result)}) message=${result.errorMessage ?: "null"} resolution=${result.hasResolution()} attempt=${attempt + 1}/3"
-                if (attempt < 2) Thread.sleep(2000)
-            } catch (t: Throwable) {
-                last = "FAIL ${t.javaClass.simpleName}: ${t.message ?: "无详细信息"} attempt=${attempt + 1}/3"
-                if (attempt < 2) Thread.sleep(2000)
-            } finally {
-                if (client.isConnected || client.isConnecting) client.disconnect()
+        val client = GoogleApiClient.Builder(context.applicationContext)
+            .addApi(Wearable.API)
+            .build()
+        return try {
+            val result = client.blockingConnect(12, TimeUnit.SECONDS)
+            if (!result.isSuccess) {
+                "CONNECT FAIL code=${result.errorCode} (${connectionName(result)}) message=${result.errorMessage ?: "null"} resolution=${result.hasResolution()}"
+            } else {
+                block(client)
             }
+        } catch (t: Throwable) {
+            "FAIL ${t.javaClass.simpleName}: ${t.message ?: "无详细信息"}"
+        } finally {
+            if (client.isConnected || client.isConnecting) client.disconnect()
         }
-        return last
     }
 
     fun runDiagnostics(context: Context, role: String): String = buildString {

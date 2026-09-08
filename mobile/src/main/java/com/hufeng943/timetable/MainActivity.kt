@@ -4,8 +4,6 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.graphics.Color
 import android.content.Intent
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
@@ -23,7 +21,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.color.DynamicColors
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
@@ -54,8 +51,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var syncManager: SyncManager
     private lateinit var timetableContainer: LinearLayout
     private lateinit var emptyText: TextView
-    private lateinit var todayCourseContainer: LinearLayout
-    private lateinit var todayEmptyText: TextView
     private var currentTimetables: List<Timetable> = emptyList()
 
     private val openDocument = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -64,7 +59,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        DynamicColors.applyToActivityIfAvailable(this)
         setContentView(R.layout.activity_main)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { view, insets ->
@@ -77,17 +71,12 @@ class MainActivity : AppCompatActivity() {
         syncManager = SyncManager(listOf(WearOsTransport(this)))
         timetableContainer = findViewById(R.id.timetableContainer)
         emptyText = findViewById(R.id.emptyText)
-        todayCourseContainer = findViewById(R.id.todayCourseContainer)
-        todayEmptyText = findViewById(R.id.todayEmptyText)
 
         findViewById<MaterialButton>(R.id.buttonManualCreate).setOnClickListener {
             showCreateTimetableDialog()
         }
         findViewById<MaterialButton>(R.id.buttonQuickCreate).setOnClickListener {
             showQuickCreateDialog()
-        }
-        findViewById<MaterialButton>(R.id.buttonAiImport).setOnClickListener {
-            showAiImportDialog()
         }
         findViewById<MaterialButton>(R.id.buttonImport).setOnClickListener {
             openDocument.launch(arrayOf("application/json", "text/csv", "text/calendar", "text/*"))
@@ -100,130 +89,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         observeTimetables()
-
-        if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
-            showAiImportDialog(intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty())
-        }
     }
 
     private fun observeTimetables() {
         uiScope.launch {
             repository.getAllTimetables().collectLatest { timetables ->
-                        currentTimetables = timetables.sortedByDescending { it.createdAt }
+                currentTimetables = timetables.sortedByDescending { it.createdAt }
                 renderTimetables(currentTimetables)
-                renderTodayCourses(currentTimetables)
             }
         }
     }
-
-    private fun renderTodayCourses(timetables: List<Timetable>) {
-        todayCourseContainer.removeAllViews()
-        val today = java.time.LocalDate.now()
-        val todayKotlin = LocalDate.parse(today.toString())
-        val courses = timetables.flatMap { timetable ->
-            if (todayKotlin < timetable.semesterStart || (timetable.semesterEnd != null && todayKotlin > timetable.semesterEnd)) return@flatMap emptyList()
-            val weekIndex = ((todayKotlin.toEpochDays() - timetable.semesterStartMonday.toEpochDays()) / 7).toInt() + 1
-            timetable.allCourses.flatMap { course ->
-                course.timeSlots.filter { slot ->
-                    slot.dayOfWeek == todayKotlin.dayOfWeek && when (slot.recurrence) {
-                        WeekPattern.EVERY_WEEK -> true
-                        WeekPattern.ODD_WEEK -> weekIndex % 2 == 1
-                        WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
-                    }
-                }.map { slot -> timetable to (course to slot) }
-            }
-        }.sortedBy { it.second.second.startTime }
-
-        todayEmptyText.visibility = if (courses.isEmpty()) View.VISIBLE else View.GONE
-        courses.forEach { (timetable, pair) ->
-            val (course, slot) = pair
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(14), dp(12), dp(14), dp(12))
-                background = GradientDrawable().apply {
-                    cornerRadius = dp(18).toFloat()
-                    val base = if (course.color != -1L) course.color.toInt() else if (timetable.color != -1L) timetable.color.toInt() else resolveSurfaceColor()
-                    setColor(withAlpha(base, 0x20))
-                    setStroke(dp(1), withAlpha(base, 0x55))
-                }
-            }
-            card.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(10) }
-            card.addView(TextView(this).apply {
-                text = "${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}  ${course.name}"
-                textSize = 17f
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
-            })
-            val detail = listOfNotNull(course.location, course.teacher, timetable.semesterName.takeIf { it.isNotBlank() }).joinToString(" · ")
-            if (detail.isNotBlank()) card.addView(TextView(this).apply { text = detail; setPadding(0, dp(4), 0, 0) })
-            todayCourseContainer.addView(card)
-        }
-    }
-
-    private fun showAiImportDialog(initialText: String = "") {
-        val input = TextInputLayout(this).apply {
-            hint = "粘贴 AI 生成的课表文本"
-            addView(TextInputEditText(context).apply {
-                minLines = 8
-                maxLines = 16
-                setText(initialText)
-            })
-        }
-        val help = TextView(this).apply {
-            text = "先点击“复制 AI 提示词”，让任意 AI 按指定格式整理课表，再把结果粘贴回来。无需在 APK 内置 API Key，适合国行设备。"
-            setPadding(0, dp(4), 0, dp(8))
-        }
-        val copyPrompt = MaterialButton(this).apply {
-            text = "复制 AI 提示词"
-            isAllCaps = false
-            setOnClickListener {
-                val prompt = "请把下面的课程表整理成纯文本，每行严格使用：课程|星期|开始-结束|地点|教师|重复。星期用周一到周日，重复只用每周/单周/双周；不要添加解释。\n\n请处理我接下来提供的课表信息。"
-                val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("Timetable AI Prompt", prompt))
-                toast("AI 提示词已复制")
-            }
-        }
-        val content = dialogColumn(help, copyPrompt, input)
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("AI 导入课表")
-            .setView(content)
-            .setNegativeButton("取消", null)
-            .setPositiveButton("解析并导入", null)
-            .create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                runCatching {
-                    val text = input.editText?.text?.toString().orEmpty()
-                    if (text.isBlank()) throw IllegalArgumentException("请先粘贴 AI 生成的课程文本")
-                    val name = "AI 导入 ${todayString()}"
-                    val courses = parseAiCourses(text)
-                    if (courses.isEmpty()) throw IllegalArgumentException("没有解析到课程，请检查 AI 输出格式")
-                    Timetable(
-                        semesterName = name,
-                        createdAt = Clock.System.now(),
-                        semesterStart = LocalDate.parse(todayString()),
-                        allCourses = courses
-                    )
-                }.onSuccess { timetable ->
-                    uiScope.launch {
-                        withContext(Dispatchers.IO) { insertWholeTimetable(timetable) }
-                        dialog.dismiss()
-                        toast("AI 导入成功：${timetable.allCourses.size} 门课程")
-                    }
-                }.onFailure { toast(it.message ?: "AI 导入失败") }
-            }
-        }
-        dialog.show()
-    }
-
-    private fun parseAiCourses(text: String): List<Course> = parseQuickCourses(
-        text.lineSequence().map { line ->
-            line.trim().replace('｜', '|').replace('，', '|').replace('\t', '|')
-        }.joinToString("\n")
-    )
-
-    private fun formatTime(time: LocalTime?): String = time?.let { "%02d:%02d".format(it.hour, it.minute) } ?: "--:--"
-
-    private fun withAlpha(color: Int, alpha: Int): Int = (color and 0x00FFFFFF) or (alpha shl 24)
 
     private fun renderTimetables(timetables: List<Timetable>) {
         timetableContainer.removeAllViews()
@@ -262,23 +137,12 @@ class MainActivity : AppCompatActivity() {
                     val end = slot.endTime?.toString() ?: "--:--"
                     "$day $start-$end"
                 }.ifBlank { "暂无时间" }
-                val courseRow = LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = android.view.Gravity.CENTER_VERTICAL
-                    setPadding(0, dp(3), 0, dp(3))
-                }
-                courseRow.addView(View(this).apply {
-                    val accent = if (course.color != -1L) course.color.toInt() else if (timetable.color != -1L) timetable.color.toInt() else 0xFF7E57C2.toInt()
-                    background = GradientDrawable().apply { cornerRadius = dp(4).toFloat(); setColor(accent) }
-                }, LinearLayout.LayoutParams(dp(5), dp(34)).apply { marginEnd = dp(9) })
-                courseRow.addView(TextView(this).apply {
-                    text = "${course.name}  $slotText" +
+                card.addView(TextView(this).apply {
+                    text = "• ${course.name}  $slotText" +
                         listOfNotNull(course.location, course.teacher).takeIf { it.isNotEmpty() }
                             ?.joinToString(prefix = "  （", postfix = "）", separator = " / ").orEmpty()
-                    setPadding(0, dp(1), 0, dp(1))
-                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    setPadding(0, dp(3), 0, dp(3))
                 })
-                card.addView(courseRow)
             }
 
             val actions = LinearLayout(this).apply {

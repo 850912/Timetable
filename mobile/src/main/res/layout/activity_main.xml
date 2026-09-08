@@ -46,14 +46,6 @@
             android:text="@string/quick_create" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonAiImport"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="AI 导入课表" />
-
-        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonImport"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
@@ -80,32 +72,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="今日课程"
-            android:textAppearance="?attr/textAppearanceTitleLarge"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/todayEmptyText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center"
-            android:padding="16dp"
-            android:text="今天没有安排课程"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <LinearLayout
-            android:id="@+id/todayCourseContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="vertical" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="28dp"
             android:text="@string/my_timetables"
             android:textAppearance="?attr/textAppearanceTitleLarge"
             android:textStyle="bold" />

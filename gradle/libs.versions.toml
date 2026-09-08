@@ -21,7 +21,7 @@ navigationCompose = "2.9.8"
 # Wear OS 体系 (Compose/Tiles/Horologist)
 wearComposeM3 = "1.6.2"
 wearToolingPreview = "1.0.0"
-playServicesWearable = "10.2.0"
+playServicesWearable = "20.0.1"
 tiles = "1.6.1"
 tilesTooling = "1.6.1"
 tilesToolingPreview = "1.6.1"
