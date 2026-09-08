@@ -1,5 +1,10 @@
 package com.hufeng943.timetable.presentation.ui.components
 
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,16 +17,20 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.time.Duration
+import java.time.LocalTime
 import androidx.wear.compose.material3.Card
 import androidx.wear.compose.material3.CardDefaults
 import androidx.wear.compose.material3.MaterialTheme
@@ -39,16 +48,40 @@ fun CourseCard(
     course: CourseUi,
     modifier: Modifier = Modifier,
     transformation: SurfaceTransformation? = null,
+    isCurrent: Boolean = false,
+    isNext: Boolean = false,
+    now: LocalTime = LocalTime.now(),
     onClick: () -> Unit
 ) {
     val colors = AppTheme.colors
     val courseColor = course.displayColor
     val slot = course.timeSlot
     val order = course.dailyOrder?.toString() ?: "•"
+    val pulseTransition = rememberInfiniteTransition(label = "nextCoursePulse")
+    val nextScale by pulseTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = if (isNext && !isCurrent) 1.012f else 1f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "nextCourseScale"
+    )
+    val remainingText = if (isCurrent) {
+        course.timeSlot.endTime?.let { end ->
+            val endTime = LocalTime.of(end.hour, end.minute)
+            val minutes = Duration.between(now, endTime).toMinutes().coerceAtLeast(0)
+            "距下课还有 ${minutes} 分钟"
+        }
+    } else if (isNext) {
+        "下一节"
+    } else null
 
     Card(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier
+            .graphicsLayer { scaleX = nextScale; scaleY = nextScale }
+            .then(
+                if (isCurrent) Modifier.border(2.dp, colors.primary, CourseCapsuleShape)
+                else Modifier
+            ),
         transformation = transformation,
         shape = CourseCapsuleShape,
         colors = CardDefaults.cardColors(
@@ -102,9 +135,11 @@ fun CourseCard(
                             slot.startTime?.let { append("%02d:%02d".format(it.hour, it.minute)) }
                             if (slot.startTime != null && slot.endTime != null) append(" – ")
                             slot.endTime?.let { append("%02d:%02d".format(it.hour, it.minute)) }
+                            remainingText?.let { append(" · ").append(it) }
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colors.textSecondary,
+                        color = if (isCurrent) colors.primary else colors.textSecondary,
+                        fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
                         maxLines = 1,
                     )
 

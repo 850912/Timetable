@@ -10,11 +10,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -58,6 +61,8 @@ import com.hufeng943.timetable.presentation.ui.components.rememberPullToRefreshC
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.home.TimetableViewModel
 import kotlinx.datetime.LocalDate
+import java.time.LocalTime as JavaLocalTime
+import kotlinx.coroutines.delay
 
 @Composable
 fun TimetablePager(
@@ -106,14 +111,17 @@ fun TimetablePager(
                 itemKey = { courseUi -> courseUi.timeSlot.id },
                 selectedDate = selectedDate,
                 onDateSelected = handleDateSelected
-            ) { courseUi, transformationSpec ->
+            ) { courseUi, transformationSpec, isCurrent, isNext, now ->
                 CourseCard(
                     course = courseUi,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec)
+                    transformation = SurfaceTransformation(transformationSpec),
+                    isCurrent = isCurrent,
+                    isNext = isNext,
+                    now = now
                 ) {
                     navController.navigateSingle(courseDetail(courseUi.timeSlot.id))
                 }
@@ -164,7 +172,7 @@ private fun EmptyCoursePager(
                     OneUiCapsuleSurface(
                         title = stringResource(R.string.home_empty_course_hint),
                         subtitle = stringResource(R.string.home_empty_course_hint),
-                        icon = null,
+                        icon = Icons.Rounded.EventAvailable,
                         emphasize = true,
                     )
                 }
@@ -184,7 +192,7 @@ private fun CourseListPager(
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
-    itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec) -> Unit
+    itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec, Boolean, Boolean, JavaLocalTime) -> Unit
 ) {
     val scrollState = rememberTransformingLazyColumnState(initialAnchorItemIndex = 0)
     val transformationSpec = rememberTransformationSpec()
@@ -193,6 +201,33 @@ private fun CourseListPager(
 
     val nestedScrollConnection = rememberPullToRefreshConnection(
         scrollState = scrollState, state = state, isTouching = { isTouching.get() })
+
+    val now by produceState(initialValue = JavaLocalTime.now()) {
+        while (true) {
+            value = JavaLocalTime.now()
+            delay(30_000)
+        }
+    }
+    val currentIndex = coursesUi.indexOfFirst { course ->
+        val start = course.timeSlot.startTime ?: return@indexOfFirst false
+        val end = course.timeSlot.endTime ?: return@indexOfFirst false
+        val startJava = JavaLocalTime.of(start.hour, start.minute)
+        val endJava = JavaLocalTime.of(end.hour, end.minute)
+        !now.isBefore(startJava) && now.isBefore(endJava)
+    }
+    val nextIndex = if (currentIndex >= 0) {
+        coursesUi.indices.firstOrNull { index ->
+            index > currentIndex && (coursesUi[index].timeSlot.startTime?.let {
+                now.isBefore(JavaLocalTime.of(it.hour, it.minute))
+            } == true)
+        }
+    } else {
+        coursesUi.indices.firstOrNull { index ->
+            coursesUi[index].timeSlot.startTime?.let {
+                now.isBefore(JavaLocalTime.of(it.hour, it.minute))
+            } == true
+        }
+    }
 
     LaunchedEffect(state.dragOffset) {
         if (state.dragOffset > 0) {
@@ -252,8 +287,14 @@ private fun CourseListPager(
                     }
                 }
                 itemsIndexed(
-                    items = coursesUi, key = { _, item -> itemKey(item) }) { _, item ->
-                    this.itemContent(item, transformationSpec)
+                    items = coursesUi, key = { _, item -> itemKey(item) }) { index, item ->
+                    this.itemContent(
+                        item,
+                        transformationSpec,
+                        index == currentIndex,
+                        index == nextIndex,
+                        now
+                    )
                 }
             }
         }

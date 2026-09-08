@@ -96,6 +96,19 @@ jobs:
 
           echo "All release APK signatures match: $MOBILE_CERT"
 
+          # Data Layer requires the phone and watch builds to use the same package name.
+          package_name() {
+            aapt dump badging "$1" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n 1
+          }
+
+          MOBILE_PACKAGE="$(package_name "${MOBILE_APKS[0]}")"
+          WEAR_PACKAGE="$(package_name "${WEAR_APKS[0]}")"
+          if [ -z "$MOBILE_PACKAGE" ] || [ -z "$WEAR_PACKAGE" ] || [ "$MOBILE_PACKAGE" != "$WEAR_PACKAGE" ]; then
+            echo "Mobile/Wear package names do not match: $MOBILE_PACKAGE vs $WEAR_PACKAGE" >&2
+            exit 1
+          fi
+          echo "Mobile/Wear package name matches: $MOBILE_PACKAGE"
+
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
         with:
