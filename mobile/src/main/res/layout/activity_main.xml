@@ -30,11 +30,22 @@
             android:text="@string/mobile_subtitle"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:padding="12dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
+                <ProgressBar android:id="@+id/syncProgress" style="?android:attr/progressBarStyleSmall" android:layout_width="24dp" android:layout_height="24dp" android:visibility="gone" />
+                <TextView android:id="@+id/connectionStatus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="正在检测手表连接…" android:textAppearance="?attr/textAppearanceBodyMedium" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonManualCreate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="14dp"
             android:text="@string/manual_create" />
 
         <com.google.android.material.button.MaterialButton

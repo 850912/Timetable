@@ -1,0 +1,6 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="16dp" android:background="?android:attr/colorBackground">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="今日课程" android:textStyle="bold" android:textSize="18sp"/>
+    <TextView android:id="@+id/widgetCourses" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="加载中…" android:textSize="14sp"/>
+</LinearLayout>

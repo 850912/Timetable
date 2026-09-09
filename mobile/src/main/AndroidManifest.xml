@@ -6,6 +6,7 @@
     </queries>
 
     <application
+        android:name=".TimetableMobileApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -14,6 +15,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Timetable">
+
+        <service
+            android:name=".sync.AutoSyncJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+
         <activity
             android:name=".probe.WearProbeActivity"
             android:exported="false" />
@@ -56,6 +63,12 @@
                 <data android:scheme="wear" android:host="*" android:pathPrefix="/timetable/file-transfer/v1" />
             </intent-filter>
         </service>
+
+
+        <receiver android:name=".widget.TodayWidgetProvider" android:exported="true">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/today_widget_info" />
+        </receiver>
 
         <activity
             android:name=".MainActivity"

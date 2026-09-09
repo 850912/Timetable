@@ -14,11 +14,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -39,20 +46,27 @@ fun CourseCard(
     course: CourseUi,
     modifier: Modifier = Modifier,
     transformation: SurfaceTransformation? = null,
+    isCurrent: Boolean = false,
+    isNext: Boolean = false,
+    minutesLeft: Int? = null,
     onClick: () -> Unit
 ) {
     val colors = AppTheme.colors
     val courseColor = course.displayColor
     val slot = course.timeSlot
     val order = course.dailyOrder?.toString() ?: "•"
+    val pulse = if (isNext) {
+        val transition = rememberInfiniteTransition(label = "nextCoursePulse")
+        transition.animateFloat(0.82f, 1f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "alpha").value
+    } else 1f
 
     Card(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.alpha(pulse),
         transformation = transformation,
         shape = CourseCapsuleShape,
         colors = CardDefaults.cardColors(
-            containerColor = colors.surfaceContainer,
+            containerColor = courseColor.copy(alpha = if (isCurrent) 0.28f else 0.14f).compositeOver(colors.surfaceContainer),
             contentColor = colors.textPrimary,
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -107,6 +121,22 @@ fun CourseCard(
                         color = colors.textSecondary,
                         maxLines = 1,
                     )
+
+                    if (isCurrent && minutesLeft != null) {
+                        Text(
+                            text = "上课中 · 距离下课还有 ${minutesLeft} 分钟",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = courseColor,
+                            maxLines = 1,
+                        )
+                    } else if (isNext) {
+                        Text(
+                            text = "下一节课程",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = courseColor,
+                            maxLines = 1,
+                        )
+                    }
 
                     val detail = listOfNotNull(
                         course.location?.takeIf { it.isNotBlank() },

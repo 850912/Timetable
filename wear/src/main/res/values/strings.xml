@@ -174,4 +174,6 @@
         <item>Simplified Chinese</item>
         <item>English</item>
     </string-array>
-    <string name="home_no_course_today">No courses today</string>\n</resources>
+    <string name="home_no_course_today">No courses today</string>\n    <string name="course_in_progress">In class · %1$d min left</string>
+    <string name="course_next">Next</string>
+</resources>

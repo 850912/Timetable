@@ -51,8 +51,10 @@ private data class TileCourse(
     val start: String,
     val end: String,
     val startMinutes: Int,
+    val endMinutes: Int,
     val location: String?,
     val teacher: String?,
+    val color: Int?,
 )
 
 @OptIn(ExperimentalHorologistApi::class)
@@ -73,7 +75,7 @@ class MainTileService : SuspendingTileService() {
             repository.getAllTimetables().first().coursesForDate(today)
         }.getOrDefault(emptyList())
 
-        return tile(requestParams, this, courses.nextCourseOnly())
+        return tile(requestParams, this, courses.currentAndUpcoming())
     }
 }
 
@@ -146,7 +148,7 @@ private fun tileLayout(
                             .joinToString(" · ")
                         if (detail.isNotBlank()) append("  $detail")
                     },
-                    accent = if (index == 0) PRIMARY else AI_PURPLE,
+                    accent = course.color ?: if (index == 0) PRIMARY else AI_PURPLE,
                     clickId = "tile_course_$index",
                 )
             )
@@ -258,17 +260,12 @@ private fun TimeSlot.matchesWeek(weekIndex: Int): Boolean = when (recurrence) {
     WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
 }
 
-private fun List<TileCourse>.nextCourseOnly(): List<TileCourse> {
+private fun List<TileCourse>.currentAndUpcoming(): List<TileCourse> {
     if (isEmpty()) return emptyList()
-
-    val now = Clock.System.now()
-    val localNow = now.toLocalDateTime(TimeZone.currentSystemDefault()).time
-    val currentMinutes = localNow.hour * 60 + localNow.minute
-
-    val next = firstOrNull { it.startMinutes >= currentMinutes }
-        ?: firstOrNull()
-
-    return next?.let { listOf(it) }.orEmpty()
+    val localNow = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
+    val nowMinutes = localNow.hour * 60 + localNow.minute
+    val active = filter { nowMinutes < it.endMinutes }
+    return (if (active.isNotEmpty()) active else this).take(3)
 }
 
 private fun Course.toTileCourse(slot: TimeSlot): TileCourse = TileCourse(
@@ -276,8 +273,10 @@ private fun Course.toTileCourse(slot: TimeSlot): TileCourse = TileCourse(
     start = slot.startTime?.let { "%02d:%02d".format(it.hour, it.minute) }.orEmpty(),
     end = slot.endTime?.let { "%02d:%02d".format(it.hour, it.minute) }.orEmpty(),
     startMinutes = slot.startTime?.let { it.hour * 60 + it.minute } ?: Int.MAX_VALUE,
+    endMinutes = slot.endTime?.let { it.hour * 60 + it.minute } ?: Int.MAX_VALUE,
     location = location,
     teacher = teacher,
+    color = color.takeIf { it != -1L }?.toInt(),
 )
 
 @Preview(device = WearDevices.SMALL_ROUND)
@@ -287,8 +286,8 @@ fun tilePreview(context: Context) = TilePreviewData({ _: RequestBuilders.Resourc
         it,
         context,
         listOf(
-            TileCourse("高等数学", "08:00", "09:40", 480, "A301", "张老师"),
-            TileCourse("大学英语", "10:20", "12:00", 620, "B205", null),
+            TileCourse("高等数学", "08:00", "09:40", 480, 580, "A301", "张老师", PRIMARY),
+            TileCourse("大学英语", "10:20", "12:00", 620, 720, "B205", null, AI_PURPLE),
         )
     )
 }

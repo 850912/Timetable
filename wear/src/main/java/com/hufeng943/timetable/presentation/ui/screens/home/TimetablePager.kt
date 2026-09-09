@@ -12,6 +12,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,11 @@ import com.hufeng943.timetable.presentation.ui.components.rememberPullToRefreshC
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.home.TimetableViewModel
 import kotlinx.datetime.LocalDate
+import kotlinx.coroutines.delay
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 
 @Composable
 fun TimetablePager(
@@ -107,8 +114,13 @@ fun TimetablePager(
                 selectedDate = selectedDate,
                 onDateSelected = handleDateSelected
             ) { courseUi, transformationSpec ->
+                minuteTick
+                val status = courseStatus(courseUi, selectedDate, coursesUi)
                 CourseCard(
                     course = courseUi,
+                    isCurrent = status.first,
+                    isNext = status.second,
+                    minutesLeft = status.third,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -164,7 +176,7 @@ private fun EmptyCoursePager(
                     OneUiCapsuleSurface(
                         title = stringResource(R.string.home_empty_course_hint),
                         subtitle = stringResource(R.string.home_empty_course_hint),
-                        icon = null,
+                        icon = Icons.Rounded.EventAvailable,
                         emphasize = true,
                     )
                 }
@@ -190,6 +202,13 @@ private fun CourseListPager(
     val transformationSpec = rememberTransformationSpec()
     val isTouching = remember { AtomicBoolean(false) }
     val focusRequester = remember { FocusRequester() }
+    var minuteTick by remember { mutableStateOf(0L) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000L)
+            minuteTick++
+        }
+    }
 
     val nestedScrollConnection = rememberPullToRefreshConnection(
         scrollState = scrollState, state = state, isTouching = { isTouching.get() })
@@ -241,6 +260,7 @@ private fun CourseListPager(
                     ListHeader(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(top = 14.dp)
                             .transformedHeight(this, transformationSpec)
                             .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
@@ -258,4 +278,16 @@ private fun CourseListPager(
             }
         }
     }
+}
+
+private fun courseStatus(course: CourseUi, selectedDate: LocalDate, all: List<CourseUi>): Triple<Boolean, Boolean, Int?> {
+    val zone = TimeZone.currentSystemDefault()
+    val now = Clock.System.now().toLocalDateTime(zone)
+    if (selectedDate != Clock.System.todayIn(zone)) return Triple(false, false, null)
+    val nowMin = now.hour * 60 + now.minute
+    val start = course.timeSlot.startTime?.let { it.hour * 60 + it.minute } ?: return Triple(false, false, null)
+    val end = course.timeSlot.endTime?.let { it.hour * 60 + it.minute } ?: return Triple(false, false, null)
+    val current = nowMin in start until end
+    val nextId = all.firstOrNull { c -> c.timeSlot.startTime?.let { it.hour * 60 + it.minute > nowMin } == true }?.timeSlot?.id
+    return Triple(current, !current && nextId == course.timeSlot.id, if (current) (end - nowMin).coerceAtLeast(0) else null)
 }

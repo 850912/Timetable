@@ -39,6 +39,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import com.hufeng943.timetable.sync.AutoSyncJobService
+import android.widget.ProgressBar
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -51,6 +54,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var syncManager: SyncManager
     private lateinit var timetableContainer: LinearLayout
     private lateinit var emptyText: TextView
+    private lateinit var connectionStatus: TextView
+    private lateinit var syncProgress: ProgressBar
     private var currentTimetables: List<Timetable> = emptyList()
 
     private val openDocument = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -71,6 +76,8 @@ class MainActivity : AppCompatActivity() {
         syncManager = SyncManager(listOf(WearOsTransport(this)))
         timetableContainer = findViewById(R.id.timetableContainer)
         emptyText = findViewById(R.id.emptyText)
+        connectionStatus = findViewById(R.id.connectionStatus)
+        syncProgress = findViewById(R.id.syncProgress)
 
         findViewById<MaterialButton>(R.id.buttonManualCreate).setOnClickListener {
             showCreateTimetableDialog()
@@ -89,6 +96,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         observeTimetables()
+        monitorWearConnection()
     }
 
     private fun observeTimetables() {
@@ -96,6 +104,7 @@ class MainActivity : AppCompatActivity() {
             repository.getAllTimetables().collectLatest { timetables ->
                 currentTimetables = timetables.sortedByDescending { it.createdAt }
                 renderTimetables(currentTimetables)
+                AutoSyncJobService.scheduleNow(this@MainActivity)
             }
         }
     }
@@ -109,7 +118,7 @@ class MainActivity : AppCompatActivity() {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(16), dp(16), dp(16), dp(12))
                 background = GradientDrawable().apply {
-                    cornerRadius = dp(18).toFloat()
+                    cornerRadius = dp(24).toFloat()
                     setColor(resolveSurfaceColor())
                     setStroke(dp(1), 0x22000000)
                 }
@@ -416,14 +425,33 @@ class MainActivity : AppCompatActivity() {
 
     private fun syncToWatch() {
         uiScope.launch {
+            syncProgress.visibility = View.VISIBLE
+            connectionStatus.text = "正在同步课表…"
             val result = withContext(Dispatchers.IO) {
                 val records = TimetableDatabaseProvider.database(this@MainActivity).syncRecordDao().pending()
                     .map { SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) }
                 syncManager.syncRecords(records)
             }
+            syncProgress.visibility = View.GONE
             when (result) {
-                com.hufeng943.timetable.shared.sync.SyncResult.Success -> toast("同步请求已发送，等待手表确认")
-                is com.hufeng943.timetable.shared.sync.SyncResult.Failed -> toast(result.message)
+                com.hufeng943.timetable.shared.sync.SyncResult.Success -> {
+                    connectionStatus.text = "手表已连接 · 同步请求已发送"
+                    toast("同步请求已发送，等待手表确认")
+                }
+                is com.hufeng943.timetable.shared.sync.SyncResult.Failed -> {
+                    connectionStatus.text = "同步失败 · ${result.message}"
+                    toast(result.message)
+                }
+            }
+        }
+    }
+
+    private fun monitorWearConnection() {
+        uiScope.launch {
+            while (true) {
+                val connected = withContext(Dispatchers.IO) { WearOsTransport(this@MainActivity).isAvailable() }
+                connectionStatus.text = if (connected) "手表已连接 · 自动同步已开启" else "手表未连接 · 将在连接后自动重试"
+                delay(10_000L)
             }
         }
     }
