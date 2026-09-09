@@ -140,7 +140,7 @@ class ExportViewModel @Inject constructor(
                     format = transferFormat,
                     timetables = targets
                 )
-                _state.value = ExportState.Success("已发送到手机")
+                _state.value = ExportState.Success("传输请求已提交，手机接收后会自动显示")
             } catch (e: Exception) {
                 _state.value = ExportState.Error(e.message ?: "导出失败")
             }

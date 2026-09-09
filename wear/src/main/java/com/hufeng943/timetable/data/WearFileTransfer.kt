@@ -33,6 +33,14 @@ object WearFileTransfer {
             }
             output.toByteArray()
         }
+        // The selected export format is preserved as the user's downloadable
+        // file, while a canonical JSON backup is sent alongside it for exact
+        // import into the companion phone app.  This avoids reconstructing an
+        // app timetable from lossy ICS/CSV exports.
+        val appImportBytes = ByteArrayOutputStream().use { output ->
+            BackupManager.backup(output, timetables)
+            output.toByteArray()
+        }
 
         val timestamp = java.text.SimpleDateFormat(
             "yyyyMMdd_HHmmss",
@@ -41,18 +49,23 @@ object WearFileTransfer {
         val extension = format.extension
         val fileName = "Timetable_Export_${timestamp}.${extension}"
 
-        val request = PutDataMapRequest.create(WearFileTransferProtocol.PATH).apply {
+        val requestId = UUID.randomUUID().toString()
+        val request = PutDataMapRequest.create(WearFileTransferProtocol.path(requestId)).apply {
             dataMap.putString(
                 WearFileTransferProtocol.KEY_KIND,
                 WearFileTransferProtocol.KIND_WEAR_EXPORT
             )
             dataMap.putString(
                 WearFileTransferProtocol.KEY_REQUEST_ID,
-                UUID.randomUUID().toString()
+                requestId
             )
             dataMap.putString(WearFileTransferProtocol.KEY_FILE_NAME, fileName)
             dataMap.putString(WearFileTransferProtocol.KEY_MIME_TYPE, format.mimeType)
             dataMap.putAsset(WearFileTransferProtocol.KEY_ASSET, Asset.createFromBytes(bytes))
+            dataMap.putAsset(
+                WearFileTransferProtocol.KEY_APP_IMPORT_ASSET,
+                Asset.createFromBytes(appImportBytes)
+            )
         }.asPutDataRequest().setUrgent()
 
         LegacyWearIo.putDataItem(context, request)

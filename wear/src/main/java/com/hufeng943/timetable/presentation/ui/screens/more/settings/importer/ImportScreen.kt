@@ -55,9 +55,9 @@ fun ImportScreen(
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                if (intent.action != com.hufeng943.timetable.transfer.WearDataLayerTransferService.ACTION_IMPORT_RESULT) return
+                if (intent.action != com.hufeng943.timetable.sync.WearOsSyncReceiverService.ACTION_IMPORT_RESULT) return
                 val success = intent.getBooleanExtra(
-                    com.hufeng943.timetable.transfer.WearDataLayerTransferService.EXTRA_SUCCESS,
+                    com.hufeng943.timetable.sync.WearOsSyncReceiverService.EXTRA_SUCCESS,
                     false
                 )
                 if (success) {
@@ -66,7 +66,7 @@ fun ImportScreen(
                 } else {
                     Toast.makeText(
                         context,
-                        intent.getStringExtra(com.hufeng943.timetable.transfer.WearDataLayerTransferService.EXTRA_MESSAGE)
+                        intent.getStringExtra(com.hufeng943.timetable.sync.WearOsSyncReceiverService.EXTRA_MESSAGE)
                             ?: "导入失败",
                         Toast.LENGTH_LONG
                     ).show()
@@ -76,7 +76,7 @@ fun ImportScreen(
         ContextCompat.registerReceiver(
             context,
             receiver,
-            IntentFilter(com.hufeng943.timetable.transfer.WearDataLayerTransferService.ACTION_IMPORT_RESULT),
+            IntentFilter(com.hufeng943.timetable.sync.WearOsSyncReceiverService.ACTION_IMPORT_RESULT),
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
         onDispose { context.unregisterReceiver(receiver) }

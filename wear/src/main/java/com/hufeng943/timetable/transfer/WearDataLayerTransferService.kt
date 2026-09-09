@@ -22,7 +22,7 @@ class WearDataLayerTransferService : WearableListenerService() {
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
             if (event.type != DataEvent.TYPE_CHANGED ||
-                event.dataItem.uri.path != WearFileTransferProtocol.PATH
+                !WearFileTransferProtocol.matchesPath(event.dataItem.uri.path)
             ) return@forEach
 
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap

@@ -53,7 +53,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
             if (event.type != DataEvent.TYPE_CHANGED ||
-                !event.dataItem.uri.path.orEmpty().startsWith("${WearFileTransferProtocol.PATH_PREFIX}/")
+                !WearFileTransferProtocol.matchesPath(event.dataItem.uri.path)
             ) return@forEach
 
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
@@ -114,7 +114,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
         val localNodeId = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull() ?: return
         val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds, records = records)
         val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
-        val request = PutDataMapRequest.create(WearFileTransferProtocol.PATH).apply {
+        val request = PutDataMapRequest.create(WearFileTransferProtocol.path(requestId)).apply {
             dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_SYNC_ACK)
             dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)
             dataMap.putString(WearFileTransferProtocol.KEY_TARGET_NODE_ID, targetNodeId)

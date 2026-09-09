@@ -10,6 +10,10 @@ object WearFileTransferProtocol {
 
     fun path(requestId: String): String = "$PATH_PREFIX/$requestId"
 
+    /** Accept both the legacy base path and request-scoped child paths. */
+    fun matchesPath(path: String?): Boolean =
+        path == PATH_PREFIX || path?.startsWith("$PATH_PREFIX/") == true
+
     const val KEY_KIND = "kind"
     const val KEY_REQUEST_ID = "requestId"
     const val KEY_TARGET_NODE_ID = "targetNodeId"
@@ -17,6 +21,7 @@ object WearFileTransferProtocol {
     const val KEY_FILE_NAME = "fileName"
     const val KEY_MIME_TYPE = "mimeType"
     const val KEY_ASSET = "asset"
+    const val KEY_APP_IMPORT_ASSET = "appImportAsset"
     const val KEY_ERROR_MESSAGE = "errorMessage"
 
     const val KIND_WEAR_EXPORT = "wear_export"

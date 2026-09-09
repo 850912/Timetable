@@ -10,7 +10,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
@@ -108,6 +107,18 @@ fun TimetablePager(
                 onDateSelected = handleDateSelected
             )
         } else {
+            // Re-evaluate current/next-course state periodically.  This state must
+            // live in the same lexical scope as the item-content lambda below;
+            // keeping it inside CourseListPager made `minuteTick` inaccessible
+            // here and caused the release Kotlin compilation to fail.
+            var minuteTick by remember { mutableStateOf(0L) }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    delay(30_000L)
+                    minuteTick++
+                }
+            }
+
             CourseListPager(
                 coursesUi = coursesUi,
                 state = pullToDatePickerState,
@@ -115,10 +126,10 @@ fun TimetablePager(
                 selectedDate = selectedDate,
                 onDateSelected = handleDateSelected
             ) { courseUi, transformationSpec ->
-                key(courseUi.timeSlot.id) {
-                    val status = courseStatus(courseUi, selectedDate, coursesUi)
-                    CourseCard(
-                        course = courseUi,
+                minuteTick
+                val status = courseStatus(courseUi, selectedDate, coursesUi)
+                CourseCard(
+                    course = courseUi,
                     isCurrent = status.first,
                     isNext = status.second,
                     minutesLeft = status.third,
@@ -203,6 +214,7 @@ private fun CourseListPager(
     val transformationSpec = rememberTransformationSpec()
     val isTouching = remember { AtomicBoolean(false) }
     val focusRequester = remember { FocusRequester() }
+
     val nestedScrollConnection = rememberPullToRefreshConnection(
         scrollState = scrollState, state = state, isTouching = { isTouching.get() })
 

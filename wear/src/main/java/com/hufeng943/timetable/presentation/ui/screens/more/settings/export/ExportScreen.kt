@@ -70,7 +70,7 @@ fun ExportScreen(
     LaunchedEffect(exportState) {
         when (val s = exportState) {
             is ExportState.Success -> {
-                Toast.makeText(context, "导出成功: ${s.fileName}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, s.fileName, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
                 onNavigateBack()
             }

@@ -3,7 +3,6 @@ package com.hufeng943.timetable.transfer
 import android.content.ContentValues
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
@@ -13,10 +12,6 @@ import com.google.android.gms.wearable.WearableListenerService
 import com.hufeng943.timetable.shared.importexport.WearBridgeProtocol
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
-import com.hufeng943.timetable.shared.importexport.ImportService
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import com.hufeng943.timetable.TimetableDatabaseProvider
 import com.hufeng943.timetable.sync.LegacyWearIo
 import com.hufeng943.timetable.shared.sync.SyncAck
@@ -26,11 +21,10 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 
-@AndroidEntryPoint
 class PhoneWearDataLayerService : WearableListenerService() {
-    private val tag = "PhoneWearSync"
-    @javax.inject.Inject lateinit var importService: ImportService
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -60,8 +54,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
         dataEvents.forEach { event ->
             val dataPath = event.dataItem.uri.path
             if (event.type != DataEvent.TYPE_CHANGED ||
-                dataPath == null ||
-                !dataPath.startsWith("${WearFileTransferProtocol.PATH_PREFIX}/")
+                !WearFileTransferProtocol.matchesPath(dataPath)
             ) return@forEach
 
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
@@ -70,12 +63,10 @@ class PhoneWearDataLayerService : WearableListenerService() {
                 val local = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull()
                 if (local != target) return@forEach
             }
-            val kind = dataMap.getString(WearFileTransferProtocol.KEY_KIND)
-            Log.d(tag, "receive kind=$kind path=$dataPath")
-            val processed = when (kind) {
+            val processed = when (dataMap.getString(WearFileTransferProtocol.KEY_KIND)) {
                 WearFileTransferProtocol.KIND_SYNC_ACK -> runCatching { applySyncAck(dataMap) }.getOrDefault(false)
                 WearFileTransferProtocol.KIND_WEAR_EXPORT ->
-                    runCatching { importWearExport(dataMap) }.isSuccess
+                    runCatching { saveWearExport(dataMap) }.isSuccess
                 else -> false
             }
 
@@ -124,19 +115,6 @@ class PhoneWearDataLayerService : WearableListenerService() {
         }
     }
 
-    private fun importWearExport(dataMap: com.google.android.gms.wearable.DataMap) {
-        Log.d(tag, "importWearExport start")
-        val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET)
-            ?: error("缺少导出数据")
-        val bytes = readAsset(asset).use { it.readBytes() }
-        val timetables = TimetableFileParser.parse(bytes)
-        Log.d(tag, "parsed timetables=${timetables.size}")
-        runBlocking(Dispatchers.IO) {
-            importService.importReplacingMatchesAtomic(timetables)
-        }
-        Log.d(tag, "database import success")
-    }
-
     private fun saveWearExport(dataMap: com.google.android.gms.wearable.DataMap) {
         val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET)
             ?: throw IllegalArgumentException("缺少导出文件")
@@ -147,8 +125,24 @@ class PhoneWearDataLayerService : WearableListenerService() {
         val mimeType = dataMap.getString(WearFileTransferProtocol.KEY_MIME_TYPE)
             ?: "application/octet-stream"
 
-        val inputStream = readAsset(asset)
-        inputStream.use {
+        // Keep the user's selected export bytes for Downloads, but prefer the
+        // canonical JSON backup asset for importing into the companion app.
+        // Falling back to the primary asset keeps compatibility with older Wear
+        // builds that only send KEY_ASSET.
+        val bytes = readAsset(asset).use { it.readBytes() }
+        val appImportAsset = dataMap.getAsset(WearFileTransferProtocol.KEY_APP_IMPORT_ASSET)
+        val appImportBytes = if (appImportAsset != null) {
+            readAsset(appImportAsset).use { it.readBytes() }
+        } else {
+            bytes
+        }
+        val timetables = TimetableFileParser.parse(appImportBytes)
+        runBlocking(Dispatchers.IO) {
+            TimetableDatabaseProvider.importService(this@PhoneWearDataLayerService)
+                .importReplacingMatchesAtomic(timetables)
+        }
+
+        bytes.inputStream().use {
             val values = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, fileName)
                 put(MediaStore.Downloads.MIME_TYPE, mimeType)
@@ -185,4 +179,5 @@ class PhoneWearDataLayerService : WearableListenerService() {
     private fun sanitizeFileName(name: String): String {
         return name.replace(Regex("[\\\\/:*?\"<>|]"), "_").ifBlank { "Timetable_Export" }
     }
+
 }
