@@ -62,7 +62,7 @@ class TodayWidgetProvider : AppWidgetProvider() {
                             start = start,
                             end = end,
                             title = course.name,
-                            location = course.location
+                            location = course.location.orEmpty()
                         )
                     }
                 }
