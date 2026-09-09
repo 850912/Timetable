@@ -47,6 +47,7 @@ import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.NavRoutes.courseDetail
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
 import com.hufeng943.timetable.presentation.ui.components.CourseCard
@@ -74,6 +75,7 @@ fun TimetablePager(
     val uiState by viewModel.dateCoursesUi.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val navController = LocalNavController.current
+    val config = LocalAppConfig.current
 
     LaunchedEffect(uiState) {
         if (uiState !is UiState.Success) {
@@ -124,7 +126,8 @@ fun TimetablePager(
                 state = pullToDatePickerState,
                 itemKey = { courseUi -> courseUi.timeSlot.id },
                 selectedDate = selectedDate,
-                onDateSelected = handleDateSelected
+                onDateSelected = handleDateSelected,
+                showTopTime = config.isShowTopTime
             ) { courseUi, transformationSpec ->
                 minuteTick
                 val status = courseStatus(courseUi, selectedDate, coursesUi)
@@ -207,6 +210,7 @@ private fun CourseListPager(
     itemKey: (CourseUi) -> Any,
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
+    showTopTime: Boolean = false,
     modifier: Modifier = Modifier,
     itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec) -> Unit
 ) {
@@ -265,7 +269,7 @@ private fun CourseListPager(
                     ListHeader(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 14.dp)
+                            .padding(top = if (showTopTime) 30.dp else 10.dp)
                             .transformedHeight(this, transformationSpec)
                             .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
@@ -289,10 +293,39 @@ private fun courseStatus(course: CourseUi, selectedDate: LocalDate, all: List<Co
     val zone = TimeZone.currentSystemDefault()
     val now = Clock.System.now().toLocalDateTime(zone)
     if (selectedDate != Clock.System.todayIn(zone)) return Triple(false, false, null)
-    val nowMin = now.hour * 60 + now.minute
-    val start = course.timeSlot.startTime?.let { it.hour * 60 + it.minute } ?: return Triple(false, false, null)
-    val end = course.timeSlot.endTime?.let { it.hour * 60 + it.minute } ?: return Triple(false, false, null)
-    val current = nowMin in start until end
-    val nextId = all.firstOrNull { c -> c.timeSlot.startTime?.let { it.hour * 60 + it.minute > nowMin } == true }?.timeSlot?.id
-    return Triple(current, !current && nextId == course.timeSlot.id, if (current) (end - nowMin).coerceAtLeast(0) else null)
+
+    val nowMin = now.time.hour * 60 + now.time.minute
+    val start = course.timeSlot.startTime?.let { it.hour * 60 + it.minute }
+        ?: return Triple(false, false, null)
+    val end = course.timeSlot.endTime?.let { it.hour * 60 + it.minute }
+        ?: return Triple(false, false, null)
+
+    val current = isWithinSlot(nowMin, start, end)
+    val nextId = all.asSequence()
+        .mapNotNull { candidate ->
+            val candidateStart = candidate.timeSlot.startTime?.let { it.hour * 60 + it.minute }
+                ?: return@mapNotNull null
+            val untilStart = candidateStart - nowMin
+            if (untilStart > 0) candidate to untilStart else null
+        }
+        .minByOrNull { it.second }
+        ?.first
+        ?.timeSlot
+        ?.id
+
+    return Triple(
+        current,
+        !current && nextId == course.timeSlot.id,
+        if (current) minutesUntil(nowMin, end).coerceAtLeast(0) else null
+    )
 }
+
+private fun isWithinSlot(nowMinutes: Int, startMinutes: Int, endMinutes: Int): Boolean =
+    if (startMinutes <= endMinutes) {
+        nowMinutes in startMinutes until endMinutes
+    } else {
+        nowMinutes >= startMinutes || nowMinutes < endMinutes
+    }
+
+private fun minutesUntil(nowMinutes: Int, targetMinutes: Int): Int =
+    if (targetMinutes >= nowMinutes) targetMinutes - nowMinutes else (24 * 60 - nowMinutes) + targetMinutes

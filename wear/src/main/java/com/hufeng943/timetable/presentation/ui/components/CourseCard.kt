@@ -34,6 +34,8 @@ import androidx.wear.compose.material3.CardDefaults
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
@@ -124,14 +126,14 @@ fun CourseCard(
 
                     if (isCurrent && minutesLeft != null) {
                         Text(
-                            text = "上课中 · 距离下课还有 ${minutesLeft} 分钟",
+                            text = stringResource(R.string.course_in_progress, minutesLeft),
                             style = MaterialTheme.typography.labelSmall,
                             color = courseColor,
                             maxLines = 1,
                         )
                     } else if (isNext) {
                         Text(
-                            text = "下一节课程",
+                            text = stringResource(R.string.course_next),
                             style = MaterialTheme.typography.labelSmall,
                             color = courseColor,
                             maxLines = 1,

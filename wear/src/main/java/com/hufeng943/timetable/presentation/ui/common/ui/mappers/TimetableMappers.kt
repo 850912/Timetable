@@ -72,7 +72,11 @@ fun TimetableUi.toDayCoursesUi(
                         WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
                     }
         }.map { slot ->
-            course.copy(selectedTimeSlot = slot)
+            val effectiveColor = if (course.color == Color.Unspecified) color else course.color
+            course.copy(
+                color = effectiveColor,
+                selectedTimeSlot = slot.copy(color = effectiveColor)
+            )
         }
     }
 }

@@ -38,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import com.hufeng943.timetable.sync.AutoSyncJobService
@@ -52,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var repository: TimetableRepository
     private lateinit var syncManager: SyncManager
+    private lateinit var wearTransport: WearOsTransport
     private lateinit var timetableContainer: LinearLayout
     private lateinit var emptyText: TextView
     private lateinit var connectionStatus: TextView
@@ -73,7 +75,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         repository = TimetableDatabaseProvider.repository(this)
-        syncManager = SyncManager(listOf(WearOsTransport(this)))
+        wearTransport = WearOsTransport(this)
+        syncManager = SyncManager(listOf(wearTransport))
         timetableContainer = findViewById(R.id.timetableContainer)
         emptyText = findViewById(R.id.emptyText)
         connectionStatus = findViewById(R.id.connectionStatus)
@@ -89,7 +92,7 @@ class MainActivity : AppCompatActivity() {
             openDocument.launch(arrayOf("application/json", "text/csv", "text/calendar", "text/*"))
         }
         findViewById<MaterialButton>(R.id.buttonSyncAll).setOnClickListener {
-            syncToWatch()
+            syncToWatch(forceFullSnapshot = true)
         }
         findViewById<MaterialButton>(R.id.buttonWearProbe).setOnClickListener {
             startActivity(Intent(this, WearProbeActivity::class.java))
@@ -159,7 +162,7 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, dp(8), 0, 0)
             }
             actions.addView(actionButton("添加课程") { showAddCourseDialog(timetable) })
-            actions.addView(actionButton("同步") { syncToWatch() })
+            actions.addView(actionButton("同步") { syncToWatch(forceFullSnapshot = true) })
             actions.addView(actionButton("删除") { confirmDelete(timetable) })
             card.addView(actions)
             timetableContainer.addView(card)
@@ -416,27 +419,44 @@ class MainActivity : AppCompatActivity() {
                 val timetables = withContext(Dispatchers.Default) { TimetableFileParser.parse(bytes) }
                 withContext(Dispatchers.IO) {
                     TimetableDatabaseProvider.importService(this@MainActivity).importAtomic(timetables)
+                    val snapshot = repository.getAllTimetables().first()
+                    enqueueSnapshotForIncrementalSync(snapshot)
                 }
                 timetables.size
-            }.onSuccess { toast("成功导入 $it 个课表") }
-                .onFailure { toast(it.message ?: "导入失败") }
+            }.onSuccess {
+                toast("成功导入 $it 个课表，已加入自动同步队列")
+                AutoSyncJobService.scheduleNow(this@MainActivity)
+            }.onFailure { toast(it.message ?: "导入失败") }
         }
     }
 
-    private fun syncToWatch() {
+    private fun syncToWatch(forceFullSnapshot: Boolean = false) {
         uiScope.launch {
             syncProgress.visibility = View.VISIBLE
-            connectionStatus.text = "正在同步课表…"
+            connectionStatus.text = if (forceFullSnapshot) "正在完整同步课表…" else "正在同步课表变更…"
             val result = withContext(Dispatchers.IO) {
-                val records = TimetableDatabaseProvider.database(this@MainActivity).syncRecordDao().pending()
-                    .map { SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) }
-                syncManager.syncRecords(records)
+                if (forceFullSnapshot) {
+                    wearTransport.sendTimetablesSnapshot(currentTimetables)
+                } else {
+                    val db = TimetableDatabaseProvider.database(this@MainActivity)
+                    val records = db.syncRecordDao().pending()
+                        .map { SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) }
+                    val syncResult = syncManager.syncRecords(records)
+                    if (syncResult is com.hufeng943.timetable.shared.sync.SyncResult.Failed && records.isNotEmpty()) {
+                        db.syncRecordDao().markFailed(
+                            records.map { it.sourceRecordId },
+                            System.currentTimeMillis(),
+                            syncResult.message
+                        )
+                    }
+                    syncResult
+                }
             }
             syncProgress.visibility = View.GONE
             when (result) {
                 com.hufeng943.timetable.shared.sync.SyncResult.Success -> {
                     connectionStatus.text = "手表已连接 · 同步请求已发送"
-                    toast("同步请求已发送，等待手表确认")
+                    toast(if (forceFullSnapshot) "完整课表已发送到手表" else "同步请求已发送，等待手表确认")
                 }
                 is com.hufeng943.timetable.shared.sync.SyncResult.Failed -> {
                     connectionStatus.text = "同步失败 · ${result.message}"
@@ -449,9 +469,29 @@ class MainActivity : AppCompatActivity() {
     private fun monitorWearConnection() {
         uiScope.launch {
             while (true) {
-                val connected = withContext(Dispatchers.IO) { WearOsTransport(this@MainActivity).isAvailable() }
-                connectionStatus.text = if (connected) "手表已连接 · 自动同步已开启" else "手表未连接 · 将在连接后自动重试"
+                val (connected, pendingCount) = withContext(Dispatchers.IO) {
+                    val db = TimetableDatabaseProvider.database(this@MainActivity)
+                    wearTransport.isAvailable() to db.syncRecordDao().pendingCount()
+                }
+                connectionStatus.text = when {
+                    connected && pendingCount > 0 -> "手表已连接 · 有 $pendingCount 条变更等待自动同步"
+                    connected -> "手表已连接 · 自动同步已开启"
+                    else -> "手表未连接 · 将在连接后自动重试"
+                }
+                if (connected && pendingCount > 0) AutoSyncJobService.scheduleNow(this@MainActivity)
                 delay(10_000L)
+            }
+        }
+    }
+
+    private suspend fun enqueueSnapshotForIncrementalSync(timetables: List<Timetable>) {
+        timetables.forEach { timetable ->
+            val timetableId = repository.upsertTimetable(timetable)
+            timetable.allCourses.forEach { course ->
+                val courseId = repository.upsertCourse(course, timetableId)
+                course.timeSlots.forEach { slot ->
+                    repository.upsertTimeSlot(slot, courseId)
+                }
             }
         }
     }

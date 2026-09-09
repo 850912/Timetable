@@ -7,8 +7,8 @@ import android.app.job.JobService
 import android.content.ComponentName
 import android.content.Context
 import com.hufeng943.timetable.TimetableDatabaseProvider
+import com.hufeng943.timetable.shared.sync.SyncCoordinator
 import com.hufeng943.timetable.shared.sync.SyncManager
-import com.hufeng943.timetable.shared.sync.SyncRecordPayload
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,10 +21,10 @@ class AutoSyncJobService : JobService() {
     override fun onStartJob(params: JobParameters): Boolean {
         scope.launch {
             val db = TimetableDatabaseProvider.database(applicationContext)
-            val records = db.syncRecordDao().pending().map {
-                SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson)
-            }
-            if (records.isNotEmpty()) SyncManager(listOf(WearOsTransport(applicationContext))).syncRecords(records)
+            SyncCoordinator(
+                dao = db.syncRecordDao(),
+                manager = SyncManager(listOf(WearOsTransport(applicationContext)))
+            ).syncPending()
             jobFinished(params, false)
         }
         return true

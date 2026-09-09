@@ -135,7 +135,8 @@ private fun tileLayout(
             )
         )
     } else {
-        courses.take(2).forEachIndexed { index, course ->
+        val visibleCourses = courses.take(3)
+        visibleCourses.forEachIndexed { index, course ->
             column.addContent(
                 capsule(
                     context = context,
@@ -150,9 +151,10 @@ private fun tileLayout(
                     },
                     accent = course.color ?: if (index == 0) PRIMARY else AI_PURPLE,
                     clickId = "tile_course_$index",
+                    compact = visibleCourses.size > 1,
                 )
             )
-            if (index == 0 && courses.size > 1) column.addContent(spacer(5f))
+            if (index < visibleCourses.lastIndex) column.addContent(spacer(3f))
         }
     }
 
@@ -168,19 +170,20 @@ private fun capsule(
     subtitle: String,
     accent: Int,
     clickId: String,
+    compact: Boolean = false,
 ): LayoutElementBuilders.LayoutElement {
     val corner = ModifiersBuilders.Corner.Builder()
-        .setRadius(dp(22f))
+        .setRadius(dp(if (compact) 18f else 22f))
         .build()
     val background = ModifiersBuilders.Background.Builder()
         .setColor(argb(SURFACE))
         .setCorner(corner)
         .build()
     val padding = ModifiersBuilders.Padding.Builder()
-        .setStart(dp(13f))
-        .setEnd(dp(13f))
-        .setTop(dp(9f))
-        .setBottom(dp(9f))
+        .setStart(dp(12f))
+        .setEnd(dp(12f))
+        .setTop(dp(if (compact) 6f else 9f))
+        .setBottom(dp(if (compact) 6f else 9f))
         .build()
 
     val content = LayoutElementBuilders.Column.Builder()
@@ -198,7 +201,7 @@ private fun capsule(
             Text.Builder(context, subtitle)
                 .setColor(argb(TEXT_SECONDARY))
                 .setTypography(Typography.TYPOGRAPHY_CAPTION1)
-                .setMaxLines(2)
+                .setMaxLines(if (compact) 1 else 2)
                 .build()
         )
         .build()
@@ -239,7 +242,7 @@ private fun List<Timetable>.coursesForDate(date: LocalDate): List<TileCourse> = 
     table.allCourses.flatMap { course ->
         course.timeSlots
             .filter { it.dayOfWeek == date.dayOfWeek && it.matchesWeek(weekIndex) }
-            .map { slot -> course.toTileCourse(slot) }
+            .map { slot -> course.toTileCourse(slot, table.color) }
     }
 }.sortedBy { it.start }
 
@@ -264,11 +267,28 @@ private fun List<TileCourse>.currentAndUpcoming(): List<TileCourse> {
     if (isEmpty()) return emptyList()
     val localNow = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
     val nowMinutes = localNow.hour * 60 + localNow.minute
-    val active = filter { nowMinutes < it.endMinutes }
-    return (if (active.isNotEmpty()) active else this).take(3)
+    val activeOrUpcoming = mapNotNull { course ->
+        val current = isWithinSlot(nowMinutes, course.startMinutes, course.endMinutes)
+        val startsLaterToday = course.startMinutes - nowMinutes
+        when {
+            current -> course to 0
+            startsLaterToday > 0 -> course to startsLaterToday
+            else -> null
+        }
+    }.sortedBy { it.second }.map { it.first }
+    return (if (activeOrUpcoming.isNotEmpty()) activeOrUpcoming else this).take(3)
 }
 
-private fun Course.toTileCourse(slot: TimeSlot): TileCourse = TileCourse(
+private fun isWithinSlot(nowMinutes: Int, startMinutes: Int, endMinutes: Int): Boolean {
+    if (startMinutes == Int.MAX_VALUE || endMinutes == Int.MAX_VALUE) return false
+    return if (startMinutes <= endMinutes) {
+        nowMinutes in startMinutes until endMinutes
+    } else {
+        nowMinutes >= startMinutes || nowMinutes < endMinutes
+    }
+}
+
+private fun Course.toTileCourse(slot: TimeSlot, timetableColor: Long): TileCourse = TileCourse(
     name = name,
     start = slot.startTime?.let { "%02d:%02d".format(it.hour, it.minute) }.orEmpty(),
     end = slot.endTime?.let { "%02d:%02d".format(it.hour, it.minute) }.orEmpty(),
@@ -276,7 +296,7 @@ private fun Course.toTileCourse(slot: TimeSlot): TileCourse = TileCourse(
     endMinutes = slot.endTime?.let { it.hour * 60 + it.minute } ?: Int.MAX_VALUE,
     location = location,
     teacher = teacher,
-    color = color.takeIf { it != -1L }?.toInt(),
+    color = color.takeIf { it != -1L }?.toInt() ?: timetableColor.takeIf { it != -1L }?.toInt(),
 )
 
 @Preview(device = WearDevices.SMALL_ROUND)
