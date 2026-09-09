@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
@@ -114,10 +115,10 @@ fun TimetablePager(
                 selectedDate = selectedDate,
                 onDateSelected = handleDateSelected
             ) { courseUi, transformationSpec ->
-                minuteTick
-                val status = courseStatus(courseUi, selectedDate, coursesUi)
-                CourseCard(
-                    course = courseUi,
+                key(courseUi.timeSlot.id) {
+                    val status = courseStatus(courseUi, selectedDate, coursesUi)
+                    CourseCard(
+                        course = courseUi,
                     isCurrent = status.first,
                     isNext = status.second,
                     minutesLeft = status.third,
@@ -202,14 +203,6 @@ private fun CourseListPager(
     val transformationSpec = rememberTransformationSpec()
     val isTouching = remember { AtomicBoolean(false) }
     val focusRequester = remember { FocusRequester() }
-    var minuteTick by remember { mutableStateOf(0L) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(30_000L)
-            minuteTick++
-        }
-    }
-
     val nestedScrollConnection = rememberPullToRefreshConnection(
         scrollState = scrollState, state = state, isTouching = { isTouching.get() })
 

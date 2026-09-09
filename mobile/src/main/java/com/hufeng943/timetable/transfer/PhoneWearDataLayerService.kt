@@ -3,6 +3,7 @@ package com.hufeng943.timetable.transfer
 import android.content.ContentValues
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
@@ -11,6 +12,11 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
 import com.hufeng943.timetable.shared.importexport.WearBridgeProtocol
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
+import com.hufeng943.timetable.shared.importexport.TimetableFileParser
+import com.hufeng943.timetable.shared.importexport.ImportService
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import com.hufeng943.timetable.TimetableDatabaseProvider
 import com.hufeng943.timetable.sync.LegacyWearIo
 import com.hufeng943.timetable.shared.sync.SyncAck
@@ -21,7 +27,10 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 
+@AndroidEntryPoint
 class PhoneWearDataLayerService : WearableListenerService() {
+    private val tag = "PhoneWearSync"
+    @javax.inject.Inject lateinit var importService: ImportService
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -61,10 +70,12 @@ class PhoneWearDataLayerService : WearableListenerService() {
                 val local = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull()
                 if (local != target) return@forEach
             }
-            val processed = when (dataMap.getString(WearFileTransferProtocol.KEY_KIND)) {
+            val kind = dataMap.getString(WearFileTransferProtocol.KEY_KIND)
+            Log.d(tag, "receive kind=$kind path=$dataPath")
+            val processed = when (kind) {
                 WearFileTransferProtocol.KIND_SYNC_ACK -> runCatching { applySyncAck(dataMap) }.getOrDefault(false)
                 WearFileTransferProtocol.KIND_WEAR_EXPORT ->
-                    runCatching { saveWearExport(dataMap) }.isSuccess
+                    runCatching { importWearExport(dataMap) }.isSuccess
                 else -> false
             }
 
@@ -111,6 +122,19 @@ class PhoneWearDataLayerService : WearableListenerService() {
                 .await(10, java.util.concurrent.TimeUnit.SECONDS)
             if (!result.status.isSuccess) error("发送同步 ACK 失败(${result.status.statusCode})")
         }
+    }
+
+    private fun importWearExport(dataMap: com.google.android.gms.wearable.DataMap) {
+        Log.d(tag, "importWearExport start")
+        val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET)
+            ?: error("缺少导出数据")
+        val bytes = readAsset(asset).use { it.readBytes() }
+        val timetables = TimetableFileParser.parse(bytes)
+        Log.d(tag, "parsed timetables=${timetables.size}")
+        runBlocking(Dispatchers.IO) {
+            importService.importReplacingMatchesAtomic(timetables)
+        }
+        Log.d(tag, "database import success")
     }
 
     private fun saveWearExport(dataMap: com.google.android.gms.wearable.DataMap) {
