@@ -1,11 +1,10 @@
 package com.hufeng943.timetable.probe
 
-import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.MessageEvent
-import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
+import com.hufeng943.timetable.sync.LegacyWearIo
 
 class WearProbeListenerService : WearableListenerService() {
     override fun onMessageReceived(messageEvent: MessageEvent) {
@@ -13,15 +12,16 @@ class WearProbeListenerService : WearableListenerService() {
             WearProbe.MESSAGE_PATH -> {
                 val body = messageEvent.data.toString(Charsets.UTF_8)
                 WearProbe.saveEvent(this, "收到手机 Message：$body · node=${messageEvent.sourceNodeId}")
-                runCatching {
-                    Tasks.await(
-                        Wearable.getMessageClient(this).sendMessage(
+                Thread {
+                    runCatching {
+                        LegacyWearIo.sendMessage(
+                            this,
                             messageEvent.sourceNodeId,
                             WearProbe.ACK_PATH,
                             "WATCH_ACK|${System.currentTimeMillis()}".toByteArray()
                         )
-                    )
-                }
+                    }
+                }.start()
             }
             WearProbe.ACK_PATH -> {
                 WearProbe.saveEvent(this, "收到手机 ACK：${messageEvent.data.toString(Charsets.UTF_8)}")

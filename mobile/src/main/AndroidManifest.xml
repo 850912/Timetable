@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
 
     <queries>
         <package android:name="com.google.android.gms" />
@@ -20,8 +20,10 @@
 
         <service
             android:name=".probe.PhoneWearProbeListenerService"
-            android:exported="true"
-            android:permission="com.google.android.gms.wearable.BIND_LISTENER">
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" tools:ignore="WearableBindListener" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
@@ -44,8 +46,10 @@
 
         <service
             android:name=".transfer.PhoneWearDataLayerService"
-            android:exported="true"
-            android:permission="com.google.android.gms.wearable.BIND_LISTENER">
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" tools:ignore="WearableBindListener" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
                 <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />

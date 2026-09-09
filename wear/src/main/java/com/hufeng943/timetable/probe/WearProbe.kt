@@ -2,12 +2,13 @@ package com.hufeng943.timetable.probe
 
 import android.content.Context
 import android.os.Build
-import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
+import com.hufeng943.timetable.sync.LegacyWearIo
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 object WearProbe {
     const val MESSAGE_PATH = "/timetable/probe/v1/message"
@@ -33,49 +34,56 @@ object WearProbe {
     }
 
     fun runDiagnostics(context: Context): String = buildString {
+        appendLine("Build 10.1 · 正式 App Legacy Probe")
+        appendLine("角色：手表")
         appendLine("设备：${Build.MANUFACTURER} ${Build.MODEL}")
-        appendLine("Wear OS / Android：${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
+        appendLine("Android：${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
         appendLine("GMS：${gmsInfo(context)}")
-
-        val nodeClient = runCatching { Wearable.getNodeClient(context) }
-        appendLine("Wearable NodeClient：${if (nodeClient.isSuccess) "可创建" else "创建失败 ${nodeClient.exceptionOrNull()?.short()}"}")
-        if (nodeClient.isSuccess) {
-            val client = nodeClient.getOrThrow()
-            val local = runCatching { Tasks.await(client.localNode) }
-            appendLine("localNode：${local.fold({ "OK ${it.displayName} / ${it.id}" }, { "FAIL ${it.short()}" })}")
-            val connected = runCatching { Tasks.await(client.connectedNodes) }
-            appendLine("connectedNodes：${connected.fold({ nodes -> "OK ${nodes.size} 个" + nodes.joinToString(prefix = if (nodes.isEmpty()) "" else "\n  ", separator = "\n  ") { "${it.displayName} / ${it.id} nearby=${it.isNearby}" } }, { "FAIL ${it.short()}" })}")
-        }
-
-        val dataClient = runCatching { Wearable.getDataClient(context) }
-        appendLine("DataClient：${if (dataClient.isSuccess) "可创建" else "创建失败 ${dataClient.exceptionOrNull()?.short()}"}")
-        val messageClient = runCatching { Wearable.getMessageClient(context) }
-        appendLine("MessageClient：${if (messageClient.isSuccess) "可创建" else "创建失败 ${messageClient.exceptionOrNull()?.short()}"}")
-        appendLine("最近接收：${lastEvent(context)}")
-    }
-
-    fun sendMessage(context: Context): String {
-        val nodes = Tasks.await(Wearable.getNodeClient(context).connectedNodes)
-        if (nodes.isEmpty()) return "失败：connectedNodes=0"
-        val payload = "WATCH_PROBE|${System.currentTimeMillis()}|${Build.MODEL}".toByteArray()
-        return nodes.joinToString("\n") { node ->
+        appendLine("接口：GoogleApiClient + Wearable.*Api")
+        appendLine()
+        append(
             runCatching {
-                Tasks.await(Wearable.getMessageClient(context).sendMessage(node.id, MESSAGE_PATH, payload))
-                "${node.displayName}: OK"
-            }.getOrElse { "${node.displayName}: FAIL ${it.short()}" }
-        }
+                LegacyWearIo.withClient(context) { client ->
+                    buildString {
+                        appendLine("GoogleApiClient：CONNECTED")
+                        appendLine("hasConnectedApi(Wearable.API)：${client.hasConnectedApi(Wearable.API)}")
+                        val local = Wearable.NodeApi.getLocalNode(client).await(10, TimeUnit.SECONDS)
+                        appendLine("localNode：status=${local.status.statusCode} success=${local.status.isSuccess}")
+                        if (local.status.isSuccess) appendLine("  ${local.node.displayName} / ${local.node.id}")
+                        val connected = Wearable.NodeApi.getConnectedNodes(client).await(10, TimeUnit.SECONDS)
+                        appendLine("connectedNodes：status=${connected.status.statusCode} success=${connected.status.isSuccess} count=${connected.nodes.size}")
+                        connected.nodes.forEach { appendLine("  ${it.displayName} / ${it.id} nearby=${it.isNearby}") }
+                        appendLine("最近接收：${lastEvent(context)}")
+                    }
+                }
+            }.getOrElse { "FAIL ${it.javaClass.simpleName}: ${it.message ?: "无详细信息"}" }
+        )
     }
 
-    fun sendDataItem(context: Context): String {
-        val request = PutDataMapRequest.create(DATA_PATH).apply {
-            dataMap.putLong("timestamp", System.currentTimeMillis())
-            dataMap.putString("from", "watch")
-            dataMap.putString("model", Build.MODEL)
-        }.asPutDataRequest().setUrgent()
-        val item = Tasks.await(Wearable.getDataClient(context).putDataItem(request))
-        return "OK：${item.uri}"
-    }
+    fun sendMessage(context: Context): String = runCatching {
+        LegacyWearIo.withClient(context) { client ->
+            val nodes = Wearable.NodeApi.getConnectedNodes(client).await(10, TimeUnit.SECONDS)
+            if (!nodes.status.isSuccess) return@withClient "NodeApi FAIL status=${nodes.status.statusCode}"
+            if (nodes.nodes.isEmpty()) return@withClient "失败：connectedNodes=0"
+            val payload = "WATCH_PROBE|${System.currentTimeMillis()}|${Build.MODEL}".toByteArray()
+            nodes.nodes.joinToString("\n") { node ->
+                val result = Wearable.MessageApi.sendMessage(client, node.id, MESSAGE_PATH, payload).await(10, TimeUnit.SECONDS)
+                "${node.displayName}: status=${result.status.statusCode} success=${result.status.isSuccess} requestId=${result.requestId}"
+            }
+        }
+    }.getOrElse { "FAIL ${it.javaClass.simpleName}: ${it.message ?: "无详细信息"}" }
+
+    fun sendDataItem(context: Context): String = runCatching {
+        LegacyWearIo.withClient(context) { client ->
+            val request = PutDataMapRequest.create(DATA_PATH).apply {
+                dataMap.putLong("timestamp", System.currentTimeMillis())
+                dataMap.putString("from", "watch")
+                dataMap.putString("model", Build.MODEL)
+            }.asPutDataRequest().setUrgent()
+            val result = Wearable.DataApi.putDataItem(client, request).await(10, TimeUnit.SECONDS)
+            "DataApi.putDataItem status=${result.status.statusCode} success=${result.status.isSuccess} uri=${result.dataItem?.uri ?: "null"}"
+        }
+    }.getOrElse { "FAIL ${it.javaClass.simpleName}: ${it.message ?: "无详细信息"}" }
 
     private fun nowText(): String = SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-    private fun Throwable.short(): String = "${javaClass.simpleName}: ${message ?: "无详细信息"}"
 }
