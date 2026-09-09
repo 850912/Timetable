@@ -1,11 +1,12 @@
 package com.hufeng943.timetable.transfer
 
-import com.hufeng943.timetable.sync.LegacyWearableClient
 import android.content.Intent
+import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import com.hufeng943.timetable.shared.importexport.ImportService
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
@@ -21,13 +22,13 @@ class WearDataLayerTransferService : WearableListenerService() {
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
             if (event.type != DataEvent.TYPE_CHANGED ||
-                !event.dataItem.uri.path.orEmpty().startsWith("${WearFileTransferProtocol.PATH_PREFIX}/") && event.dataItem.uri.path != WearFileTransferProtocol.PATH
+                event.dataItem.uri.path != WearFileTransferProtocol.PATH
             ) return@forEach
 
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
             val targetNodeId = dataMap.getString(WearFileTransferProtocol.KEY_TARGET_NODE_ID)
             val localNodeId = runCatching {
-                LegacyWearableClient.localNode(this).id
+                Tasks.await(Wearable.getNodeClient(this).localNode).id
             }.getOrNull()
 
             if (targetNodeId != null && targetNodeId != localNodeId) {
@@ -58,14 +59,20 @@ class WearDataLayerTransferService : WearableListenerService() {
             }
 
             if (processed) {
-                runCatching { LegacyWearableClient.deleteDataItemsBlocking(this, event.dataItem.uri) }
+                runCatching {
+                    Tasks.await(
+                        Wearable.getDataClient(this).deleteDataItems(event.dataItem.uri)
+                    )
+                }
             }
         }
     }
 
     private fun importAsset(asset: Asset?, replaceMatching: Boolean) {
         requireNotNull(asset) { "导入数据缺少文件内容" }
-        val bytes = LegacyWearableClient.readAssetBlocking(this, asset).use { it.readBytes() }
+        val bytes = Tasks.await(Wearable.getDataClient(this).getFdForAsset(asset))
+            ?.inputStream
+            ?.use { it.readBytes() }
             ?: throw IllegalStateException("无法读取手机发送的文件")
 
         val timetables = TimetableFileParser.parse(bytes)

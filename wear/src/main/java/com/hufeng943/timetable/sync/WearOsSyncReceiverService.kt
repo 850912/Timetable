@@ -6,10 +6,12 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMap
 import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.WearableListenerService
 import com.hufeng943.timetable.shared.importexport.ImportService
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
+import com.hufeng943.timetable.shared.importexport.WearBridgeProtocol
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.shared.data.database.AppDatabase
 import com.hufeng943.timetable.shared.sync.SyncAck
@@ -39,10 +41,19 @@ class WearOsSyncReceiverService : WearableListenerService() {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+        if (messageEvent.path != WearBridgeProtocol.READY_PATH) return
+        getSharedPreferences(WearBridgeProtocol.PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putString(WearBridgeProtocol.KEY_READY_NODE_ID, messageEvent.sourceNodeId)
+            .putLong(WearBridgeProtocol.KEY_READY_AT, System.currentTimeMillis())
+            .apply()
+    }
+
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
             if (event.type != DataEvent.TYPE_CHANGED ||
-                !event.dataItem.uri.path.orEmpty().startsWith("${WearFileTransferProtocol.PATH_PREFIX}/") && event.dataItem.uri.path != WearFileTransferProtocol.PATH
+                !event.dataItem.uri.path.orEmpty().startsWith("${WearFileTransferProtocol.PATH_PREFIX}/")
             ) return@forEach
 
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
@@ -63,7 +74,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
                     val success = processIncomingTransfer(dataMap)
                     if (success) {
                         runCatching {
-                            LegacyWearableClient.deleteDataItemsBlocking(this, event.dataItem.uri)
+                            LegacyWearIo.deleteDataItem(this, event.dataItem.uri)
                         }
                     }
                 }
@@ -75,8 +86,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
     private fun processSyncAck(dataMap: DataMap): Boolean {
         return runCatching {
             val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET) ?: error("缺少 ACK")
-            val bytes = LegacyWearableClient.readAssetBlocking(this, asset).use { it.readBytes() }
-                ?: throw IllegalStateException("无法读取 ACK")
+            val bytes = LegacyWearIo.readAsset(this, asset).use { it.readBytes() }
             val ack = json.decodeFromString<SyncAck>(bytes.toString(Charsets.UTF_8))
             if (ack.appliedRecordIds.isNotEmpty()) kotlinx.coroutines.runBlocking(Dispatchers.IO) { database.syncRecordDao().markSynced(ack.appliedRecordIds) }
             true
@@ -89,8 +99,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
                 ?: throw IllegalStateException("同步请求缺少源节点")
             val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET)
                 ?: throw IllegalStateException("同步请求缺少数据")
-            val bytes = LegacyWearableClient.readAssetBlocking(this, asset).use { it.readBytes() }
-                ?: throw IllegalStateException("无法读取同步数据")
+            val bytes = LegacyWearIo.readAsset(this, asset).use { it.readBytes() }
             val envelope = json.decodeFromString<SyncEnvelope>(bytes.toString(Charsets.UTF_8))
             val applied = kotlinx.coroutines.runBlocking(Dispatchers.IO) { SyncApplier(database).apply(envelope.records) }
             val localRecords = kotlinx.coroutines.runBlocking(Dispatchers.IO) { database.syncRecordDao().pending().map { com.hufeng943.timetable.shared.sync.SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) } }
@@ -102,29 +111,27 @@ class WearOsSyncReceiverService : WearableListenerService() {
     }
 
     private fun sendSyncAck(targetNodeId: String, requestId: String, appliedIds: List<Long>, records: List<com.hufeng943.timetable.shared.sync.SyncRecordPayload> = emptyList()) {
-        val localNodeId = runCatching { LegacyWearableClient.localNode(this).id }.getOrNull() ?: return
+        val localNodeId = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull() ?: return
         val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds, records = records)
         val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
-        val request = PutDataMapRequest.create(WearFileTransferProtocol.path(requestId)).apply {
+        val request = PutDataMapRequest.create(WearFileTransferProtocol.PATH).apply {
             dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_SYNC_ACK)
             dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)
             dataMap.putString(WearFileTransferProtocol.KEY_TARGET_NODE_ID, targetNodeId)
             dataMap.putString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID, localNodeId)
             dataMap.putAsset(WearFileTransferProtocol.KEY_ASSET, Asset.createFromBytes(bytes))
         }.asPutDataRequest().setUrgent()
-        LegacyWearableClient.putDataItemBlocking(this, request)
+        LegacyWearIo.putDataItem(this, request)
     }
 
     private fun deleteDataItem(event: DataEvent) {
-        runCatching { LegacyWearableClient.deleteDataItemsBlocking(this, event.dataItem.uri) }
+        runCatching { LegacyWearIo.deleteDataItem(this, event.dataItem.uri) }
     }
 
     private fun isForThisNode(dataMap: DataMap): Boolean {
         val targetNodeId = dataMap.getString(WearFileTransferProtocol.KEY_TARGET_NODE_ID)
             ?: return true
-        val localNodeId = runCatching {
-            LegacyWearableClient.localNode(this).id
-        }.getOrNull()
+        val localNodeId = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull()
         return targetNodeId == localNodeId
     }
 
@@ -147,8 +154,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
 
     private fun importAsset(asset: Asset?, replaceMatching: Boolean) {
         requireNotNull(asset) { "同步数据缺少文件内容" }
-        val bytes = LegacyWearableClient.readAssetBlocking(this, asset).use { it.readBytes() }
-            ?: throw IllegalStateException("无法读取手机发送的同步数据")
+        val bytes = LegacyWearIo.readAsset(this, asset).use { it.readBytes() }
 
         val timetables = TimetableFileParser.parse(bytes)
         runBlocking(Dispatchers.IO) {

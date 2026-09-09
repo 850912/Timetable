@@ -1,6 +1,5 @@
 package com.hufeng943.timetable.transfer
 
-import com.hufeng943.timetable.sync.LegacyWearableClient
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -9,6 +8,7 @@ import android.provider.OpenableColumns
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
+import com.hufeng943.timetable.sync.LegacyWearIo
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -154,7 +154,11 @@ class PhoneFileTransferActivity : Activity() {
                 )
             }.asPutDataRequest().setUrgent()
 
-        LegacyWearableClient.putDataItemBlocking(this, request)
+        LegacyWearIo.withClient(this) { client ->
+            val result = com.google.android.gms.wearable.Wearable.DataApi.putDataItem(client, request)
+                .await(10, java.util.concurrent.TimeUnit.SECONDS)
+            if (!result.status.isSuccess) error("发送文件失败(${result.status.statusCode})")
+        }
     }
 
     private fun sendTransferError(message: String) {
@@ -189,7 +193,11 @@ class PhoneFileTransferActivity : Activity() {
                 )
             }.asPutDataRequest().setUrgent()
 
-        LegacyWearableClient.putDataItemBlocking(this, request)
+        LegacyWearIo.withClient(this) { client ->
+            val result = com.google.android.gms.wearable.Wearable.DataApi.putDataItem(client, request)
+                .await(10, java.util.concurrent.TimeUnit.SECONDS)
+            if (!result.status.isSuccess) error("发送文件失败(${result.status.statusCode})")
+        }
     }
 
     private fun queryDisplayName(uri: Uri): String? {

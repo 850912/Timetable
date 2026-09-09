@@ -1,6 +1,5 @@
 package com.hufeng943.timetable.data
 
-import com.hufeng943.timetable.sync.LegacyWearableClient
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,6 +7,7 @@ import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
+import com.hufeng943.timetable.sync.LegacyWearIo
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.export.BackupManager
 import com.hufeng943.timetable.shared.export.CsvExporter
@@ -55,13 +55,13 @@ object WearFileTransfer {
             dataMap.putAsset(WearFileTransferProtocol.KEY_ASSET, Asset.createFromBytes(bytes))
         }.asPutDataRequest().setUrgent()
 
-        LegacyWearableClient.putDataItem(context, request)
+        LegacyWearIo.putDataItem(context, request)
     }
 
-    suspend fun requestImportFromPhone(context: Context): Boolean = withContext(Dispatchers.Main) {
-        try {
+    suspend fun requestImportFromPhone(context: Context): Boolean {
+        return try {
             val requestId = UUID.randomUUID().toString()
-            val sourceNodeId = LegacyWearableClient.localNode(context).id
+            val sourceNodeId = withContext(Dispatchers.IO) { LegacyWearIo.localNodeId(context) }
             val uri = Uri.Builder()
                 .scheme(WearFileTransferProtocol.URI_SCHEME)
                 .authority(WearFileTransferProtocol.URI_HOST)
@@ -70,13 +70,15 @@ object WearFileTransfer {
                 .appendQueryParameter(WearFileTransferProtocol.URI_SOURCE_NODE_ID, sourceNodeId)
                 .build()
 
-            RemoteActivityHelper(context, context.mainExecutor)
-                .startRemoteActivity(
-                    Intent(Intent.ACTION_VIEW)
-                        .setData(uri)
-                        .addCategory(Intent.CATEGORY_BROWSABLE)
-                )
-                .await()
+            withContext(Dispatchers.Main) {
+                RemoteActivityHelper(context, context.mainExecutor)
+                    .startRemoteActivity(
+                        Intent(Intent.ACTION_VIEW)
+                            .setData(uri)
+                            .addCategory(Intent.CATEGORY_BROWSABLE)
+                    )
+                    .await()
+            }
             true
         } catch (_: Exception) {
             false

@@ -1,6 +1,5 @@
 package com.hufeng943.timetable.transfer
 
-import com.hufeng943.timetable.sync.LegacyWearableClient
 import android.content.ContentValues
 import android.os.Environment
 import android.provider.MediaStore
@@ -8,9 +7,12 @@ import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
+import com.hufeng943.timetable.shared.importexport.WearBridgeProtocol
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.TimetableDatabaseProvider
+import com.hufeng943.timetable.sync.LegacyWearIo
 import com.hufeng943.timetable.shared.sync.SyncAck
 import com.hufeng943.timetable.shared.sync.SyncApplier
 import com.hufeng943.timetable.shared.sync.SyncRecordPayload
@@ -24,6 +26,27 @@ class PhoneWearDataLayerService : WearableListenerService() {
         ignoreUnknownKeys = true
         encodeDefaults = true
     }
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+        if (messageEvent.path != WearBridgeProtocol.HELLO_PATH) return
+
+        getSharedPreferences(WearBridgeProtocol.PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putString(WearBridgeProtocol.KEY_READY_NODE_ID, messageEvent.sourceNodeId)
+            .putLong(WearBridgeProtocol.KEY_READY_AT, System.currentTimeMillis())
+            .apply()
+
+        Thread {
+            runCatching {
+                LegacyWearIo.sendMessage(
+                    this,
+                    messageEvent.sourceNodeId,
+                    WearBridgeProtocol.READY_PATH,
+                    "PHONE_READY|${WearBridgeProtocol.PROTOCOL_VERSION}|${System.currentTimeMillis()}".toByteArray()
+                )
+            }
+        }.start()
+    }
+
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
             val dataPath = event.dataItem.uri.path
@@ -35,7 +58,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
             val target = dataMap.getString(WearFileTransferProtocol.KEY_TARGET_NODE_ID)
             if (target != null) {
-                val local = runCatching { LegacyWearableClient.localNode(this).id }.getOrNull()
+                val local = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull()
                 if (local != target) return@forEach
             }
             val processed = when (dataMap.getString(WearFileTransferProtocol.KEY_KIND)) {
@@ -47,7 +70,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
 
             if (processed) {
                 runCatching {
-                    LegacyWearableClient.deleteDataItemsBlocking(this, event.dataItem.uri)
+                    LegacyWearIo.deleteDataItem(this, event.dataItem.uri)
                 }
             }
         }
@@ -71,7 +94,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
     }
 
     private fun sendSyncAck(targetNodeId: String, requestId: String, appliedIds: List<Long>) {
-        val localNodeId = runCatching { LegacyWearableClient.localNode(this).id }.getOrNull() ?: return
+        val localNodeId = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull() ?: return
         val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds)
         val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
         val request = com.google.android.gms.wearable.PutDataMapRequest.create(
@@ -83,7 +106,11 @@ class PhoneWearDataLayerService : WearableListenerService() {
             dataMap.putString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID, localNodeId)
             dataMap.putAsset(WearFileTransferProtocol.KEY_ASSET, Asset.createFromBytes(bytes))
         }.asPutDataRequest().setUrgent()
-        LegacyWearableClient.putDataItemBlocking(this, request)
+        LegacyWearIo.withClient(this) { client ->
+            val result = com.google.android.gms.wearable.Wearable.DataApi.putDataItem(client, request)
+                .await(10, java.util.concurrent.TimeUnit.SECONDS)
+            if (!result.status.isSuccess) error("发送同步 ACK 失败(${result.status.statusCode})")
+        }
     }
 
     private fun saveWearExport(dataMap: com.google.android.gms.wearable.DataMap) {
@@ -128,8 +155,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
     }
 
     private fun readAsset(asset: Asset): InputStream {
-        val response = LegacyWearableClient.readAssetBlocking(this, asset)
-        return response.inputStream
+        return LegacyWearIo.readAsset(this, asset)
     }
 
     private fun sanitizeFileName(name: String): String {
