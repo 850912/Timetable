@@ -93,14 +93,14 @@
     <string name="apperror_unexpectedempty">Unexpected empty state</string>
     <string name="apperror_unknown">An unknown error occurred: %1$s</string>
     <!-- About -->
-    <string name="about_description">    A Wear OS timetable app for managing multiple timetables, editing courses and time slots, and viewing your daily schedule at a glance.</string>
+    <string name="about_description">    A timetable app for Wear OS and Galaxy Watch with phone sync, offline schedules, Tiles, watch-face complications, and Samsung multi-info capsules.</string>
     <string name="about_features_title">Features</string>
     <string name="about_features_text">
         " · Multiple timetable management\n"
         " · Course and time-slot editing\n"
         " · ICS calendar export / CSV spreadsheet export\n"
         " · JSON full backup and restore\n"
-        " · Wear Tile and Complication\n"
+        " · Wear Tile, watch-face complications, and Samsung multi-info capsules\n"
         " · Theme presets and Wear OS dynamic colors\n"
         " · 12/24-hour format and week-start settings\n"
         " · Chinese / English interface"
@@ -123,8 +123,8 @@
     <string name="about_changelog">
         " · Phone ↔ Watch bidirectional timetable file transfer\n"
         " · ICS / CSV / JSON import and export\n"
-        " · Samsung Tile powered by live timetable data\n"
-        " · Wear OS Complication support\n"
+        " · Samsung Tile with multiple courses and timetable colors\n"
+        " · Current Course / Next Course complications for Samsung multi-info surfaces\n"
         " · Unified One UI 8 Watch capsule interface\n"
         " · Lightweight Galaxy AI-inspired ambient effects\n"
         " · AMOLED black background with accent-color themes"
@@ -132,7 +132,7 @@
     <string name="about_original_author_name">HuFeng943</string>
     <string name="about_original_author_subtitle">Original author · Timetable project</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
-    <string name="about_developer_subtitle">Secondary development &amp; maintenance · Timetable 2.0.0</string>
+    <string name="about_developer_subtitle">Secondary development &amp; maintenance · Reliability / UI 2026.09</string>
     <string name="developer_options_title">Developer Options</string>
     <string name="developer_version_title">App version</string>
     <string name="developer_transfer_title">File-transfer protocol</string>
@@ -175,6 +175,8 @@
         <item>English</item>
     </string-array>
     <string name="home_no_course_today">No courses today</string>
-    <string name="course_in_progress">In class · %1$d min left</string>
+    <string name="course_in_progress">%1$d min left</string>
     <string name="course_next">Next</string>
+    <string name="complication_current_course_label">Current course</string>
+    <string name="complication_next_course_label">Next course</string>
 </resources>

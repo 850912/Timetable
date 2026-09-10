@@ -25,6 +25,13 @@ object WearFileTransfer {
         format: ExportFormatForPhone,
         timetables: List<Timetable>
     ) = withContext(Dispatchers.IO) {
+        // A DataItem can be written locally even when no phone is reachable.
+        // Treat that case as unavailable instead of reporting a false success and
+        // navigating away from the export screen.
+        if (!LegacyWearIo.hasConnectedNodes(context)) {
+            throw IllegalStateException("未连接手机，请连接后重试")
+        }
+
         val bytes = ByteArrayOutputStream().use { output ->
             when (format) {
                 ExportFormatForPhone.ICS -> IcsExporter.streamIcs(output, timetables)

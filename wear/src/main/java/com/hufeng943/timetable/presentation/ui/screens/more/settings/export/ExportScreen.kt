@@ -72,7 +72,6 @@ fun ExportScreen(
             is ExportState.Success -> {
                 Toast.makeText(context, s.fileName, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
-                onNavigateBack()
             }
             is ExportState.Error -> {
                 Toast.makeText(context, s.message, Toast.LENGTH_LONG).show()

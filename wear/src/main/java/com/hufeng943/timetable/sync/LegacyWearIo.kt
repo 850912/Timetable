@@ -37,6 +37,11 @@ internal object LegacyWearIo {
         throw lastError ?: IllegalStateException("Wear OS 连接失败")
     }
 
+    fun hasConnectedNodes(context: Context): Boolean = withClient(context) { client ->
+        val result = Wearable.NodeApi.getConnectedNodes(client).await(OP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        result.status.isSuccess && result.nodes.isNotEmpty()
+    }
+
     fun localNodeId(context: Context): String = withClient(context) { client ->
         val result = Wearable.NodeApi.getLocalNode(client).await(OP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         if (!result.status.isSuccess) error("无法获取本机节点(${result.status.statusCode})")

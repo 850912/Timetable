@@ -82,14 +82,14 @@
     <string name="apperror_unexpectedempty">意外的空状态</string>
     <string name="apperror_unknown">发生了未知的错误：%1$s</string>
     <!-- About -->
-    <string name="about_description">    一款面向 Wear OS 的课程表应用，支持多课表管理、课程与课时编辑，以及每日课程查看。</string>
+    <string name="about_description">    一款面向 Wear OS 与 Galaxy Watch 的课程表应用。支持手机同步、离线课表、Tile、表盘复杂功能与三星多信息卡片胶囊。</string>
     <string name="about_features_title">主要功能</string>
     <string name="about_features_text">
         " · 多课表管理\n"
         " · 课程与课时编辑\n"
         " · ICS 日历导出 / CSV 表格导出\n"
         " · JSON 完整备份与恢复\n"
-        " · Wear Tile 与 Complication\n"
+        " · Wear Tile、表盘复杂功能与三星多信息卡片胶囊\n"
         " · 主题预设与 Wear OS 动态配色\n"
         " · 12/24 小时制与每周起始日设置\n"
         " · 中文 / English 界面"
@@ -111,7 +111,7 @@
     <string name="about_changelog">
         " · 手机 ↔ 手表双向课表文件传输\n"
         " · 支持 ICS / CSV / JSON 导入导出\n"
-        " · Samsung Tile 接入真实课表数据\n"
+        " · Samsung Tile 支持多课程与课表主题色\n"
         " · 支持 Wear OS Complication\n"
         " · One UI 8 Watch 胶囊界面统一改造\n"
         " · Galaxy AI 风格轻量环境光效\n"
@@ -120,7 +120,7 @@
     <string name="about_original_author_name">HuFeng943</string>
     <string name="about_original_author_subtitle">原作者 · 原始项目 Timetable</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
-    <string name="about_developer_subtitle">二次开发与维护 · Timetable 2.0.0</string>
+    <string name="about_developer_subtitle">二次开发与维护 · Reliability / UI 2026.09</string>
     <string name="developer_options_title">开发者选项</string>
     <string name="developer_version_title">应用版本</string>
     <string name="developer_transfer_title">文件传输协议</string>
@@ -157,6 +157,8 @@
         <item>English</item>
     </string-array>
     <string name="home_no_course_today">今天没有课程</string>
-    <string name="course_in_progress">上课中 · 距离下课还有 %1$d 分钟</string>
+    <string name="course_in_progress">剩余 %1$d 分</string>
     <string name="course_next">下一节</string>
+    <string name="complication_current_course_label">当前课程</string>
+    <string name="complication_next_course_label">下一节课</string>
 </resources>
