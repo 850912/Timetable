@@ -108,7 +108,7 @@
     <string name="about_declaration_title">Declaration</string>
     <string name="about_declaration_subtitle" translatable="false">https://github.com/HuFeng943/Timetable</string>
     <string name="about_declaration_text">
-        " · Wear OS app, version 2.0.0\n"
+        " · Wear OS app; the version shown above is authoritative\n"
         " · Original project: HuFeng943 / Timetable\n"
         " · Secondary development &amp; maintenance: 黑白君 (HeiBaiJun)\n"
         " · This version continues development on top of the original project\n"
@@ -121,18 +121,19 @@
     <string name="about_changelog_title">Changelog</string>
     <string name="about_changelog_expand_hint">Tap to expand</string>
     <string name="about_changelog">
-        " · Phone ↔ Watch bidirectional timetable file transfer\n"
-        " · ICS / CSV / JSON import and export\n"
+        " · Improved home performance for large schedules\n"
+        " · Fixed and unified 12 / 24-hour time formatting\n"
+        " · Current courses now show minutes until class ends\n"
+        " · Wear Tile now shows remaining class time\n"
+        " · Reliable Phone ↔ Watch sync with retry support\n"
         " · Wear Tile with multiple courses and timetable colors\n"
-        " · Current Course / Next Course watch-face complications\n"
-        " · Unified One UI 8 Watch capsule interface\n"
-        " · Lightweight Galaxy AI-inspired ambient effects\n"
-        " · AMOLED black background with accent-color themes"
+        " · Current / Next course watch-face complications\n"
+        " · ICS / CSV / JSON import and export"
     </string>
     <string name="about_original_author_name">HuFeng943</string>
     <string name="about_original_author_subtitle">Original author · Timetable project</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
-    <string name="about_developer_subtitle">Secondary development &amp; maintenance · Reliability / UI 2026.09</string>
+    <string name="about_developer_subtitle">Secondary development &amp; maintenance · Performance / Time Format / UI 2026.09</string>
     <string name="developer_options_title">Developer Options</string>
     <string name="developer_version_title">App version</string>
     <string name="developer_transfer_title">File-transfer protocol</string>
@@ -175,7 +176,7 @@
         <item>English</item>
     </string-array>
     <string name="home_no_course_today">No courses today</string>
-    <string name="course_in_progress">%1$d min</string>
+    <string name="course_in_progress">%1$d min until class ends</string>
     <string name="course_next">Next</string>
     <string name="complication_current_course_label">Current course</string>
     <string name="complication_next_course_label">Next course</string>

@@ -19,6 +19,9 @@ import androidx.wear.tiles.tooling.preview.TilePreviewData
 import androidx.wear.tooling.preview.devices.WearDevices
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.tiles.SuspendingTileService
+import com.hufeng943.timetable.R
+import com.hufeng943.timetable.data.PreferenceStorage
+import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.TimeSlot
@@ -62,6 +65,7 @@ private data class TileCourse(
 class MainTileService : SuspendingTileService() {
 
     @Inject lateinit var repository: TimetableRepository
+    @Inject lateinit var preferenceStorage: PreferenceStorage
 
     override suspend fun resourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
@@ -71,8 +75,9 @@ class MainTileService : SuspendingTileService() {
         requestParams: RequestBuilders.TileRequest
     ): TileBuilders.Tile {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        val is24Hour = runCatching { preferenceStorage.appConfigFlow.first().is24HourFormat }.getOrDefault(true)
         val courses = runCatching {
-            repository.getAllTimetables().first().coursesForDate(today)
+            repository.getAllTimetables().first().coursesForDate(today, is24Hour)
         }.getOrDefault(emptyList())
 
         return tile(requestParams, this, courses.currentAndUpcoming())
@@ -142,6 +147,12 @@ private fun tileLayout(
                     context = context,
                     title = course.name.ifBlank { "未命名课程" },
                     subtitle = buildString {
+                        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
+                        val nowMinutes = now.hour * 60 + now.minute
+                        if (isWithinSlot(nowMinutes, course.startMinutes, course.endMinutes)) {
+                            append(context.getString(R.string.course_in_progress, minutesUntil(nowMinutes, course.endMinutes).coerceAtLeast(1)))
+                            append(" · ")
+                        }
                         append(course.start)
                         if (course.end.isNotBlank()) append("–${course.end}")
                         course.location?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
@@ -232,14 +243,14 @@ private fun capsule(
 private fun spacer(heightDp: Float): LayoutElementBuilders.LayoutElement =
     LayoutElementBuilders.Spacer.Builder().setHeight(dp(heightDp)).build()
 
-private fun List<Timetable>.coursesForDate(date: LocalDate): List<TileCourse> = flatMap { table ->
+private fun List<Timetable>.coursesForDate(date: LocalDate, is24Hour: Boolean): List<TileCourse> = flatMap { table ->
     val weekIndex = table.weekIndex(date)
     if (weekIndex <= 0) return@flatMap emptyList()
 
     table.allCourses.flatMap { course ->
         course.timeSlots
             .filter { it.dayOfWeek == date.dayOfWeek && it.matchesWeek(weekIndex) }
-            .map { slot -> course.toTileCourse(slot, table.color) }
+            .map { slot -> course.toTileCourse(slot, table.color, is24Hour) }
     }
 }.sortedBy { it.start }
 
@@ -285,10 +296,13 @@ private fun isWithinSlot(nowMinutes: Int, startMinutes: Int, endMinutes: Int): B
     }
 }
 
-private fun Course.toTileCourse(slot: TimeSlot, timetableColor: Long): TileCourse = TileCourse(
+private fun minutesUntil(nowMinutes: Int, targetMinutes: Int): Int =
+    if (targetMinutes >= nowMinutes) targetMinutes - nowMinutes else (24 * 60 - nowMinutes) + targetMinutes
+
+private fun Course.toTileCourse(slot: TimeSlot, timetableColor: Long, is24Hour: Boolean): TileCourse = TileCourse(
     name = name,
-    start = slot.startTime?.let { "%02d:%02d".format(it.hour, it.minute) }.orEmpty(),
-    end = slot.endTime?.let { "%02d:%02d".format(it.hour, it.minute) }.orEmpty(),
+    start = slot.startTime?.toDisplayString(is24Hour).orEmpty(),
+    end = slot.endTime?.toDisplayString(is24Hour).orEmpty(),
     startMinutes = slot.startTime?.let { it.hour * 60 + it.minute } ?: Int.MAX_VALUE,
     endMinutes = slot.endTime?.let { it.hour * 60 + it.minute } ?: Int.MAX_VALUE,
     location = location,

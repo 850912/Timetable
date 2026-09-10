@@ -51,6 +51,7 @@ fun CourseCard(
     isCurrent: Boolean = false,
     isNext: Boolean = false,
     minutesLeft: Int? = null,
+    is24HourFormat: Boolean = true,
     onClick: () -> Unit
 ) {
     val colors = AppTheme.colors
@@ -115,9 +116,9 @@ fun CourseCard(
 
                     Text(
                         text = buildString {
-                            slot.startTime?.let { append("%02d:%02d".format(it.hour, it.minute)) }
+                            slot.startTime?.let { append(it.toDisplayString(is24HourFormat)) }
                             if (slot.startTime != null && slot.endTime != null) append(" – ")
-                            slot.endTime?.let { append("%02d:%02d".format(it.hour, it.minute)) }
+                            slot.endTime?.let { append(it.toDisplayString(is24HourFormat)) }
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.textSecondary,

@@ -49,7 +49,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     timeSource = if (config.is24HourFormat) {
                         rememberTimeSource("HH:mm")
                     } else {
-                        rememberTimeSource("h:mm")
+                        rememberTimeSource("h:mm a")
                     }
                 )
             }

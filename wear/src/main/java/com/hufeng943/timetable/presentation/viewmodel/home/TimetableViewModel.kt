@@ -1,12 +1,10 @@
 package com.hufeng943.timetable.presentation.viewmodel.home
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hufeng943.timetable.presentation.ui.common.ui.mappers.getWeekIndexForDate
-import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toDayCoursesUi
-import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toTimetableUi
+import androidx.compose.ui.graphics.Color
+import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toCourseUi
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.toSafeStateFlow
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
@@ -14,6 +12,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import com.hufeng943.timetable.shared.model.Timetable
+import com.hufeng943.timetable.shared.model.WeekPattern
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.minus
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -27,13 +31,9 @@ class TimetableViewModel @Inject constructor(
         const val KEY_SELECTED_DATE = "selected_date"
     }
 
-    // 全部课表 (UI 层)
-    val allTimetables = repository.getAllTimetables().map { list ->
-        if (list.isEmpty()) UiState.Empty
-        else {
-            val uiList = list.map { it.toTimetableUi(it.allCourses) }
-            UiState.Success(uiList)
-        }
+    // 保留领域模型，按选中日期过滤后再转换为 UI，避免大课表反复转换全部课程/课时。
+    private val allTimetables = repository.getAllTimetables().map { list ->
+        if (list.isEmpty()) UiState.Empty else UiState.Success(list)
     }.toSafeStateFlow(viewModelScope)
 
     private val _selectedDate = savedStateHandle.getStateFlow<LocalDate>(
@@ -49,18 +49,13 @@ class TimetableViewModel @Inject constructor(
             is UiState.Empty -> UiState.Empty
             is UiState.Error -> UiState.Error(state.throwable)
             is UiState.Success -> {
-                val allTablesUi = state.data
-                val allDailyCourses = allTablesUi.flatMap { tableUi ->
-                    val weekIndex = tableUi.getWeekIndexForDate(selectedDate)
-                    Log.d("weekIndex", weekIndex.toString())
-                    Log.d("selectedDate.dayOfWeek", selectedDate.dayOfWeek.toString())
-                    tableUi.toDayCoursesUi(selectedDate.dayOfWeek, weekIndex)
+                val allDailyCourses = state.data.flatMap { table ->
+                    table.toDayCoursesUi(selectedDate)
                 }
-                // 统一排序并重新编号
-                val sortedCoursesUi =
-                    allDailyCourses.sortedBy { it.timeSlot.startTime }.mapIndexed { index, course ->
-                        course.copy(dailyOrder = index + 1)
-                    }
+                // 只对当天结果排序和编号，复杂度随“当天课程数”而不是“全部课时数”增长。
+                val sortedCoursesUi = allDailyCourses
+                    .sortedBy { it.timeSlot.startTime }
+                    .mapIndexed { index, course -> course.copy(dailyOrder = index + 1) }
                 UiState.Success(sortedCoursesUi)
             }
         }
@@ -68,5 +63,35 @@ class TimetableViewModel @Inject constructor(
 
     fun updateSelectedDate(date: LocalDate) {
         savedStateHandle[KEY_SELECTED_DATE] = date
+    }
+}
+
+
+private fun Timetable.toDayCoursesUi(date: LocalDate) = buildList {
+    val end = semesterEnd
+    if (date < semesterStart || (end != null && date > end)) return@buildList
+
+    val semesterOffset = (semesterStart.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
+    val semesterMonday = semesterStart.minus(semesterOffset.toLong(), DateTimeUnit.DAY)
+    val dateOffset = (date.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
+    val dateMonday = date.minus(dateOffset.toLong(), DateTimeUnit.DAY)
+    val daysBetween = dateMonday.toEpochDays() - semesterMonday.toEpochDays()
+    if (daysBetween < 0) return@buildList
+    val weekIndex = (daysBetween / 7 + 1).toInt()
+
+    for (course in allCourses) {
+        for (slot in course.timeSlots) {
+            if (slot.dayOfWeek != date.dayOfWeek) continue
+            val matches = when (slot.recurrence) {
+                WeekPattern.EVERY_WEEK -> true
+                WeekPattern.ODD_WEEK -> weekIndex % 2 == 1
+                WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
+            }
+            if (!matches) continue
+            val ui = course.toCourseUi(slot)
+            val tableColor = if (color == -1L) Color.Unspecified else Color(color)
+            val effectiveColor = if (ui.color == Color.Unspecified) tableColor else ui.color
+            add(ui.copy(color = effectiveColor, selectedTimeSlot = ui.selectedTimeSlot?.copy(color = effectiveColor)))
+        }
     }
 }

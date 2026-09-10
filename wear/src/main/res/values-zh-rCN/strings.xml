@@ -96,7 +96,7 @@
     </string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
-        " · Wear OS 应用，当前版本 2.0.0\n"
+        " · Wear OS 应用，版本号以上方显示为准\n"
         " · 原项目：HuFeng943 / Timetable\n"
         " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
         " · 当前版本在原项目基础上持续维护与扩展\n"
@@ -109,18 +109,19 @@
     <string name="about_changelog_title">更新内容</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
-        " · 手机 ↔ 手表双向课表文件传输\n"
-        " · 支持 ICS / CSV / JSON 导入导出\n"
+        " · 优化大量课程 / 课时场景下的首页性能\n"
+        " · 修复并统一 12 / 24 小时制显示\n"
+        " · 当前课程显示“XX分钟下课”\n"
+        " · Wear Tile 增加当前课程剩余时间\n"
+        " · 手机 ↔ 手表可靠同步与断线重试\n"
         " · Wear Tile 支持多课程与课表主题色\n"
         " · 支持当前课程 / 下一节课表盘复杂功能\n"
-        " · One UI 8 Watch 胶囊界面统一改造\n"
-        " · Galaxy AI 风格轻量环境光效\n"
-        " · AMOLED 黑背景与主题强调色体系"
+        " · ICS / CSV / JSON 导入导出"
     </string>
     <string name="about_original_author_name">HuFeng943</string>
     <string name="about_original_author_subtitle">原作者 · 原始项目 Timetable</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
-    <string name="about_developer_subtitle">二次开发与维护 · Reliability / UI 2026.09</string>
+    <string name="about_developer_subtitle">二次开发与维护 · Performance / Time Format / UI 2026.09</string>
     <string name="developer_options_title">开发者选项</string>
     <string name="developer_version_title">应用版本</string>
     <string name="developer_transfer_title">文件传输协议</string>
@@ -157,7 +158,7 @@
         <item>English</item>
     </string-array>
     <string name="home_no_course_today">今天没有课程</string>
-    <string name="course_in_progress">%1$d 分</string>
+    <string name="course_in_progress">%1$d分钟下课</string>
     <string name="course_next">下一节</string>
     <string name="complication_current_course_label">当前课程</string>
     <string name="complication_next_course_label">下一节课</string>

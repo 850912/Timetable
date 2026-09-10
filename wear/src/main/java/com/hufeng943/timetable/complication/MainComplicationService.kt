@@ -12,7 +12,9 @@ import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingTimelineComplicationDataSourceService
 import androidx.wear.watchface.complications.datasource.TimeInterval
 import androidx.wear.watchface.complications.datasource.TimelineEntry
+import com.hufeng943.timetable.data.PreferenceStorage
 import com.hufeng943.timetable.presentation.MainActivity
+import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.TimeSlot
@@ -37,6 +39,9 @@ class MainComplicationService : SuspendingTimelineComplicationDataSourceService(
 
     @Inject
     lateinit var repository: TimetableRepository
+
+    @Inject
+    lateinit var preferenceStorage: PreferenceStorage
 
     private data class CourseInterval(
         val course: Course,
@@ -76,6 +81,7 @@ class MainComplicationService : SuspendingTimelineComplicationDataSourceService(
         )
 
         val allTimetables = repository.getAllTimetables().firstOrNull() ?: emptyList()
+        val is24Hour = runCatching { preferenceStorage.appConfigFlow.firstOrNull()?.is24HourFormat ?: true }.getOrDefault(true)
         val timeZone = TimeZone.currentSystemDefault()
         val javaNow = java.time.LocalDate.now()
         val today = LocalDate(javaNow.year, javaNow.monthValue, javaNow.dayOfMonth)
@@ -170,7 +176,7 @@ class MainComplicationService : SuspendingTimelineComplicationDataSourceService(
             if (item.startInstant > cursorInstant) {
                 val nextData = buildComplicationData(
                     request.complicationType,
-                    title = "%02d:%02d".format(item.startTime.hour, item.startTime.minute),
+                    title = item.startTime.toDisplayString(is24Hour),
                     text = item.course.name,
                     tapIntent = tapIntent
                 )

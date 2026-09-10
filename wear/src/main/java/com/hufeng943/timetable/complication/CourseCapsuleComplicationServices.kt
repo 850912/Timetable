@@ -9,7 +9,10 @@ import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
+import com.hufeng943.timetable.R
+import com.hufeng943.timetable.data.PreferenceStorage
 import com.hufeng943.timetable.presentation.MainActivity
+import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.WeekPattern
@@ -29,7 +32,7 @@ import javax.inject.Inject
 private data class CapsuleCourse(val name: String, val start: String, val end: String, val startMin: Int, val endMin: Int)
 enum class CapsuleMode { CURRENT, NEXT }
 
-private suspend fun TimetableRepository.capsuleCourse(mode: CapsuleMode): CapsuleCourse? {
+private suspend fun TimetableRepository.capsuleCourse(mode: CapsuleMode, is24Hour: Boolean): CapsuleCourse? {
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
     val nowMin = now.hour * 60 + now.minute
@@ -51,8 +54,8 @@ private suspend fun TimetableRepository.capsuleCourse(mode: CapsuleMode): Capsul
                 val finish = slot.endTime ?: return@mapNotNull null
                 CapsuleCourse(
                     course.name.ifBlank { "课程" },
-                    "%02d:%02d".format(start.hour, start.minute),
-                    "%02d:%02d".format(finish.hour, finish.minute),
+                    start.toDisplayString(is24Hour),
+                    finish.toDisplayString(is24Hour),
                     start.hour * 60 + start.minute,
                     finish.hour * 60 + finish.minute
                 )
@@ -76,6 +79,7 @@ private fun TimeSlot.matchesWeek(week: Int): Boolean = when (recurrence) {
 @AndroidEntryPoint
 abstract class BaseCourseCapsuleService(private val mode: CapsuleMode) : SuspendingComplicationDataSourceService() {
     @Inject lateinit var repository: TimetableRepository
+    @Inject lateinit var preferenceStorage: PreferenceStorage
 
     private fun tapAction() = PendingIntent.getActivity(
         this, if (mode == CapsuleMode.CURRENT) 101 else 102,
@@ -90,11 +94,18 @@ abstract class BaseCourseCapsuleService(private val mode: CapsuleMode) : Suspend
     )
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? {
-        val course = repository.capsuleCourse(mode)
+        val is24Hour = runCatching { preferenceStorage.appConfigFlow.firstOrNull()?.is24HourFormat ?: true }.getOrDefault(true)
+        val course = repository.capsuleCourse(mode, is24Hour)
         return if (course == null) {
             build(request.complicationType, if (mode == CapsuleMode.CURRENT) "当前无课" else "后续无课", "课程表", "—")
         } else {
-            build(request.complicationType, course.name, if (mode == CapsuleMode.CURRENT) "上课中" else course.start, "${course.start}–${course.end}")
+            val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
+            val nowMin = now.hour * 60 + now.minute
+            val title = if (mode == CapsuleMode.CURRENT) {
+                val left = if (course.endMin >= nowMin) course.endMin - nowMin else 24 * 60 - nowMin + course.endMin
+                getString(R.string.course_in_progress, left.coerceAtLeast(1))
+            } else course.start
+            build(request.complicationType, course.name, title, "${course.start}–${course.end}")
         }
     }
 

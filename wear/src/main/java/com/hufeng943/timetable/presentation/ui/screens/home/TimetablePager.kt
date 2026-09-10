@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -113,12 +114,16 @@ fun TimetablePager(
             // live in the same lexical scope as the item-content lambda below;
             // keeping it inside CourseListPager made `minuteTick` inaccessible
             // here and caused the release Kotlin compilation to fail.
-            var minuteTick by remember { mutableStateOf(0L) }
+            var minuteTick by remember { mutableLongStateOf(0L) }
             LaunchedEffect(Unit) {
                 while (true) {
-                    delay(30_000L)
+                    val now = System.currentTimeMillis()
+                    delay(60_000L - (now % 60_000L))
                     minuteTick++
                 }
+            }
+            val statusSummary = remember(coursesUi, selectedDate, minuteTick) {
+                calculateCourseStatusSummary(coursesUi, selectedDate)
             }
 
             CourseListPager(
@@ -129,13 +134,13 @@ fun TimetablePager(
                 onDateSelected = handleDateSelected,
                 showTopTime = config.isShowTopTime
             ) { courseUi, transformationSpec ->
-                minuteTick
-                val status = courseStatus(courseUi, selectedDate, coursesUi)
+                val courseId = courseUi.timeSlot.id
                 CourseCard(
                     course = courseUi,
-                    isCurrent = status.first,
-                    isNext = status.second,
-                    minutesLeft = status.third,
+                    isCurrent = statusSummary.currentId == courseId,
+                    isNext = statusSummary.nextId == courseId,
+                    minutesLeft = if (statusSummary.currentId == courseId) statusSummary.minutesLeft else null,
+                    is24HourFormat = config.is24HourFormat,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -289,35 +294,44 @@ private fun CourseListPager(
     }
 }
 
-private fun courseStatus(course: CourseUi, selectedDate: LocalDate, all: List<CourseUi>): Triple<Boolean, Boolean, Int?> {
+private data class CourseStatusSummary(
+    val currentId: Long? = null,
+    val nextId: Long? = null,
+    val minutesLeft: Int? = null,
+)
+
+private fun calculateCourseStatusSummary(
+    courses: List<CourseUi>,
+    selectedDate: LocalDate,
+): CourseStatusSummary {
     val zone = TimeZone.currentSystemDefault()
     val now = Clock.System.now().toLocalDateTime(zone)
-    if (selectedDate != Clock.System.todayIn(zone)) return Triple(false, false, null)
+    if (selectedDate != Clock.System.todayIn(zone)) return CourseStatusSummary()
 
     val nowMin = now.time.hour * 60 + now.time.minute
-    val start = course.timeSlot.startTime?.let { it.hour * 60 + it.minute }
-        ?: return Triple(false, false, null)
-    val end = course.timeSlot.endTime?.let { it.hour * 60 + it.minute }
-        ?: return Triple(false, false, null)
+    var currentId: Long? = null
+    var currentMinutesLeft: Int? = null
+    var nextId: Long? = null
+    var smallestUntilStart = Int.MAX_VALUE
 
-    val current = isWithinSlot(nowMin, start, end)
-    val nextId = all.asSequence()
-        .mapNotNull { candidate ->
-            val candidateStart = candidate.timeSlot.startTime?.let { it.hour * 60 + it.minute }
-                ?: return@mapNotNull null
-            val untilStart = candidateStart - nowMin
-            if (untilStart > 0) candidate to untilStart else null
+    for (course in courses) {
+        val start = course.timeSlot.startTime?.let { it.hour * 60 + it.minute } ?: continue
+        val end = course.timeSlot.endTime?.let { it.hour * 60 + it.minute } ?: continue
+        if (isWithinSlot(nowMin, start, end)) {
+            if (currentId == null) {
+                currentId = course.timeSlot.id
+                currentMinutesLeft = minutesUntil(nowMin, end).coerceAtLeast(1)
+            }
+        } else {
+            val untilStart = start - nowMin
+            if (untilStart > 0 && untilStart < smallestUntilStart) {
+                smallestUntilStart = untilStart
+                nextId = course.timeSlot.id
+            }
         }
-        .minByOrNull { it.second }
-        ?.first
-        ?.timeSlot
-        ?.id
+    }
 
-    return Triple(
-        current,
-        !current && nextId == course.timeSlot.id,
-        if (current) minutesUntil(nowMin, end).coerceAtLeast(0) else null
-    )
+    return CourseStatusSummary(currentId, nextId, currentMinutesLeft)
 }
 
 private fun isWithinSlot(nowMinutes: Int, startMinutes: Int, endMinutes: Int): Boolean =
