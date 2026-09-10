@@ -91,7 +91,7 @@ private fun Timetable.toDayCoursesUi(date: LocalDate) = buildList {
             val ui = course.toCourseUi(slot)
             val tableColor = if (color == -1L) Color.Unspecified else Color(color)
             val effectiveColor = if (ui.color == Color.Unspecified) tableColor else ui.color
-            add(ui.copy(color = effectiveColor, selectedTimeSlot = ui.selectedTimeSlot?.copy(color = effectiveColor)))
+            add(ui.copy(color = effectiveColor, selectedTimeSlot = ui.timeSlot.copy(color = effectiveColor)))
         }
     }
 }
