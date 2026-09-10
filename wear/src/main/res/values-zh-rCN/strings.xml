@@ -82,14 +82,14 @@
     <string name="apperror_unexpectedempty">意外的空状态</string>
     <string name="apperror_unknown">发生了未知的错误：%1$s</string>
     <!-- About -->
-    <string name="about_description">    一款面向 Wear OS 与 Galaxy Watch 的课程表应用。支持手机同步、离线课表、Tile、表盘复杂功能与三星多信息卡片胶囊。</string>
+    <string name="about_description">    一款面向 Wear OS 与 Galaxy Watch 的课程表应用。支持手机同步、离线课表、Wear Tile 与表盘复杂功能。</string>
     <string name="about_features_title">主要功能</string>
     <string name="about_features_text">
         " · 多课表管理\n"
         " · 课程与课时编辑\n"
         " · ICS 日历导出 / CSV 表格导出\n"
         " · JSON 完整备份与恢复\n"
-        " · Wear Tile、表盘复杂功能与三星多信息卡片胶囊\n"
+        " · Wear Tile 与表盘复杂功能\n"
         " · 主题预设与 Wear OS 动态配色\n"
         " · 12/24 小时制与每周起始日设置\n"
         " · 中文 / English 界面"
@@ -111,8 +111,8 @@
     <string name="about_changelog">
         " · 手机 ↔ 手表双向课表文件传输\n"
         " · 支持 ICS / CSV / JSON 导入导出\n"
-        " · Samsung Tile 支持多课程与课表主题色\n"
-        " · 支持 Wear OS Complication\n"
+        " · Wear Tile 支持多课程与课表主题色\n"
+        " · 支持当前课程 / 下一节课表盘复杂功能\n"
         " · One UI 8 Watch 胶囊界面统一改造\n"
         " · Galaxy AI 风格轻量环境光效\n"
         " · AMOLED 黑背景与主题强调色体系"
@@ -125,8 +125,8 @@
     <string name="developer_version_title">应用版本</string>
     <string name="developer_transfer_title">文件传输协议</string>
     <string name="developer_formats_title">支持格式</string>
-    <string name="developer_tile_title">Samsung Tile</string>
-    <string name="developer_tile_subtitle">真实课表数据 · 今日/下一节课程</string>
+    <string name="developer_tile_title">Wear OS Tile</string>
+    <string name="developer_tile_subtitle">标准 Wear OS Tile · 兼容 Galaxy Watch</string>
     <string name="developer_complication_title">Complication</string>
     <string name="developer_complication_subtitle">表盘课程信息入口已启用</string>
     <string name="developer_effects_title">Galaxy AI 光效</string>
@@ -157,7 +157,7 @@
         <item>English</item>
     </string-array>
     <string name="home_no_course_today">今天没有课程</string>
-    <string name="course_in_progress">剩余 %1$d 分</string>
+    <string name="course_in_progress">%1$d 分</string>
     <string name="course_next">下一节</string>
     <string name="complication_current_course_label">当前课程</string>
     <string name="complication_next_course_label">下一节课</string>

@@ -46,9 +46,9 @@ private suspend fun TimetableRepository.capsuleCourse(mode: CapsuleMode): Capsul
         table.allCourses.flatMap { course ->
             course.timeSlots.filter { slot ->
                 slot.dayOfWeek == today.dayOfWeek && slot.matchesWeek(week) && slot.startTime != null && slot.endTime != null
-            }.map { slot ->
-                val start = slot.startTime!!
-                val finish = slot.endTime!!
+            }.mapNotNull { slot ->
+                val start = slot.startTime ?: return@mapNotNull null
+                val finish = slot.endTime ?: return@mapNotNull null
                 CapsuleCourse(
                     course.name.ifBlank { "课程" },
                     "%02d:%02d".format(start.hour, start.minute),

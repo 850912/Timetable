@@ -39,12 +39,12 @@ class SyncManager(
     private fun compact(records: List<SyncRecordPayload>): List<SyncRecordPayload> = records
         .groupBy { it.entityType to it.entityId }
         .values
-        .map { group ->
+        .mapNotNull { group ->
             group.maxWithOrNull(
                 compareBy<SyncRecordPayload> { it.revision }
                     .thenBy { it.updatedAt }
                     .thenBy { it.sourceRecordId }
-            )!!
+            ) ?: return@mapNotNull null
         }
         .sortedWith(compareBy<SyncRecordPayload> { it.updatedAt }.thenBy { it.sourceRecordId })
 }

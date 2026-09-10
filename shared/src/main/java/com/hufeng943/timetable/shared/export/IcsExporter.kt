@@ -122,8 +122,8 @@ object IcsExporter {
 
             forEachCourseOccurrence(timetables) { timetable, courseName, location, teacher, remark, targetDate, weekIndex, slotId, courseId, startTimeStr, endTimeStr ->
                 val y = targetDate.year.toString().padStart(4, '0')
-                val m = targetDate.monthNumber.toString().padStart(2, '0')
-                val d = targetDate.dayOfMonth.toString().padStart(2, '0')
+                val m = targetDate.month.number.toString().padStart(2, '0')
+                val d = targetDate.day.toString().padStart(2, '0')
                 val dtStart = "${y}${m}${d}T${startTimeStr}"
                 val dtEnd = "${y}${m}${d}T${endTimeStr}"
 

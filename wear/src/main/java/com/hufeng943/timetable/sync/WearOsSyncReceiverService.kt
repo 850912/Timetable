@@ -17,6 +17,7 @@ import com.hufeng943.timetable.shared.data.database.AppDatabase
 import com.hufeng943.timetable.shared.sync.SyncAck
 import com.hufeng943.timetable.shared.sync.SyncApplier
 import com.hufeng943.timetable.shared.sync.SyncEnvelope
+import com.hufeng943.timetable.surface.WearSurfaceRefresher
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import dagger.hilt.android.AndroidEntryPoint
@@ -105,9 +106,10 @@ class WearOsSyncReceiverService : WearableListenerService() {
             val localRecords = kotlinx.coroutines.runBlocking(Dispatchers.IO) { database.syncRecordDao().pending().map { com.hufeng943.timetable.shared.sync.SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) } }
             sendSyncAck(sourceNodeId, envelope.requestId, applied, localRecords)
             val complete = applied.size == envelope.records.size
+            if (complete) WearSurfaceRefresher.refresh(this)
             sendResultBroadcast(complete, if (complete) null else "部分同步等待重试")
             complete
-        }.onFailure { sendResultBroadcast(false, it.message ?: "增量同步失败") }.isSuccess
+        }.onFailure { sendResultBroadcast(false, it.message ?: "增量同步失败") }.getOrDefault(false)
     }
 
     private fun sendSyncAck(targetNodeId: String, requestId: String, appliedIds: List<Long>, records: List<com.hufeng943.timetable.shared.sync.SyncRecordPayload> = emptyList()) {
@@ -146,6 +148,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
                 replaceMatching = kind == WearFileTransferProtocol.KIND_PHONE_PUSH_TIMETABLES
             )
         }.onSuccess {
+            WearSurfaceRefresher.refresh(this)
             sendResultBroadcast(true, null)
         }.onFailure { error ->
             sendResultBroadcast(false, error.message ?: "同步失败")

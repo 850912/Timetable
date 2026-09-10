@@ -104,7 +104,7 @@ private fun tile(
     return TileBuilders.Tile.Builder()
         .setResourcesVersion(RESOURCES_VERSION)
         .setTileTimeline(timeline)
-        .setFreshnessIntervalMillis(15 * 60 * 1000L)
+        .setFreshnessIntervalMillis(5 * 60 * 1000L)
         .build()
 }
 
@@ -135,7 +135,7 @@ private fun tileLayout(
             )
         )
     } else {
-        val visibleCourses = courses.take(3)
+        val visibleCourses = courses.take(2)
         visibleCourses.forEachIndexed { index, course ->
             column.addContent(
                 capsule(
@@ -143,11 +143,8 @@ private fun tileLayout(
                     title = course.name.ifBlank { "未命名课程" },
                     subtitle = buildString {
                         append(course.start)
-                        if (course.end.isNotBlank()) append(" – ${course.end}")
-                        val detail = listOfNotNull(course.location, course.teacher)
-                            .filter { it.isNotBlank() }
-                            .joinToString(" · ")
-                        if (detail.isNotBlank()) append("  $detail")
+                        if (course.end.isNotBlank()) append("–${course.end}")
+                        course.location?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
                     },
                     accent = course.color ?: if (index == 0) PRIMARY else AI_PURPLE,
                     clickId = "tile_course_$index",
