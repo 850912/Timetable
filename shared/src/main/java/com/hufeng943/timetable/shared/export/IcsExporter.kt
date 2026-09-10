@@ -5,6 +5,7 @@ import com.hufeng943.timetable.shared.model.WeekPattern
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.number
 import java.io.BufferedWriter
 import java.io.OutputStream
 import java.io.OutputStreamWriter
