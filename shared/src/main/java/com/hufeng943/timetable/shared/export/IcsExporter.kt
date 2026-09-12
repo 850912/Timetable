@@ -21,7 +21,7 @@ data class ExportPreviewStats(
 
 object IcsExporter {
 
-    private inline fun forEachCourseOccurrence(
+    private fun forEachCourseOccurrence(
         timetables: List<Timetable>,
         action: (timetable: Timetable, courseName: String, location: String?, teacher: String?, remark: String?, date: LocalDate, weekIndex: Int, slotId: Long, courseId: Long, startTimeStr: String, endTimeStr: String) -> Unit
     ) {
