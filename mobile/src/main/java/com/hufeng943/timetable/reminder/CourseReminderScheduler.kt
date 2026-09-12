@@ -136,8 +136,8 @@ object CourseReminderScheduler {
         ReminderSettings.saveScheduledRequestCodes(context, emptySet())
     }
 
-    private fun eventKey(slotId: Long, epochDay: Int): Int =
-        ((31L * slotId + epochDay.toLong()) xor (slotId ushr 32)).toInt()
+    private fun eventKey(slotId: Long, epochDay: Long): Int =
+        ((31L * slotId + epochDay) xor (slotId ushr 32)).toInt()
 
     private fun requestCode(eventKey: Int, phase: Int): Int = (eventKey and 0x1FFF_FFFF) * 4 + phase
 }

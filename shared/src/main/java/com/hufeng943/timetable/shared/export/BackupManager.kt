@@ -8,6 +8,7 @@ import com.hufeng943.timetable.shared.model.WeekPattern
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
@@ -53,6 +54,7 @@ data class TimetableBackupContainer(
     val timetables: List<TimetableBackupDto>
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 object BackupManager {
     private val json = Json {
         prettyPrint = true
@@ -64,8 +66,8 @@ object BackupManager {
         val dtos = timetables.map { tt ->
             TimetableBackupDto(
                 semesterName = tt.semesterName,
-                startEpochDays = tt.semesterStart.toEpochDays().toLong(),
-                endEpochDays = tt.semesterEnd?.toEpochDays()?.toLong(),
+                startEpochDays = tt.semesterStart.toEpochDays(),
+                endEpochDays = tt.semesterEnd?.toEpochDays(),
                 color = tt.color,
                 courses = tt.allCourses.map { course ->
                     CourseBackupDto(
