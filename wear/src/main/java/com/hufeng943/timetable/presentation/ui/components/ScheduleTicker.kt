@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.datetime.LocalTime
@@ -56,10 +57,14 @@ fun rememberScheduleSeconds(
             val mode = calculateTickerMode(nowSec, todaySlots, isAmbient)
 
             when (mode) {
-                TickerFrequency.STOPPED,
+                TickerFrequency.STOPPED -> awaitCancellation()
                 TickerFrequency.LOW_FREQUENCY -> {
-                    val delayMillis = 60_000L - (nowMillis % 60_000L)
-                    delay(if (delayMillis > 0) delayMillis else 60_000L)
+                    // Nothing on screen needs second-level precision yet. Wake at the
+                    // next useful boundary (one minute before class, or the class start),
+                    // capped so clock/timezone changes are still picked up reasonably soon.
+                    val nextWakeSeconds = nextRelevantWakeSeconds(nowSec, todaySlots)
+                    val delayMillis = (nextWakeSeconds * 1000L).coerceIn(1_000L, 15 * 60_000L)
+                    delay(delayMillis)
                 }
                 TickerFrequency.SECOND_LEVEL -> {
                     val delayMillis = 1000L - (nowMillis % 1000L)
@@ -70,6 +75,20 @@ fun rememberScheduleSeconds(
     }
 
     return currentSecondOfDay
+}
+
+private fun nextRelevantWakeSeconds(nowSeconds: Int, slots: List<CourseTimeRange>): Long {
+    val next = slots.mapNotNull { range ->
+        val start = range.start.hour * 3600 + range.start.minute * 60 + range.start.second
+        if (start <= nowSeconds) null else {
+            val untilStart = start - nowSeconds
+            when {
+                untilStart > 60 -> untilStart - 60
+                else -> 1
+            }
+        }
+    }.minOrNull() ?: 15 * 60
+    return next.toLong().coerceAtLeast(1L)
 }
 
 private fun getCurrentSecondOfDay(): Int {

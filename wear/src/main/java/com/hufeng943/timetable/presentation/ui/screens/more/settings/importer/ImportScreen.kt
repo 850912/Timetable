@@ -13,7 +13,6 @@ import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -38,6 +37,7 @@ import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import kotlinx.coroutines.launch
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun ImportScreen(
     viewModel: ImportViewModel = hiltViewModel(),
@@ -49,8 +49,8 @@ fun ImportScreen(
     val scope = rememberCoroutineScope()
     val config = LocalAppConfig.current
 
-    val importState by viewModel.state.collectAsState()
-    val backupFiles by viewModel.backupFiles.collectAsState()
+    val importState by viewModel.state.collectAsStateWithLifecycle()
+    val backupFiles by viewModel.backupFiles.collectAsStateWithLifecycle()
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {

@@ -21,10 +21,14 @@ class AutoSyncJobService : JobService() {
     override fun onStartJob(params: JobParameters): Boolean {
         scope.launch {
             val db = TimetableDatabaseProvider.database(applicationContext)
+            val dao = db.syncRecordDao()
             SyncCoordinator(
-                dao = db.syncRecordDao(),
+                dao = dao,
                 manager = SyncManager(listOf(WearOsTransport(applicationContext)))
             ).syncPending()
+            val thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+            dao.deleteSyncedBefore(thirtyDaysAgo)
+            dao.trimSyncedHistory(500)
             jobFinished(params, false)
         }
         return true

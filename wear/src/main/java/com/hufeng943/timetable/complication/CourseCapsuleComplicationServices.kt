@@ -6,6 +6,7 @@ import androidx.wear.watchface.complications.data.ComplicationData
 import androidx.wear.watchface.complications.data.ComplicationType
 import androidx.wear.watchface.complications.data.LongTextComplicationData
 import androidx.wear.watchface.complications.data.PlainComplicationText
+import androidx.wear.watchface.complications.data.RangedValueComplicationData
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
@@ -14,16 +15,10 @@ import com.hufeng943.timetable.data.PreferenceStorage
 import com.hufeng943.timetable.presentation.MainActivity
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
-import com.hufeng943.timetable.shared.model.TimeSlot
-import com.hufeng943.timetable.shared.model.WeekPattern
+import com.hufeng943.timetable.shared.model.resolveDate
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.DayOfWeek
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
@@ -38,28 +33,16 @@ private suspend fun TimetableRepository.capsuleCourse(mode: CapsuleMode, is24Hou
     val nowMin = now.hour * 60 + now.minute
     val tables = getAllTimetables().firstOrNull().orEmpty()
     val courses = tables.flatMap { table ->
-        val end = table.semesterEnd
-        if (today < table.semesterStart || (end != null && today > end)) return@flatMap emptyList()
-        val offset = (table.semesterStart.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
-        val semesterMonday = table.semesterStart.minus(offset.toLong(), DateTimeUnit.DAY)
-        val todayOffset = (today.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
-        val todayMonday = today.minus(todayOffset.toLong(), DateTimeUnit.DAY)
-        val week = ((todayMonday.toEpochDays() - semesterMonday.toEpochDays()) / 7 + 1).toInt()
-        if (week <= 0) return@flatMap emptyList()
-        table.allCourses.flatMap { course ->
-            course.timeSlots.filter { slot ->
-                slot.dayOfWeek == today.dayOfWeek && slot.matchesWeek(week) && slot.startTime != null && slot.endTime != null
-            }.mapNotNull { slot ->
-                val start = slot.startTime ?: return@mapNotNull null
-                val finish = slot.endTime ?: return@mapNotNull null
-                CapsuleCourse(
-                    course.name.ifBlank { "课程" },
-                    start.toDisplayString(is24Hour),
-                    finish.toDisplayString(is24Hour),
-                    start.hour * 60 + start.minute,
-                    finish.hour * 60 + finish.minute
-                )
-            }
+        table.resolveDate(today).map { occurrence ->
+            val start = occurrence.startTime
+            val finish = occurrence.endTime
+            CapsuleCourse(
+                occurrence.course.name.ifBlank { "课程" },
+                start.toDisplayString(is24Hour),
+                finish.toDisplayString(is24Hour),
+                start.hour * 60 + start.minute,
+                finish.hour * 60 + finish.minute
+            )
         }
     }.sortedBy { it.startMin }
 
@@ -70,11 +53,6 @@ private suspend fun TimetableRepository.capsuleCourse(mode: CapsuleMode, is24Hou
     }
 }
 
-private fun TimeSlot.matchesWeek(week: Int): Boolean = when (recurrence) {
-    WeekPattern.EVERY_WEEK -> true
-    WeekPattern.ODD_WEEK -> week % 2 == 1
-    WeekPattern.EVEN_WEEK -> week % 2 == 0
-}
 
 @AndroidEntryPoint
 abstract class BaseCourseCapsuleService(private val mode: CapsuleMode) : SuspendingComplicationDataSourceService() {
@@ -90,14 +68,15 @@ abstract class BaseCourseCapsuleService(private val mode: CapsuleMode) : Suspend
         type,
         if (mode == CapsuleMode.CURRENT) "高等数学" else "大学英语",
         if (mode == CapsuleMode.CURRENT) "上课中" else "10:20",
-        "08:00–09:40"
+        "08:00–09:40",
+        if (mode == CapsuleMode.CURRENT) 0.55f else null
     )
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? {
         val is24Hour = runCatching { preferenceStorage.appConfigFlow.firstOrNull()?.is24HourFormat ?: true }.getOrDefault(true)
         val course = repository.capsuleCourse(mode, is24Hour)
         return if (course == null) {
-            build(request.complicationType, if (mode == CapsuleMode.CURRENT) "当前无课" else "后续无课", "课程表", "—")
+            build(request.complicationType, if (mode == CapsuleMode.CURRENT) "当前无课" else "后续无课", "课程表", "—", null)
         } else {
             val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
             val nowMin = now.hour * 60 + now.minute
@@ -105,17 +84,33 @@ abstract class BaseCourseCapsuleService(private val mode: CapsuleMode) : Suspend
                 val left = if (course.endMin >= nowMin) course.endMin - nowMin else 24 * 60 - nowMin + course.endMin
                 getString(R.string.course_in_progress, left.coerceAtLeast(1))
             } else course.start
-            build(request.complicationType, course.name, title, "${course.start}–${course.end}")
+            val progress = if (mode == CapsuleMode.CURRENT) {
+                val duration = if (course.endMin >= course.startMin) course.endMin - course.startMin else 24 * 60 - course.startMin + course.endMin
+                val elapsed = if (nowMin >= course.startMin) nowMin - course.startMin else 24 * 60 - course.startMin + nowMin
+                if (duration > 0) (elapsed.toFloat() / duration).coerceIn(0f, 1f) else 0f
+            } else null
+            build(request.complicationType, course.name, title, "${course.start}–${course.end}", progress)
         }
     }
 
-    private fun build(type: ComplicationType, text: String, title: String, detail: String): ComplicationData? = when (type) {
+    private fun build(type: ComplicationType, text: String, title: String, detail: String, progress: Float?): ComplicationData? = when (type) {
         ComplicationType.SHORT_TEXT -> ShortTextComplicationData.Builder(
             PlainComplicationText.Builder(text).build(), PlainComplicationText.Builder("课程表 $text $detail").build()
         ).setTitle(PlainComplicationText.Builder(title).build()).setTapAction(tapAction()).build()
         ComplicationType.LONG_TEXT -> LongTextComplicationData.Builder(
             PlainComplicationText.Builder("$text  $detail").build(), PlainComplicationText.Builder("课程表 $text $detail").build()
         ).setTitle(PlainComplicationText.Builder(title).build()).setTapAction(tapAction()).build()
+        ComplicationType.RANGED_VALUE -> progress?.let {
+            RangedValueComplicationData.Builder(
+                it,
+                0f,
+                1f,
+                PlainComplicationText.Builder("$text 课程进度").build(),
+            ).setText(PlainComplicationText.Builder(text).build())
+                .setTitle(PlainComplicationText.Builder("${(it * 100).toInt()}%").build())
+                .setTapAction(tapAction())
+                .build()
+        }
         else -> null
     }
 }

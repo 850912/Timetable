@@ -18,7 +18,7 @@ import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.TimeSlot
-import com.hufeng943.timetable.shared.model.WeekPattern
+import com.hufeng943.timetable.shared.model.resolveDate
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.DateTimeUnit
@@ -27,8 +27,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
-import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import javax.inject.Inject
@@ -86,66 +84,35 @@ class MainComplicationService : SuspendingTimelineComplicationDataSourceService(
         val javaNow = java.time.LocalDate.now()
         val today = LocalDate(javaNow.year, javaNow.monthValue, javaNow.dayOfMonth)
 
-        val currentTable = allTimetables.filter { tt ->
-            val end = tt.semesterEnd ?: LocalDate.fromEpochDays(tt.semesterStart.toEpochDays() + 140)
-            today >= tt.semesterStart && today <= end
-        }.maxByOrNull { it.semesterStart } ?: allTimetables.maxByOrNull { it.semesterStart }
-
         val defaultData = buildComplicationData(
             request.complicationType, "课程表", "—", tapIntent
         ) ?: return null
 
-        if (currentTable == null) {
+        if (allTimetables.isEmpty()) {
             return ComplicationDataTimeline(defaultData, emptyList())
         }
 
-        val semesterStart = currentTable.semesterStart
-        val semesterEnd = currentTable.semesterEnd ?: LocalDate.fromEpochDays(semesterStart.toEpochDays() + 140)
-        val semesterStartMonday = currentTable.semesterStartMonday
-
         val todayStartInstant = today.atTime(0, 0).toInstant(timeZone)
         val timelineEndInstant = today.plus(2, DateTimeUnit.DAY).atTime(0, 0).toInstant(timeZone)
-
         val activeIntervals = mutableListOf<CourseInterval>()
 
-        val daysToScan = listOf(
-            today.minus(1, DateTimeUnit.DAY),
-            today,
-            today.plus(1, DateTimeUnit.DAY)
-        )
-
+        val daysToScan = listOf(today, today.plus(1, DateTimeUnit.DAY))
         for (targetDate in daysToScan) {
-            if (targetDate < semesterStart || targetDate > semesterEnd) continue
-
-            val dayOffset = (targetDate.dayOfWeek.isoDayNumber - 1).mod(7)
-            val dateMonday = LocalDate.fromEpochDays(targetDate.toEpochDays() - dayOffset)
-            val weekIndex = (((dateMonday.toEpochDays() - semesterStartMonday.toEpochDays()) / 7) + 1).toInt()
-
-            for (course in currentTable.allCourses) {
-                for (slot in course.timeSlots) {
-                    val slotStart = slot.startTime ?: continue
-                    val slotEnd = slot.endTime ?: continue
-
-                    if (slot.dayOfWeek == targetDate.dayOfWeek) {
-                        val isMatch = when (slot.recurrence) {
-                            WeekPattern.EVERY_WEEK -> true
-                            WeekPattern.ODD_WEEK -> weekIndex % 2 != 0
-                            WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
-                        }
-                        if (isMatch) {
-                            val isCrossMidnight = (slotEnd.hour * 3600 + slotEnd.minute * 60) <
-                                    (slotStart.hour * 3600 + slotStart.minute * 60)
-                            val startInst = targetDate.atTime(slotStart).toInstant(timeZone)
-                            val endInst = if (isCrossMidnight) {
-                                targetDate.plus(1, DateTimeUnit.DAY).atTime(slotEnd).toInstant(timeZone)
-                            } else {
-                                targetDate.atTime(slotEnd).toInstant(timeZone)
-                            }
-
-                            if (endInst > todayStartInstant && startInst < timelineEndInstant) {
-                                activeIntervals.add(CourseInterval(course, slot, slotStart, slotEnd, startInst, endInst))
-                            }
-                        }
+            for (table in allTimetables) {
+                for (occurrence in table.resolveDate(targetDate)) {
+                    val startInst = targetDate.atTime(occurrence.startTime).toInstant(timeZone)
+                    val endInst = targetDate.atTime(occurrence.endTime).toInstant(timeZone)
+                    if (endInst > todayStartInstant && startInst < timelineEndInstant) {
+                        activeIntervals.add(
+                            CourseInterval(
+                                occurrence.course.copy(location = occurrence.location),
+                                occurrence.timeSlot,
+                                occurrence.startTime,
+                                occurrence.endTime,
+                                startInst,
+                                endInst,
+                            )
+                        )
                     }
                 }
             }

@@ -38,6 +38,8 @@ data class TimeSlotEntity(
     val endMinute: Int,
     val recurrence: Int,
     val remark: String?,
+    @ColumnInfo(defaultValue = "'[]'")
+    val overridesJson: String = "[]",
     @ColumnInfo(defaultValue = "0")
     val updatedAt: Long = System.currentTimeMillis(),
     @ColumnInfo(defaultValue = "0")

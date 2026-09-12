@@ -1,12 +1,19 @@
 package com.hufeng943.timetable
 
 import android.app.DatePickerDialog
+import android.app.AlarmManager
+import com.hufeng943.timetable.reminder.ReminderSettings
+import com.hufeng943.timetable.reminder.CourseReminderScheduler
+import android.widget.CheckBox
+import android.os.Build
+import android.Manifest
 import android.app.TimePickerDialog
 import android.graphics.Color
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
@@ -26,27 +33,34 @@ import com.google.android.material.textfield.TextInputLayout
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
 import com.hufeng943.timetable.shared.model.Course
+import com.hufeng943.timetable.shared.model.ScheduleOverrideType
+import com.hufeng943.timetable.shared.model.ScheduleOverride
+import com.hufeng943.timetable.calendar.SystemCalendarSync
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.model.WeekPattern
+import com.hufeng943.timetable.shared.model.weekNumberFor
 import com.hufeng943.timetable.shared.sync.SyncManager
 import com.hufeng943.timetable.shared.sync.SyncRecordPayload
 import com.hufeng943.timetable.sync.WearOsTransport
+import com.hufeng943.timetable.sync.WearConnectionState
 import com.hufeng943.timetable.probe.WearProbeActivity
+import com.hufeng943.timetable.widget.TodayWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 import com.hufeng943.timetable.sync.AutoSyncJobService
 import android.widget.ProgressBar
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
 class MainActivity : AppCompatActivity() {
@@ -59,9 +73,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var connectionStatus: TextView
     private lateinit var syncProgress: ProgressBar
     private var currentTimetables: List<Timetable> = emptyList()
+    private var pendingCalendarTimetable: Timetable? = null
 
     private val openDocument = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) importTimetableFile(uri)
+    }
+
+    private val requestNotificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) toast("未授予通知权限，课程提醒不会显示通知")
+    }
+
+    private val requestCalendarPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        val granted = result[Manifest.permission.READ_CALENDAR] == true && result[Manifest.permission.WRITE_CALENDAR] == true
+        val table = pendingCalendarTimetable
+        pendingCalendarTimetable = null
+        if (granted && table != null) syncTimetableToCalendar(table) else if (!granted) toast("需要日历读写权限才能同步")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,6 +107,17 @@ class MainActivity : AppCompatActivity() {
         emptyText = findViewById(R.id.emptyText)
         connectionStatus = findViewById(R.id.connectionStatus)
         syncProgress = findViewById(R.id.syncProgress)
+        connectionStatus.setOnClickListener {
+            uiScope.launch {
+                val reset = withContext(Dispatchers.IO) {
+                    TimetableDatabaseProvider.database(this@MainActivity).syncRecordDao().retryFailed()
+                }
+                if (reset > 0) {
+                    toast("已重新加入 $reset 条失败变更")
+                    AutoSyncJobService.scheduleNow(this@MainActivity)
+                }
+            }
+        }
 
         findViewById<MaterialButton>(R.id.buttonManualCreate).setOnClickListener {
             showCreateTimetableDialog()
@@ -93,6 +130,9 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.buttonSyncAll).setOnClickListener {
             syncToWatch(forceFullSnapshot = true)
+        }
+        findViewById<MaterialButton>(R.id.buttonReminderSettings).setOnClickListener {
+            showReminderSettingsDialog()
         }
         findViewById<MaterialButton>(R.id.buttonWearProbe).setOnClickListener {
             startActivity(Intent(this, WearProbeActivity::class.java))
@@ -107,6 +147,10 @@ class MainActivity : AppCompatActivity() {
             repository.getAllTimetables().collectLatest { timetables ->
                 currentTimetables = timetables.sortedByDescending { it.createdAt }
                 renderTimetables(currentTimetables)
+                TodayWidgetProvider.requestRefresh(this@MainActivity)
+                withContext(Dispatchers.Default) {
+                    CourseReminderScheduler.schedule(this@MainActivity, currentTimetables)
+                }
                 AutoSyncJobService.scheduleNow(this@MainActivity)
             }
         }
@@ -138,7 +182,9 @@ class MainActivity : AppCompatActivity() {
             })
             card.addView(TextView(this).apply {
                 val end = timetable.semesterEnd?.toString() ?: "长期"
-                text = "${timetable.semesterStart} ～ $end · ${timetable.allCourses.size} 门课程"
+                val today = Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
+                val week = timetable.weekNumberFor(today)?.let { " · 第${it}周" }.orEmpty()
+                text = "${timetable.semesterStart} ～ $end · ${timetable.allCourses.size} 门课程$week"
                 setPadding(0, dp(5), 0, dp(8))
             })
 
@@ -147,13 +193,17 @@ class MainActivity : AppCompatActivity() {
                     val day = slot.dayOfWeek?.let(::dayLabel) ?: "未定"
                     val start = slot.startTime?.toString() ?: "--:--"
                     val end = slot.endTime?.toString() ?: "--:--"
-                    "$day $start-$end"
+                    val overrideSuffix = if (slot.overrides.isNotEmpty()) " · ${slot.overrides.size}个日期例外" else ""
+                    "$day $start-$end$overrideSuffix"
                 }.ifBlank { "暂无时间" }
                 card.addView(TextView(this).apply {
                     text = "• ${course.name}  $slotText" +
                         listOfNotNull(course.location, course.teacher).takeIf { it.isNotEmpty() }
                             ?.joinToString(prefix = "  （", postfix = "）", separator = " / ").orEmpty()
-                    setPadding(0, dp(3), 0, dp(3))
+                    setPadding(0, dp(6), 0, dp(6))
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener { showCourseActionsDialog(timetable, course) }
                 })
             }
 
@@ -165,6 +215,14 @@ class MainActivity : AppCompatActivity() {
             actions.addView(actionButton("同步") { syncToWatch(forceFullSnapshot = true) })
             actions.addView(actionButton("删除") { confirmDelete(timetable) })
             card.addView(actions)
+            val moreActions = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(4), 0, 0)
+            }
+            moreActions.addView(actionButton("日期例外") { showScheduleOverrideDialog(timetable) })
+            moreActions.addView(actionButton("复制课表") { duplicateTimetable(timetable) })
+            moreActions.addView(actionButton("同步日历") { requestCalendarSync(timetable) })
+            card.addView(moreActions)
             timetableContainer.addView(card)
         }
     }
@@ -467,20 +525,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun monitorWearConnection() {
+        val dao = TimetableDatabaseProvider.database(this).syncRecordDao()
         uiScope.launch {
-            while (true) {
-                val (connected, pendingCount) = withContext(Dispatchers.IO) {
-                    val db = TimetableDatabaseProvider.database(this@MainActivity)
-                    wearTransport.isAvailable() to db.syncRecordDao().pendingCount()
+            // Prime the process-local peer state once. Further changes are delivered by
+            // WearableListenerService callbacks instead of a permanent 10-second poll.
+            WearConnectionState.update(withContext(Dispatchers.IO) { wearTransport.isAvailable() })
+            combine(
+                WearConnectionState.connected,
+                dao.observePendingCount(),
+                dao.observePermanentlyFailedCount(),
+            ) { connected, pendingCount, failedCount -> Triple(connected, pendingCount, failedCount) }
+                .collectLatest { (connected, pendingCount, failedCount) ->
+                    connectionStatus.text = when {
+                        failedCount > 0 -> "${if (connected == true) "手表已连接" else "手表未连接"} · $failedCount 条变更同步失败，可手动重试"
+                        connected == true && pendingCount > 0 -> "手表已连接 · 有 $pendingCount 条变更等待自动同步"
+                        connected == true -> "手表已连接 · 自动同步已开启"
+                        connected == false -> "手表未连接 · 将在连接后自动重试"
+                        else -> "正在检测手表连接…"
+                    }
+                    if (connected == true && pendingCount > 0) {
+                        AutoSyncJobService.scheduleNow(this@MainActivity)
+                    }
                 }
-                connectionStatus.text = when {
-                    connected && pendingCount > 0 -> "手表已连接 · 有 $pendingCount 条变更等待自动同步"
-                    connected -> "手表已连接 · 自动同步已开启"
-                    else -> "手表未连接 · 将在连接后自动重试"
-                }
-                if (connected && pendingCount > 0) AutoSyncJobService.scheduleNow(this@MainActivity)
-                delay(10_000L)
-            }
         }
     }
 
@@ -494,6 +560,311 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun showCourseActionsDialog(timetable: Timetable, course: Course) {
+        val options = arrayOf("编辑课程信息", "编辑上课时间", "复制课程", "删除课程")
+        AlertDialog.Builder(this)
+            .setTitle(course.name.ifBlank { "课程" })
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showEditCourseDialog(timetable, course)
+                    1 -> showEditTimeSlotDialog(course)
+                    2 -> duplicateCourse(timetable, course)
+                    3 -> confirmDeleteCourse(course)
+                }
+            }.show()
+    }
+
+    private fun showEditCourseDialog(timetable: Timetable, course: Course) {
+        val name = inputField("课程名称", "课程名称").apply { editText?.setText(course.name) }
+        val location = inputField("地点（可留空）", "地点").apply { editText?.setText(course.location.orEmpty()) }
+        val teacher = inputField("教师（可留空）", "教师").apply { editText?.setText(course.teacher.orEmpty()) }
+        AlertDialog.Builder(this)
+            .setTitle("编辑课程")
+            .setView(dialogColumn(name, location, teacher))
+            .setNegativeButton("取消", null)
+            .setPositiveButton("保存") { _, _ ->
+                val newName = name.text()
+                if (newName.isBlank()) {
+                    toast("课程名称不能为空")
+                    return@setPositiveButton
+                }
+                uiScope.launch {
+                    runCatching {
+                        withContext(Dispatchers.IO) {
+                            repository.upsertCourse(
+                                course.copy(
+                                    name = newName,
+                                    location = location.text().takeIf { it.isNotBlank() },
+                                    teacher = teacher.text().takeIf { it.isNotBlank() },
+                                ),
+                                timetable.timetableId,
+                            )
+                        }
+                    }.onSuccess { toast("课程信息已更新") }
+                        .onFailure { toast(it.message ?: "更新失败") }
+                }
+            }.show()
+    }
+
+    private fun showEditTimeSlotDialog(course: Course) {
+        if (course.timeSlots.isEmpty()) {
+            toast("该课程没有上课时间")
+            return
+        }
+        val slotSpinner = spinner(course.timeSlots.map { slot ->
+            "${slot.dayOfWeek?.let(::dayLabel) ?: "未定"} ${slot.startTime ?: "--:--"}-${slot.endTime ?: "--:--"}"
+        })
+        val daySpinner = spinner(listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日"))
+        val recurrenceSpinner = spinner(listOf("每周", "单周", "双周"))
+        val start = inputField("开始时间", "08:00")
+        val end = inputField("结束时间", "09:40")
+        start.editText?.isFocusable = false
+        end.editText?.isFocusable = false
+        start.editText?.setOnClickListener { showTimePicker(start.editText ?: return@setOnClickListener) }
+        end.editText?.setOnClickListener { showTimePicker(end.editText ?: return@setOnClickListener) }
+        fun loadSlot(position: Int) {
+            val slot = course.timeSlots[position]
+            daySpinner.setSelection(slot.dayOfWeek?.ordinal ?: 0)
+            recurrenceSpinner.setSelection(slot.recurrence.ordinal)
+            start.editText?.setText(slot.startTime?.toString() ?: "08:00")
+            end.editText?.setText(slot.endTime?.toString() ?: "09:40")
+        }
+        loadSlot(0)
+        slotSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) = loadSlot(position)
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("编辑上课时间")
+            .setView(dialogColumn(labeled("课时", slotSpinner), labeled("星期", daySpinner), start, end, labeled("重复", recurrenceSpinner)))
+            .setNegativeButton("取消", null)
+            .setNeutralButton("删除此课时", null)
+            .setPositiveButton("保存", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                runCatching {
+                    val slot = course.timeSlots[slotSpinner.selectedItemPosition]
+                    val startTime = LocalTime.parse(start.text())
+                    val endTime = LocalTime.parse(end.text())
+                    if (endTime <= startTime) throw IllegalArgumentException("结束时间必须晚于开始时间")
+                    slot.copy(
+                        dayOfWeek = DayOfWeek.entries[daySpinner.selectedItemPosition],
+                        startTime = startTime,
+                        endTime = endTime,
+                        recurrence = WeekPattern.entries[recurrenceSpinner.selectedItemPosition],
+                    )
+                }.onSuccess { updated ->
+                    uiScope.launch {
+                        withContext(Dispatchers.IO) { repository.upsertTimeSlot(updated, course.id) }
+                        dialog.dismiss()
+                        toast("上课时间已更新")
+                    }
+                }.onFailure { toast(it.message ?: "更新失败") }
+            }
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                val slot = course.timeSlots[slotSpinner.selectedItemPosition]
+                uiScope.launch {
+                    withContext(Dispatchers.IO) { repository.deleteTimeSlot(slot.id) }
+                    dialog.dismiss()
+                    toast("课时已删除")
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun duplicateCourse(timetable: Timetable, source: Course) {
+        uiScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val newCourseId = repository.upsertCourse(
+                        source.copy(id = 0, name = source.name + " 副本", timeSlots = emptyList()),
+                        timetable.timetableId,
+                    )
+                    source.timeSlots.forEach { repository.upsertTimeSlot(it.copy(id = 0), newCourseId) }
+                }
+            }.onSuccess { toast("课程已复制") }
+                .onFailure { toast(it.message ?: "复制失败") }
+        }
+    }
+
+    private fun confirmDeleteCourse(course: Course) {
+        AlertDialog.Builder(this)
+            .setTitle("删除课程")
+            .setMessage("确定删除“${course.name}”及其全部课时吗？")
+            .setNegativeButton("取消", null)
+            .setPositiveButton("删除") { _, _ ->
+                uiScope.launch {
+                    withContext(Dispatchers.IO) { repository.deleteCourse(course.id) }
+                    toast("课程已删除")
+                }
+            }.show()
+    }
+
+    private fun duplicateTimetable(source: Timetable) {
+        uiScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val newTableId = repository.upsertTimetable(
+                        source.copy(
+                            timetableId = 0,
+                            semesterName = source.semesterName + " 副本",
+                            createdAt = Clock.System.now(),
+                            allCourses = emptyList(),
+                        )
+                    )
+                    source.allCourses.forEach { course ->
+                        val newCourseId = repository.upsertCourse(course.copy(id = 0, timeSlots = emptyList()), newTableId)
+                        course.timeSlots.forEach { slot -> repository.upsertTimeSlot(slot.copy(id = 0), newCourseId) }
+                    }
+                }
+            }.onSuccess { toast("课表已复制") }
+                .onFailure { toast(it.message ?: "复制失败") }
+        }
+    }
+
+    private fun requestCalendarSync(timetable: Timetable) {
+        if (SystemCalendarSync.hasPermission(this)) {
+            syncTimetableToCalendar(timetable)
+        } else {
+            pendingCalendarTimetable = timetable
+            requestCalendarPermissions.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
+        }
+    }
+
+    private fun syncTimetableToCalendar(timetable: Timetable) {
+        uiScope.launch {
+            runCatching { withContext(Dispatchers.IO) { SystemCalendarSync.sync(this@MainActivity, timetable) } }
+                .onSuccess { toast("已同步 ${it.inserted} 节课到 ${it.calendarName}") }
+                .onFailure { toast(it.message ?: "系统日历同步失败") }
+        }
+    }
+
+    private fun showScheduleOverrideDialog(timetable: Timetable) {
+        val choices = timetable.allCourses.flatMap { course -> course.timeSlots.map { course to it } }
+        if (choices.isEmpty()) {
+            toast("请先添加课程和上课时间")
+            return
+        }
+        val slotSpinner = spinner(choices.map { (course, slot) ->
+            "${course.name} · ${slot.dayOfWeek?.let(::dayLabel) ?: "未定"} ${slot.startTime ?: "--:--"}-${slot.endTime ?: "--:--"}"
+        })
+        val typeValues = listOf("停课", "调课/修改", "临时加课", "恢复正常")
+        val typeSpinner = spinner(typeValues)
+        val date = inputField("日期", "YYYY-MM-DD").apply { editText?.setText(todayString()) }
+        date.editText?.isFocusable = false
+        date.editText?.setOnClickListener { showDatePicker(date.editText ?: return@setOnClickListener) }
+        val start = inputField("新开始时间（停课可忽略）", "08:00")
+        val end = inputField("新结束时间（停课可忽略）", "09:40")
+        start.editText?.isFocusable = false
+        end.editText?.isFocusable = false
+        fun fillTimes(position: Int) {
+            val slot = choices[position].second
+            start.editText?.setText(slot.startTime?.toString() ?: "08:00")
+            end.editText?.setText(slot.endTime?.toString() ?: "09:40")
+        }
+        fillTimes(0)
+        slotSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) = fillTimes(position)
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
+        }
+        start.editText?.setOnClickListener { showTimePicker(start.editText ?: return@setOnClickListener) }
+        end.editText?.setOnClickListener { showTimePicker(end.editText ?: return@setOnClickListener) }
+        val location = inputField("临时地点（可留空）", "例如：A303")
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("日期例外")
+            .setView(dialogColumn(labeled("课程", slotSpinner), labeled("类型", typeSpinner), date, start, end, location))
+            .setNegativeButton("取消", null)
+            .setPositiveButton("保存", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                runCatching {
+                    val (course, slot) = choices[slotSpinner.selectedItemPosition]
+                    val targetDate = LocalDate.parse(date.text())
+                    if (typeSpinner.selectedItemPosition == 3) {
+                        course to slot.copy(overrides = slot.overrides.filterNot { it.date == targetDate })
+                    } else {
+                        val type = when (typeSpinner.selectedItemPosition) {
+                            0 -> ScheduleOverrideType.CANCELLED
+                            1 -> ScheduleOverrideType.MODIFIED
+                            else -> ScheduleOverrideType.EXTRA
+                        }
+                        val override = if (type == ScheduleOverrideType.CANCELLED) {
+                            ScheduleOverride(targetDate, type)
+                        } else {
+                            val startTime = LocalTime.parse(start.text())
+                            val endTime = LocalTime.parse(end.text())
+                            if (endTime <= startTime) throw IllegalArgumentException("结束时间必须晚于开始时间")
+                            ScheduleOverride(
+                                date = targetDate,
+                                type = type,
+                                startTime = startTime,
+                                endTime = endTime,
+                                location = location.text().takeIf { it.isNotBlank() },
+                            )
+                        }
+                        course to slot.copy(overrides = slot.overrides.filterNot { it.date == targetDate } + override)
+                    }
+                }.onSuccess { (course, updatedSlot) ->
+                    uiScope.launch {
+                        withContext(Dispatchers.IO) { repository.upsertTimeSlot(updatedSlot, course.id) }
+                        dialog.dismiss()
+                        toast("日期例外已保存并加入同步队列")
+                    }
+                }.onFailure { toast(it.message ?: "保存失败") }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun showReminderSettingsDialog() {
+        val enabled = CheckBox(this).apply {
+            text = "启用课程提醒"
+            isChecked = ReminderSettings.enabled(this@MainActivity)
+        }
+        val values = listOf(5, 10, 15, 30)
+        val offsetSpinner = spinner(values.map { "提前 $it 分钟" })
+        val current = ReminderSettings.offsetMinutes(this)
+        offsetSpinner.setSelection(values.indexOf(current).takeIf { it >= 0 } ?: 1)
+        AlertDialog.Builder(this)
+            .setTitle("课程提醒")
+            .setView(dialogColumn(enabled, labeled("提醒时间", offsetSpinner)))
+            .setNegativeButton("取消", null)
+            .setPositiveButton("保存") { _, _ ->
+                val offset = values[offsetSpinner.selectedItemPosition]
+                ReminderSettings.save(this, enabled.isChecked, offset)
+                CourseReminderScheduler.schedule(this, currentTimetables)
+                if (enabled.isChecked && Build.VERSION.SDK_INT >= 33) {
+                    requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+                if (enabled.isChecked) requestExactAlarmAccessIfNeeded()
+                toast(if (enabled.isChecked) "已启用：提前 $offset 分钟提醒" else "课程提醒已关闭")
+            }.show()
+    }
+
+    private fun requestExactAlarmAccessIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        val alarmManager = getSystemService(AlarmManager::class.java)
+        if (alarmManager.canScheduleExactAlarms()) return
+        AlertDialog.Builder(this)
+            .setTitle("允许精确课程提醒")
+            .setMessage("允许“闹钟和提醒”权限后，课前和开课通知可以更准时；不授权也能继续使用近似提醒。")
+            .setNegativeButton("使用近似提醒", null)
+            .setPositiveButton("去设置") { _, _ ->
+                runCatching {
+                    startActivity(
+                        Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                    )
+                }.onFailure { toast("无法打开闹钟权限设置") }
+            }
+            .show()
     }
 
     private fun confirmDelete(timetable: Timetable) {
@@ -573,6 +944,13 @@ class MainActivity : AppCompatActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+    override fun onResume() {
+        super.onResume()
+        if (::repository.isInitialized && currentTimetables.isNotEmpty() && ReminderSettings.enabled(this)) {
+            CourseReminderScheduler.schedule(this, currentTimetables)
+        }
+    }
 
     override fun onDestroy() {
         uiScope.cancel()

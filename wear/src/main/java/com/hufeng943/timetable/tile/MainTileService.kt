@@ -23,23 +23,18 @@ import com.hufeng943.timetable.R
 import com.hufeng943.timetable.data.PreferenceStorage
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
-import com.hufeng943.timetable.shared.model.Course
-import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
-import com.hufeng943.timetable.shared.model.WeekPattern
+import com.hufeng943.timetable.shared.model.resolveDate
 import dagger.hilt.android.AndroidEntryPoint
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
+import java.time.ZoneId
 
 private const val RESOURCES_VERSION = "2"
 private const val SURFACE = 0xFF17181B.toInt()
@@ -58,6 +53,8 @@ private data class TileCourse(
     val location: String?,
     val teacher: String?,
     val color: Int?,
+    val startEpochMillis: Long = 0L,
+    val endEpochMillis: Long = 0L,
 )
 
 @OptIn(ExperimentalHorologistApi::class)
@@ -80,7 +77,7 @@ class MainTileService : SuspendingTileService() {
             repository.getAllTimetables().first().coursesForDate(today, is24Hour)
         }.getOrDefault(emptyList())
 
-        return tile(requestParams, this, courses.currentAndUpcoming())
+        return tile(requestParams, this, courses)
     }
 }
 
@@ -95,21 +92,65 @@ private fun tile(
     courses: List<TileCourse>,
 ): TileBuilders.Tile {
     val timeline = TimelineBuilders.Timeline.Builder()
-        .addTimelineEntry(
-            TimelineBuilders.TimelineEntry.Builder()
-                .setLayout(
-                    LayoutElementBuilders.Layout.Builder()
-                        .setRoot(tileLayout(requestParams, context, courses))
-                        .build()
+    val fallback = courses.currentAndUpcoming()
+    timeline.addTimelineEntry(
+        TimelineBuilders.TimelineEntry.Builder()
+            .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, fallback)).build())
+            .build()
+    )
+
+    val timelineReady = courses.isNotEmpty() && courses.all { it.startEpochMillis > 0L && it.endEpochMillis > it.startEpochMillis }
+    if (timelineReady) {
+        val zone = ZoneId.systemDefault()
+        val javaToday = java.time.LocalDate.now(zone)
+        val dayStart = javaToday.atStartOfDay(zone).toInstant().toEpochMilli()
+        val dayEnd = javaToday.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        var cursor = dayStart
+        courses.forEachIndexed { index, course ->
+            if (cursor < course.startEpochMillis) {
+                val upcoming = courses.drop(index).take(2)
+                timeline.addTimelineEntry(
+                    TimelineBuilders.TimelineEntry.Builder()
+                        .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, upcoming)).build())
+                        .setValidity(
+                            TimelineBuilders.TimeInterval.Builder()
+                                .setStartMillis(cursor)
+                                .setEndMillis(course.startEpochMillis)
+                                .build()
+                        ).build()
                 )
-                .build()
-        )
-        .build()
+            }
+            val during = listOf(course) + courses.drop(index + 1).take(1)
+            timeline.addTimelineEntry(
+                TimelineBuilders.TimelineEntry.Builder()
+                    .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, during)).build())
+                    .setValidity(
+                        TimelineBuilders.TimeInterval.Builder()
+                            .setStartMillis(course.startEpochMillis)
+                            .setEndMillis(course.endEpochMillis)
+                            .build()
+                    ).build()
+            )
+            cursor = maxOf(cursor, course.endEpochMillis)
+        }
+        if (cursor < dayEnd) {
+            timeline.addTimelineEntry(
+                TimelineBuilders.TimelineEntry.Builder()
+                    .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, emptyList())).build())
+                    .setValidity(
+                        TimelineBuilders.TimeInterval.Builder()
+                            .setStartMillis(cursor)
+                            .setEndMillis(dayEnd)
+                            .build()
+                    ).build()
+            )
+        }
+    }
 
     return TileBuilders.Tile.Builder()
         .setResourcesVersion(RESOURCES_VERSION)
-        .setTileTimeline(timeline)
-        .setFreshnessIntervalMillis(5 * 60 * 1000L)
+        .setTileTimeline(timeline.build())
+        .setFreshnessIntervalMillis(6 * 60 * 60 * 1000L)
         .build()
 }
 
@@ -147,12 +188,6 @@ private fun tileLayout(
                     context = context,
                     title = course.name.ifBlank { "未命名课程" },
                     subtitle = buildString {
-                        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
-                        val nowMinutes = now.hour * 60 + now.minute
-                        if (isWithinSlot(nowMinutes, course.startMinutes, course.endMinutes)) {
-                            append(context.getString(R.string.course_in_progress, minutesUntil(nowMinutes, course.endMinutes).coerceAtLeast(1)))
-                            append(" · ")
-                        }
                         append(course.start)
                         if (course.end.isNotBlank()) append("–${course.end}")
                         course.location?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
@@ -244,32 +279,29 @@ private fun spacer(heightDp: Float): LayoutElementBuilders.LayoutElement =
     LayoutElementBuilders.Spacer.Builder().setHeight(dp(heightDp)).build()
 
 private fun List<Timetable>.coursesForDate(date: LocalDate, is24Hour: Boolean): List<TileCourse> = flatMap { table ->
-    val weekIndex = table.weekIndex(date)
-    if (weekIndex <= 0) return@flatMap emptyList()
-
-    table.allCourses.flatMap { course ->
-        course.timeSlots
-            .filter { it.dayOfWeek == date.dayOfWeek && it.matchesWeek(weekIndex) }
-            .map { slot -> course.toTileCourse(slot, table.color, is24Hour) }
+    table.resolveDate(date).map { occurrence ->
+        val start = occurrence.startTime
+        val end = occurrence.endTime
+        val javaDate = java.time.LocalDate.parse(date.toString())
+        val zone = ZoneId.systemDefault()
+        val startEpoch = javaDate.atTime(start.hour, start.minute).atZone(zone).toInstant().toEpochMilli()
+        val endDate = if (end <= start) javaDate.plusDays(1) else javaDate
+        val endEpoch = endDate.atTime(end.hour, end.minute).atZone(zone).toInstant().toEpochMilli()
+        TileCourse(
+            name = occurrence.course.name,
+            start = start.toDisplayString(is24Hour),
+            end = end.toDisplayString(is24Hour),
+            startMinutes = start.hour * 60 + start.minute,
+            endMinutes = end.hour * 60 + end.minute,
+            location = occurrence.location,
+            teacher = occurrence.course.teacher,
+            color = occurrence.course.color.takeIf { it != -1L }?.toInt()
+                ?: table.color.takeIf { it != -1L }?.toInt(),
+            startEpochMillis = startEpoch,
+            endEpochMillis = endEpoch,
+        )
     }
-}.sortedBy { it.start }
-
-private fun Timetable.weekIndex(date: LocalDate): Int {
-    val endDate = semesterEnd
-    if (date < semesterStart || (endDate != null && date > endDate)) return 0
-    val offsetDays = (semesterStart.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
-    val semesterMonday = semesterStart.minus(offsetDays.toLong(), DateTimeUnit.DAY)
-    val dateOffset = (date.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
-    val dateMonday = date.minus(dateOffset.toLong(), DateTimeUnit.DAY)
-    val daysBetween = dateMonday.toEpochDays() - semesterMonday.toEpochDays()
-    return if (daysBetween < 0) 0 else (daysBetween / 7 + 1).toInt()
-}
-
-private fun TimeSlot.matchesWeek(weekIndex: Int): Boolean = when (recurrence) {
-    WeekPattern.EVERY_WEEK -> true
-    WeekPattern.ODD_WEEK -> weekIndex % 2 == 1
-    WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
-}
+}.sortedBy { it.startEpochMillis }
 
 private fun List<TileCourse>.currentAndUpcoming(): List<TileCourse> {
     if (isEmpty()) return emptyList()
@@ -298,17 +330,6 @@ private fun isWithinSlot(nowMinutes: Int, startMinutes: Int, endMinutes: Int): B
 
 private fun minutesUntil(nowMinutes: Int, targetMinutes: Int): Int =
     if (targetMinutes >= nowMinutes) targetMinutes - nowMinutes else (24 * 60 - nowMinutes) + targetMinutes
-
-private fun Course.toTileCourse(slot: TimeSlot, timetableColor: Long, is24Hour: Boolean): TileCourse = TileCourse(
-    name = name,
-    start = slot.startTime?.toDisplayString(is24Hour).orEmpty(),
-    end = slot.endTime?.toDisplayString(is24Hour).orEmpty(),
-    startMinutes = slot.startTime?.let { it.hour * 60 + it.minute } ?: Int.MAX_VALUE,
-    endMinutes = slot.endTime?.let { it.hour * 60 + it.minute } ?: Int.MAX_VALUE,
-    location = location,
-    teacher = teacher,
-    color = color.takeIf { it != -1L }?.toInt() ?: timetableColor.takeIf { it != -1L }?.toInt(),
-)
 
 @Preview(device = WearDevices.SMALL_ROUND)
 @Preview(device = WearDevices.LARGE_ROUND)

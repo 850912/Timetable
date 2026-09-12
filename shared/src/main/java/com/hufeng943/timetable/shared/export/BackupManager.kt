@@ -1,6 +1,7 @@
 package com.hufeng943.timetable.shared.export
 
 import com.hufeng943.timetable.shared.model.Course
+import com.hufeng943.timetable.shared.model.ScheduleOverride
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.model.WeekPattern
@@ -23,7 +24,8 @@ data class TimeSlotBackupDto(
     val endHour: Int,
     val endMinute: Int,
     val recurrence: Int,
-    val remark: String? = null
+    val remark: String? = null,
+    val overrides: List<ScheduleOverride> = emptyList(),
 )
 
 @Serializable
@@ -45,7 +47,7 @@ data class TimetableBackupDto(
 
 @Serializable
 data class TimetableBackupContainer(
-    val schemaVersion: Int = 1,
+    val schemaVersion: Int = 2,
     val appVersion: String = "2.0.0",
     val backupEpochMillis: Long,
     val timetables: List<TimetableBackupDto>
@@ -86,7 +88,8 @@ object BackupManager {
                                 endHour = et.hour,
                                 endMinute = et.minute,
                                 recurrence = rec,
-                                remark = slot.remark
+                                remark = slot.remark,
+                                overrides = slot.overrides,
                             )
                         }
                     )
@@ -95,7 +98,7 @@ object BackupManager {
         }
 
         val container = TimetableBackupContainer(
-            schemaVersion = 1,
+            schemaVersion = 2,
             backupEpochMillis = Clock.System.now().toEpochMilliseconds(),
             timetables = dtos
         )
@@ -125,7 +128,8 @@ object BackupManager {
                         startTime = LocalTime(sDto.startHour, sDto.startMinute),
                         endTime = LocalTime(sDto.endHour, sDto.endMinute),
                         recurrence = rec,
-                        remark = sDto.remark
+                        remark = sDto.remark,
+                        overrides = sDto.overrides,
                     )
                 }
 

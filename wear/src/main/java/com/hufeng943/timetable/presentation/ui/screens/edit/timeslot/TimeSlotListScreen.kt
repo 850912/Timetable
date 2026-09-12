@@ -1,7 +1,6 @@
 package com.hufeng943.timetable.presentation.ui.screens.edit.timeslot
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -14,11 +13,12 @@ import com.hufeng943.timetable.presentation.ui.common.ui.TimeSlotUi
 import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
 import com.hufeng943.timetable.presentation.viewmodel.edit.timeslot.TimeSlotListViewModel
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun TimeSlotListScreen(
     viewModel: TimeSlotListViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val appConfig = LocalAppConfig.current
 

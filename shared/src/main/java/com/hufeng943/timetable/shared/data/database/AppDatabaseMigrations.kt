@@ -5,7 +5,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Keeps all pre-sync database versions upgradeable without destructive migration.
- * Room schema history in this project is 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7.
+ * Room schema history in this project is 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8.
  */
 object AppDatabaseMigrations {
     val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -113,6 +113,12 @@ object AppDatabaseMigrations {
     val MIGRATION_6_7 = object : Migration(6, 7) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("CREATE TABLE IF NOT EXISTS processed_sync_requests (requestId TEXT NOT NULL PRIMARY KEY, deviceId TEXT NOT NULL, processedAt INTEGER NOT NULL)")
+        }
+    }
+
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE time_slots ADD COLUMN overridesJson TEXT NOT NULL DEFAULT '[]'")
         }
     }
 

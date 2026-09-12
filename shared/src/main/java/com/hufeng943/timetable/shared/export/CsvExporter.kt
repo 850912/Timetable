@@ -1,19 +1,24 @@
 package com.hufeng943.timetable.shared.export
 
 import com.hufeng943.timetable.shared.model.Timetable
+import com.hufeng943.timetable.shared.model.ScheduleOverride
 import com.hufeng943.timetable.shared.model.WeekPattern
 import kotlinx.datetime.DayOfWeek
 import java.io.BufferedWriter
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 object CsvExporter {
+    private val json = Json { encodeDefaults = true }
+
 
     fun streamCsv(outputStream: OutputStream, timetables: List<Timetable>) {
         BufferedWriter(OutputStreamWriter(outputStream, StandardCharsets.UTF_8)).use { writer ->
             writer.write("\uFEFF")
-            writer.write("学期,课程名称,教师,上课地点,星期,开始时间,结束时间,单双周,备注\r\n")
+            writer.write("学期,课程名称,教师,上课地点,星期,开始时间,结束时间,单双周,备注,学期开始,学期结束,日期例外JSON\r\n")
 
             for (timetable in timetables) {
                 for (course in timetable.allCourses) {
@@ -44,7 +49,10 @@ object CsvExporter {
                         writer.write(escapeCsv(startTimeStr) + ",")
                         writer.write(escapeCsv(endTimeStr) + ",")
                         writer.write(escapeCsv(recurrenceStr) + ",")
-                        writer.write(escapeCsv(slot.remark ?: "") + "\r\n")
+                        writer.write(escapeCsv(slot.remark ?: "") + ",")
+                        writer.write(escapeCsv(timetable.semesterStart.toString()) + ",")
+                        writer.write(escapeCsv(timetable.semesterEnd?.toString().orEmpty()) + ",")
+                        writer.write(escapeCsv(json.encodeToString(slot.overrides)) + "\r\n")
                     }
                 }
             }

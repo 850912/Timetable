@@ -76,6 +76,14 @@
             android:text="@string/sync_all_to_watch" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonReminderSettings"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="课程提醒设置" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonWearProbe"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"

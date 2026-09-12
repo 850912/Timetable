@@ -18,7 +18,6 @@ import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +49,7 @@ import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import kotlinx.coroutines.launch
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun ExportScreen(
     viewModel: ExportViewModel = hiltViewModel(),
@@ -60,8 +60,8 @@ fun ExportScreen(
     val transformationSpec = rememberTransformationSpec()
     val scope = rememberCoroutineScope()
     val config = LocalAppConfig.current
-    val exportState by viewModel.state.collectAsState()
-    val previewStats by viewModel.previewStats.collectAsState()
+    val exportState by viewModel.state.collectAsStateWithLifecycle()
+    val previewStats by viewModel.previewStats.collectAsStateWithLifecycle()
 
     var selectedFormat by remember { mutableStateOf(ExportFormat.ICS) }
     var selectedScope by remember { mutableStateOf(ExportScope.CURRENT) }

@@ -1,7 +1,6 @@
 package com.hufeng943.timetable.presentation.ui.screens.edit.course
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -18,6 +17,7 @@ import com.hufeng943.timetable.presentation.ui.screens.common.TextEditScreen
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseAction
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun EditCourseScreen(
     viewModel: EditCourseViewModel = hiltViewModel()
@@ -27,7 +27,7 @@ fun EditCourseScreen(
 
 @Composable
 fun EditCourseMainScreen(viewModel: EditCourseViewModel) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     // 从 ViewModel 获取 tableId（而不是从 CourseUi）
     val tableId = viewModel.tableId ?: 0L
@@ -73,7 +73,7 @@ fun EditCourseMainScreen(viewModel: EditCourseViewModel) {
 
 @Composable
 fun EditCourseNameScreen(viewModel: EditCourseViewModel) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
 
     HandleEditUiState(uiState) { course ->
@@ -91,7 +91,7 @@ fun EditCourseNameScreen(viewModel: EditCourseViewModel) {
 
 @Composable
 fun EditCourseLocationScreen(viewModel: EditCourseViewModel) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
 
     HandleEditUiState(uiState) { course ->
@@ -111,7 +111,7 @@ fun EditCourseLocationScreen(viewModel: EditCourseViewModel) {
 
 @Composable
 fun EditCourseTeacherScreen(viewModel: EditCourseViewModel) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
 
     HandleEditUiState(uiState) { course ->
@@ -141,7 +141,7 @@ fun EditCourseColorScreen(viewModel: EditCourseViewModel) {
 
 @Composable
 fun EditCourseDeleteConfirmScreen(viewModel: EditCourseViewModel) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
 
     HandleEditUiState(uiState) { course ->

@@ -2,7 +2,6 @@ package com.hufeng943.timetable.presentation.ui.screens.edit.timeslot
 
 import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -33,11 +32,12 @@ import kotlinx.datetime.toKotlinLocalTime
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun EditTimeSlotScreen(
     viewModel: EditTimeSlotViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val internalNavController = rememberSwipeDismissableNavController()
     val config = LocalAppConfig.current

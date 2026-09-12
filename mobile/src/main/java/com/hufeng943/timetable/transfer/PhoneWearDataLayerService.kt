@@ -8,12 +8,18 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.MessageEvent
+import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
 import com.hufeng943.timetable.shared.importexport.WearBridgeProtocol
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
 import com.hufeng943.timetable.TimetableDatabaseProvider
 import com.hufeng943.timetable.sync.LegacyWearIo
+import com.hufeng943.timetable.sync.AutoSyncJobService
+import com.hufeng943.timetable.sync.WearConnectionState
+import com.hufeng943.timetable.sync.WearOsTransport
+import com.hufeng943.timetable.reminder.CourseReminderScheduler
+import com.hufeng943.timetable.widget.TodayWidgetProvider
 import com.hufeng943.timetable.shared.sync.SyncAck
 import com.hufeng943.timetable.shared.sync.SyncApplier
 import com.hufeng943.timetable.shared.sync.SyncRecordPayload
@@ -23,8 +29,18 @@ import java.io.IOException
 import java.io.InputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 
 class PhoneWearDataLayerService : WearableListenerService() {
+    override fun onPeerConnected(peer: Node) {
+        WearConnectionState.update(true)
+        AutoSyncJobService.scheduleNow(this)
+    }
+
+    override fun onPeerDisconnected(peer: Node) {
+        WearConnectionState.update(false)
+    }
+
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -89,6 +105,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
         if (ack.records.isNotEmpty()) {
             val target = dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID) ?: return false
             val applied = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { SyncApplier(db).apply(ack.records) }
+            if (applied.isNotEmpty()) refreshLocalSurfaces()
             sendSyncAck(target, ack.requestId, applied)
             return applied.size == ack.records.size
         }
@@ -141,6 +158,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
             TimetableDatabaseProvider.importService(this@PhoneWearDataLayerService)
                 .importReplacingMatchesAtomic(timetables)
         }
+        refreshLocalSurfaces()
 
         bytes.inputStream().use {
             val values = ContentValues().apply {
@@ -169,6 +187,16 @@ class PhoneWearDataLayerService : WearableListenerService() {
                 resolver.delete(uri, null, null)
                 throw error
             }
+        }
+    }
+
+    private fun refreshLocalSurfaces() {
+        runCatching {
+            val tables = runBlocking(Dispatchers.IO) {
+                TimetableDatabaseProvider.repository(this@PhoneWearDataLayerService).getAllTimetables().first()
+            }
+            CourseReminderScheduler.schedule(this, tables)
+            TodayWidgetProvider.requestRefresh(this)
         }
     }
 

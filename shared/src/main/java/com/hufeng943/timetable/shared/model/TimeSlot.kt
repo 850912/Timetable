@@ -11,7 +11,8 @@ data class TimeSlot(
     val endTime: LocalTime? = null,
     val dayOfWeek: DayOfWeek? = null,
     val recurrence: WeekPattern = WeekPattern.EVERY_WEEK, // 默认每周重复
-    val remark: String? = null
+    val remark: String? = null,
+    val overrides: List<ScheduleOverride> = emptyList()
 )
 
 /**

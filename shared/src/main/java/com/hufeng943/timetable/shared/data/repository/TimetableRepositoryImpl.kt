@@ -63,7 +63,7 @@ class TimetableRepositoryImpl(
         }
         val storedEntity = if (entity.id == 0L) entity.copy(id = id) else entity
 
-        db.syncRecordDao().insert(
+        db.syncRecordDao().replacePending(
             SyncRecordEntity(
                 entityId = id,
                 entityType = SyncEntityType.TIMETABLE,
@@ -110,7 +110,7 @@ class TimetableRepositoryImpl(
         }
         val storedEntity = if (entity.id == 0L) entity.copy(id = id) else entity
 
-        db.syncRecordDao().insert(
+        db.syncRecordDao().replacePending(
             SyncRecordEntity(
                 entityId = id,
                 entityType = SyncEntityType.COURSE,
@@ -157,7 +157,7 @@ class TimetableRepositoryImpl(
         }
         val storedEntity = if (entity.id == 0L) entity.copy(id = id) else entity
 
-        db.syncRecordDao().insert(
+        db.syncRecordDao().replacePending(
             SyncRecordEntity(
                 entityId = id,
                 entityType = SyncEntityType.TIME_SLOT,
@@ -182,7 +182,7 @@ class TimetableRepositoryImpl(
             modifiedBy = deviceId,
             deletedAt = now,
         )
-        db.syncRecordDao().insert(
+        db.syncRecordDao().replacePending(
             existing.toDeleteRecord(SyncEntityType.TIMETABLE, now, timetableRevision)
         )
 
@@ -191,13 +191,13 @@ class TimetableRepositoryImpl(
         for (course in dao.getCourseEntitiesByTimetableId(timetableId)) {
             val courseRevision = course.revision + 1
             dao.markCourseDeleted(course.id, now, courseRevision, deviceId, now)
-            db.syncRecordDao().insert(
+            db.syncRecordDao().replacePending(
                 course.toDeleteRecord(SyncEntityType.COURSE, now, courseRevision)
             )
             for (slot in dao.getTimeSlotEntitiesByCourseId(course.id)) {
                 val slotRevision = slot.revision + 1
                 dao.markTimeSlotDeleted(slot.id, now, slotRevision, deviceId, now)
-                db.syncRecordDao().insert(
+                db.syncRecordDao().replacePending(
                     slot.toDeleteRecord(SyncEntityType.TIME_SLOT, now, slotRevision)
                 )
             }
@@ -209,14 +209,14 @@ class TimetableRepositoryImpl(
         val now = System.currentTimeMillis()
         val courseRevision = existing.revision + 1
         dao.markCourseDeleted(courseId, now, courseRevision, deviceId, now)
-        db.syncRecordDao().insert(
+        db.syncRecordDao().replacePending(
             existing.toDeleteRecord(SyncEntityType.COURSE, now, courseRevision)
         )
         // Keep slot tombstones so a remote copy cannot resurrect deleted slots.
         for (slot in dao.getTimeSlotEntitiesByCourseId(courseId)) {
             val slotRevision = slot.revision + 1
             dao.markTimeSlotDeleted(slot.id, now, slotRevision, deviceId, now)
-            db.syncRecordDao().insert(
+            db.syncRecordDao().replacePending(
                 slot.toDeleteRecord(SyncEntityType.TIME_SLOT, now, slotRevision)
             )
         }
@@ -227,7 +227,7 @@ class TimetableRepositoryImpl(
         val now = System.currentTimeMillis()
         val revision = existing.revision + 1
         dao.markTimeSlotDeleted(timeSlotId, now, revision, deviceId, now)
-        db.syncRecordDao().insert(
+        db.syncRecordDao().replacePending(
             existing.toDeleteRecord(SyncEntityType.TIME_SLOT, now, revision)
         )
     }
@@ -289,6 +289,7 @@ class TimetableRepositoryImpl(
         put("endMinute", endMinute)
         put("recurrence", recurrence)
         remark?.let { put("remark", it) }
+        put("overridesJson", overridesJson)
         put("updatedAt", updatedAt)
         put("revision", revision)
         put("modifiedBy", modifiedBy)

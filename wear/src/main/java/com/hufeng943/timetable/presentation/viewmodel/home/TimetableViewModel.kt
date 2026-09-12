@@ -12,12 +12,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import com.hufeng943.timetable.shared.model.Timetable
-import com.hufeng943.timetable.shared.model.WeekPattern
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.DayOfWeek
-import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.minus
+import com.hufeng943.timetable.shared.model.resolveDate
+import com.hufeng943.timetable.shared.model.weekNumberFor
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -41,6 +40,15 @@ class TimetableViewModel @Inject constructor(
     )
 
     val selectedDate = _selectedDate
+
+    val selectedWeekNumber = combine(allTimetables, _selectedDate) { state, date ->
+        val tables = (state as? UiState.Success)?.data.orEmpty()
+        tables.mapNotNull { it.weekNumberFor(date) }.minOrNull()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000L),
+        initialValue = null,
+    )
 
     // 当前选中的课表要展示 UI 数据
     val dateCoursesUi = combine(allTimetables, _selectedDate) { state, selectedDate ->
@@ -67,31 +75,14 @@ class TimetableViewModel @Inject constructor(
 }
 
 
-private fun Timetable.toDayCoursesUi(date: LocalDate) = buildList {
-    val end = semesterEnd
-    if (date < semesterStart || (end != null && date > end)) return@buildList
-
-    val semesterOffset = (semesterStart.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
-    val semesterMonday = semesterStart.minus(semesterOffset.toLong(), DateTimeUnit.DAY)
-    val dateOffset = (date.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
-    val dateMonday = date.minus(dateOffset.toLong(), DateTimeUnit.DAY)
-    val daysBetween = dateMonday.toEpochDays() - semesterMonday.toEpochDays()
-    if (daysBetween < 0) return@buildList
-    val weekIndex = (daysBetween / 7 + 1).toInt()
-
-    for (course in allCourses) {
-        for (slot in course.timeSlots) {
-            if (slot.dayOfWeek != date.dayOfWeek) continue
-            val matches = when (slot.recurrence) {
-                WeekPattern.EVERY_WEEK -> true
-                WeekPattern.ODD_WEEK -> weekIndex % 2 == 1
-                WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
-            }
-            if (!matches) continue
-            val ui = course.toCourseUi(slot)
-            val tableColor = if (color == -1L) Color.Unspecified else Color(color)
-            val effectiveColor = if (ui.color == Color.Unspecified) tableColor else ui.color
-            add(ui.copy(color = effectiveColor, selectedTimeSlot = ui.timeSlot.copy(color = effectiveColor)))
-        }
-    }
+private fun Timetable.toDayCoursesUi(date: LocalDate) = resolveDate(date).map { occurrence ->
+    val effectiveCourse = occurrence.course.copy(location = occurrence.location)
+    val effectiveSlot = occurrence.timeSlot.copy(
+        startTime = occurrence.startTime,
+        endTime = occurrence.endTime,
+    )
+    val ui = effectiveCourse.toCourseUi(effectiveSlot)
+    val tableColor = if (color == -1L) Color.Unspecified else Color(color)
+    val effectiveColor = if (ui.color == Color.Unspecified) tableColor else ui.color
+    ui.copy(color = effectiveColor, selectedTimeSlot = ui.timeSlot.copy(color = effectiveColor))
 }

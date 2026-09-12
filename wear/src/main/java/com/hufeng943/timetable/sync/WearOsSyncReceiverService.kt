@@ -89,7 +89,12 @@ class WearOsSyncReceiverService : WearableListenerService() {
             val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET) ?: error("缺少 ACK")
             val bytes = LegacyWearIo.readAsset(this, asset).use { it.readBytes() }
             val ack = json.decodeFromString<SyncAck>(bytes.toString(Charsets.UTF_8))
-            if (ack.appliedRecordIds.isNotEmpty()) kotlinx.coroutines.runBlocking(Dispatchers.IO) { database.syncRecordDao().markSynced(ack.appliedRecordIds) }
+            if (ack.appliedRecordIds.isNotEmpty()) kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                val dao = database.syncRecordDao()
+                dao.markSynced(ack.appliedRecordIds)
+                dao.deleteSyncedBefore(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000)
+                dao.trimSyncedHistory(500)
+            }
             true
         }.isSuccess
     }

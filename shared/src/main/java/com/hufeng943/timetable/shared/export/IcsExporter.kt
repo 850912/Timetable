@@ -2,9 +2,9 @@ package com.hufeng943.timetable.shared.export
 
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.model.WeekPattern
-import kotlinx.datetime.DayOfWeek
+import com.hufeng943.timetable.shared.model.resolveDate
+import com.hufeng943.timetable.shared.model.weekNumberFor
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.number
 import java.io.BufferedWriter
 import java.io.OutputStream
@@ -28,59 +28,26 @@ object IcsExporter {
         for (timetable in timetables) {
             val startDate = timetable.semesterStart
             val endDate = timetable.semesterEnd ?: LocalDate.fromEpochDays(startDate.toEpochDays() + 140)
-            val semesterStartMonday = timetable.semesterStartMonday
-
-            val offsetEnd = (endDate.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
-            val endMonday = LocalDate.fromEpochDays(endDate.toEpochDays() - offsetEnd)
-            val totalWeeks = (((endMonday.toEpochDays() - semesterStartMonday.toEpochDays()) / 7) + 1).toInt().coerceAtLeast(1)
-
-            for (course in timetable.allCourses) {
-                for (slot in course.timeSlots) {
-                    val slotDay = slot.dayOfWeek ?: continue
-                    val startTime = slot.startTime ?: continue
-                    val endTime = slot.endTime ?: continue
-
-                    val sh = startTime.hour.toString().padStart(2, '0')
-                    val sm = startTime.minute.toString().padStart(2, '0')
-                    val ss = startTime.second.toString().padStart(2, '0')
-                    val startTimeStr = "${sh}${sm}${ss}"
-
-                    val eh = endTime.hour.toString().padStart(2, '0')
-                    val em = endTime.minute.toString().padStart(2, '0')
-                    val es = endTime.second.toString().padStart(2, '0')
-                    val endTimeStr = "${eh}${em}${es}"
-
-                    val dayOffset = slotDay.isoDayNumber - 1
-
-                    for (weekIndex in 1..totalWeeks) {
-                        val isMatch = when (slot.recurrence) {
-                            WeekPattern.EVERY_WEEK -> true
-                            WeekPattern.ODD_WEEK -> weekIndex % 2 != 0
-                            WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
-                        }
-                        if (!isMatch) continue
-
-                        val weekMondayEpoch = semesterStartMonday.toEpochDays() + (weekIndex - 1) * 7
-                        val targetDateEpoch = weekMondayEpoch + dayOffset
-
-                        if (targetDateEpoch < startDate.toEpochDays() || targetDateEpoch > endDate.toEpochDays()) continue
-
-                        val targetDate = LocalDate.fromEpochDays(targetDateEpoch)
-                        action(
-                            timetable,
-                            course.name,
-                            course.location,
-                            course.teacher,
-                            slot.remark,
-                            targetDate,
-                            weekIndex,
-                            slot.id,
-                            course.id,
-                            startTimeStr,
-                            endTimeStr
-                        )
-                    }
+            var date = startDate
+            while (date <= endDate) {
+                for (occurrence in timetable.resolveDate(date)) {
+                    fun timeString(time: kotlinx.datetime.LocalTime): String =
+                        "%02d%02d%02d".format(time.hour, time.minute, time.second)
+                    action(
+                        timetable,
+                        occurrence.course.name,
+                        occurrence.location,
+                        occurrence.course.teacher,
+                        occurrence.override?.remark ?: occurrence.timeSlot.remark,
+                        date,
+                        timetable.weekNumberFor(date) ?: 0,
+                        occurrence.timeSlot.id,
+                        occurrence.course.id,
+                        timeString(occurrence.startTime),
+                        timeString(occurrence.endTime),
+                    )
                 }
+                date = LocalDate.fromEpochDays(date.toEpochDays() + 1)
             }
         }
     }
@@ -119,7 +86,7 @@ object IcsExporter {
             writer.write("PRODID:-//HuFeng943//Timetable//CN\r\n")
             writer.write("CALSCALE:GREGORIAN\r\n")
             writer.write("METHOD:PUBLISH\r\n")
-            writer.write("X-WR-TIMEZONE:Asia/Shanghai\r\n")
+            writer.write("X-WR-TIMEZONE:${java.time.ZoneId.systemDefault().id}\r\n")
 
             forEachCourseOccurrence(timetables) { timetable, courseName, location, teacher, remark, targetDate, weekIndex, slotId, courseId, startTimeStr, endTimeStr ->
                 val y = targetDate.year.toString().padStart(4, '0')
@@ -145,8 +112,8 @@ object IcsExporter {
                 descList.add("第 ${weekIndex} 周")
 
                 writer.write("DESCRIPTION:${escapeIcs(descList.joinToString("\n"))}\r\n")
-                writer.write("DTSTART;TZID=Asia/Shanghai:${dtStart}\r\n")
-                writer.write("DTEND;TZID=Asia/Shanghai:${dtEnd}\r\n")
+                writer.write("DTSTART;TZID=${java.time.ZoneId.systemDefault().id}:${dtStart}\r\n")
+                writer.write("DTEND;TZID=${java.time.ZoneId.systemDefault().id}:${dtEnd}\r\n")
                 writer.write("STATUS:CONFIRMED\r\n")
                 writer.write("END:VEVENT\r\n")
             }

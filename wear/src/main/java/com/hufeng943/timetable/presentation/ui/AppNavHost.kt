@@ -2,7 +2,6 @@ package com.hufeng943.timetable.presentation.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.navigation.NavType
@@ -37,10 +36,11 @@ import com.hufeng943.timetable.presentation.ui.screens.more.settings.SettingScre
 import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navController = rememberSwipeDismissableNavController()
-    val config by appConfigViewModel.appConfig.collectAsState()
+    val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
 
     AppScaffold(
         timeText = {

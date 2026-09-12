@@ -23,6 +23,16 @@ private val Context.dataStore by preferencesDataStore(name = "timetable_settings
 class PreferenceStorage @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    companion object {
+        private const val LOCALE_MIRROR_PREFS = "locale_mirror"
+        private const val LOCALE_MIRROR_KEY = "app_language"
+
+        fun peekLanguageTag(context: Context): String? {
+            val value = context.getSharedPreferences(LOCALE_MIRROR_PREFS, Context.MODE_PRIVATE)
+                .getString(LOCALE_MIRROR_KEY, "system")
+            return value?.takeUnless { it == "system" || it.isBlank() }
+        }
+    }
     private object Keys {
         val TIME_FORMAT = stringPreferencesKey("time_format")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
@@ -76,7 +86,12 @@ class PreferenceStorage @Inject constructor(
     }
 
     suspend fun setLanguage(languageTag: String?) {
-        context.dataStore.edit { it[Keys.APP_LANGUAGE] = languageTag ?: "system" }
+        val persisted = languageTag ?: "system"
+        // Mirror the locale in SharedPreferences so Activity.attachBaseContext can read it
+        // synchronously without blocking the main thread on DataStore I/O during cold start.
+        context.getSharedPreferences(LOCALE_MIRROR_PREFS, Context.MODE_PRIVATE)
+            .edit().putString(LOCALE_MIRROR_KEY, persisted).apply()
+        context.dataStore.edit { it[Keys.APP_LANGUAGE] = persisted }
     }
 
     suspend fun setFirstDayOfTheWeek(firstDay: FirstDayOfTheWeek) {

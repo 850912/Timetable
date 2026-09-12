@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -62,19 +61,22 @@ import com.hufeng943.timetable.presentation.ui.components.rememberPullToRefreshC
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.home.TimetableViewModel
 import kotlinx.datetime.LocalDate
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun TimetablePager(
     viewModel: TimetableViewModel = hiltViewModel(),
     onOpenStateChanged: (Boolean) -> Unit = {}
 ) {
-    val uiState by viewModel.dateCoursesUi.collectAsState()
-    val selectedDate by viewModel.selectedDate.collectAsState()
+    val uiState by viewModel.dateCoursesUi.collectAsStateWithLifecycle()
+    val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
+    val selectedWeekNumber by viewModel.selectedWeekNumber.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
 
@@ -115,10 +117,11 @@ fun TimetablePager(
             // keeping it inside CourseListPager made `minuteTick` inaccessible
             // here and caused the release Kotlin compilation to fail.
             var minuteTick by remember { mutableLongStateOf(0L) }
-            LaunchedEffect(Unit) {
+            LaunchedEffect(coursesUi, selectedDate) {
                 while (true) {
-                    val now = System.currentTimeMillis()
-                    delay(60_000L - (now % 60_000L))
+                    val waitMillis = nextCourseStatusWakeMillis(coursesUi, selectedDate)
+                    if (waitMillis == null) awaitCancellation()
+                    delay(waitMillis)
                     minuteTick++
                 }
             }
@@ -132,6 +135,7 @@ fun TimetablePager(
                 itemKey = { courseUi -> courseUi.timeSlot.id },
                 selectedDate = selectedDate,
                 onDateSelected = handleDateSelected,
+                weekNumber = selectedWeekNumber,
                 showTopTime = config.isShowTopTime
             ) { courseUi, transformationSpec ->
                 val courseId = courseUi.timeSlot.id
@@ -215,6 +219,7 @@ private fun CourseListPager(
     itemKey: (CourseUi) -> Any,
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
+    weekNumber: Int? = null,
     showTopTime: Boolean = false,
     modifier: Modifier = Modifier,
     itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec) -> Unit
@@ -280,7 +285,8 @@ private fun CourseListPager(
                         transformation = SurfaceTransformation(transformationSpec)
                     ) {
                         Text(
-                            text = stringResource(R.string.home_title),
+                            text = weekNumber?.let { "${stringResource(R.string.home_title)} · 第${it}周" }
+                                ?: stringResource(R.string.home_title),
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
@@ -299,6 +305,24 @@ private data class CourseStatusSummary(
     val nextId: Long? = null,
     val minutesLeft: Int? = null,
 )
+
+private fun nextCourseStatusWakeMillis(courses: List<CourseUi>, selectedDate: LocalDate): Long? {
+    val zone = TimeZone.currentSystemDefault()
+    if (selectedDate != Clock.System.todayIn(zone)) return null
+    val now = Clock.System.now().toLocalDateTime(zone)
+    val nowSec = now.time.hour * 3600 + now.time.minute * 60 + now.time.second
+    var nextStartSec: Int? = null
+    for (course in courses) {
+        val start = course.timeSlot.startTime?.let { it.hour * 3600 + it.minute * 60 + it.second } ?: continue
+        val end = course.timeSlot.endTime?.let { it.hour * 3600 + it.minute * 60 + it.second } ?: continue
+        if (nowSec in start until end) {
+            val nowMillis = System.currentTimeMillis()
+            return (60_000L - (nowMillis % 60_000L)).coerceAtLeast(1_000L)
+        }
+        if (start > nowSec && (nextStartSec == null || start < nextStartSec!!)) nextStartSec = start
+    }
+    return nextStartSec?.let { ((it - nowSec) * 1000L).coerceAtLeast(1_000L) }
+}
 
 private fun calculateCourseStatusSummary(
     courses: List<CourseUi>,

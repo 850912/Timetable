@@ -4,11 +4,13 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
+import android.content.ComponentName
 import android.content.Intent
 import android.widget.RemoteViews
 import com.hufeng943.timetable.MainActivity
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.TimetableDatabaseProvider
+import com.hufeng943.timetable.shared.model.resolveDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -47,24 +49,13 @@ class TodayWidgetProvider : AppWidgetProvider() {
         return runCatching {
             val snapshot = TimetableDatabaseProvider.repository(context).getAllTimetables().first()
             snapshot.flatMap { table ->
-                val week = ((today.toEpochDays() - table.semesterStart.toEpochDays()) / 7 + 1).toInt().coerceAtLeast(1)
-                table.allCourses.flatMap { course ->
-                    course.timeSlots.filter { it.dayOfWeek == today.dayOfWeek }.mapNotNull { slot ->
-                        val matchesWeek = when (slot.recurrence.name) {
-                            "ODD_WEEK" -> week % 2 == 1
-                            "EVEN_WEEK" -> week % 2 == 0
-                            else -> true
-                        }
-                        if (!matchesWeek) return@mapNotNull null
-                        val start = slot.startTime ?: LocalTime(0, 0)
-                        val end = slot.endTime
-                        WidgetCourse(
-                            start = start,
-                            end = end,
-                            title = course.name,
-                            location = course.location.orEmpty()
-                        )
-                    }
+                table.resolveDate(today).map { occurrence ->
+                    WidgetCourse(
+                        start = occurrence.startTime,
+                        end = occurrence.endTime,
+                        title = occurrence.course.name,
+                        location = occurrence.location.orEmpty(),
+                    )
                 }
             }
                 .sortedWith(compareBy<WidgetCourse> { it.end?.let { end -> end <= now } ?: false }.thenBy { it.start })
@@ -72,6 +63,20 @@ class TodayWidgetProvider : AppWidgetProvider() {
                 .joinToString("\n") { it.toLine() }
                 .ifBlank { "今天没有课程" }
         }.getOrElse { "打开 Timetable 查看今日课程" }
+    }
+
+    companion object {
+        fun requestRefresh(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, TodayWidgetProvider::class.java))
+            if (ids.isEmpty()) return
+            context.sendBroadcast(
+                Intent(context, TodayWidgetProvider::class.java).apply {
+                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                }
+            )
+        }
     }
 
     private data class WidgetCourse(

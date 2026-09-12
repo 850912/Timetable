@@ -1,6 +1,7 @@
 package com.hufeng943.timetable.shared.export
 
 import com.hufeng943.timetable.shared.model.Course
+import com.hufeng943.timetable.shared.model.ScheduleOverride
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.model.WeekPattern
@@ -10,8 +11,11 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
+import kotlinx.serialization.json.Json
 
 object CsvImporter {
+    private val json = Json { ignoreUnknownKeys = true }
+
 
     private data class CsvRow(
         val semesterName: String,
@@ -22,7 +26,11 @@ object CsvImporter {
         val startTime: LocalTime,
         val endTime: LocalTime,
         val recurrence: WeekPattern,
-        val remark: String?
+        val remark: String?,
+        val semesterStart: LocalDate?,
+        val semesterEnd: LocalDate?,
+        val overrides: List<ScheduleOverride>,
+        val hasSemesterMetadata: Boolean,
     )
 
     fun parseCsv(csvContent: String): List<Timetable> {
@@ -46,6 +54,12 @@ object CsvImporter {
             val endStr = tokens.getOrNull(6)?.trim() ?: ""
             val recStr = tokens.getOrNull(7)?.trim() ?: ""
             val remark = tokens.getOrNull(8)?.trim()?.takeIf { it.isNotEmpty() }
+            val hasSemesterMetadata = tokens.size >= 11
+            val semesterStart = tokens.getOrNull(9)?.trim()?.takeIf { it.isNotEmpty() }?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            val semesterEnd = tokens.getOrNull(10)?.trim()?.takeIf { it.isNotEmpty() }?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            val overrides = tokens.getOrNull(11)?.trim()?.takeIf { it.isNotEmpty() }?.let { encoded ->
+                runCatching { json.decodeFromString<List<ScheduleOverride>>(encoded) }.getOrDefault(emptyList())
+            }.orEmpty()
 
             val dayOfWeek = parseDayOfWeek(dayStr) ?: DayOfWeek.MONDAY
             val startTime = parseTime(startStr) ?: LocalTime(8, 0)
@@ -66,13 +80,19 @@ object CsvImporter {
                     startTime = startTime,
                     endTime = endTime,
                     recurrence = recurrence,
-                    remark = remark
+                    remark = remark,
+                    semesterStart = semesterStart,
+                    semesterEnd = semesterEnd,
+                    overrides = overrides,
+                    hasSemesterMetadata = hasSemesterMetadata,
                 )
             )
         }
 
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        return rows.groupBy { it.semesterName }.map { (semesterName, sRows) ->
+        return rows.groupBy { it.semesterName to Triple(it.semesterStart, it.semesterEnd, it.hasSemesterMetadata) }.map { (semesterInfo, sRows) ->
+            val semesterName = semesterInfo.first
+            val (importedStart, importedEnd, hasSemesterMetadata) = semesterInfo.second
             val courses = sRows.groupBy { Triple(it.courseName, it.teacher, it.location) }.map { (info, cRows) ->
                 val (cName, cTeacher, cLocation) = info
                 val slots = cRows.map { r ->
@@ -82,7 +102,8 @@ object CsvImporter {
                         startTime = r.startTime,
                         endTime = r.endTime,
                         recurrence = r.recurrence,
-                        remark = r.remark
+                        remark = r.remark,
+                        overrides = r.overrides,
                     )
                 }
                 Course(
@@ -98,8 +119,13 @@ object CsvImporter {
                 timetableId = 0,
                 semesterName = semesterName,
                 createdAt = Clock.System.now(),
-                semesterStart = today,
-                semesterEnd = LocalDate.fromEpochDays(today.toEpochDays() + 140),
+                semesterStart = importedStart ?: today,
+                semesterEnd = if (hasSemesterMetadata) {
+                    importedEnd
+                } else {
+                    importedStart?.let { LocalDate.fromEpochDays(it.toEpochDays() + 140) }
+                        ?: LocalDate.fromEpochDays(today.toEpochDays() + 140)
+                },
                 allCourses = courses,
                 color = -1L
             )

@@ -1,7 +1,6 @@
 package com.hufeng943.timetable.presentation.ui.screens.edit.timetable
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -25,11 +24,12 @@ import com.hufeng943.timetable.presentation.viewmodel.edit.timetable.EditTimetab
 import kotlinx.datetime.toJavaLocalDate
 import kotlinx.datetime.toKotlinLocalDate
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun EditTimetableScreen(
     viewModel: EditTimetableViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val internalNavController = rememberSwipeDismissableNavController()
 

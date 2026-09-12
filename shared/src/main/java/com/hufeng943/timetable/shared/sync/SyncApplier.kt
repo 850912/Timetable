@@ -75,7 +75,21 @@ class SyncApplier(private val db: AppDatabase) {
             return true
         }
         val parent = dao.getCourseEntityBySyncId(o.str("courseSyncId")) ?: return false
-        val entity = TimeSlotEntity(0, syncId, parent.id, o.int("dayOfWeek"), o.int("startMinute"), o.int("endMinute"), o.int("recurrence"), o.strOrNull("remark"), r.updatedAt, r.revision, r.deviceId, null)
+        val entity = TimeSlotEntity(
+            id = 0,
+            syncId = syncId,
+            courseId = parent.id,
+            dayOfWeek = o.int("dayOfWeek"),
+            startMinute = o.int("startMinute"),
+            endMinute = o.int("endMinute"),
+            recurrence = o.int("recurrence"),
+            remark = o.strOrNull("remark"),
+            overridesJson = o.strOrNull("overridesJson") ?: "[]",
+            updatedAt = r.updatedAt,
+            revision = r.revision,
+            modifiedBy = r.deviceId,
+            deletedAt = null,
+        )
         if (existing == null) dao.insertTimeSlot(entity) else dao.upsertTimeSlot(entity.copy(id = existing.id))
         db.syncTombstoneDao().delete(syncId, r.entityType); return true
     }
