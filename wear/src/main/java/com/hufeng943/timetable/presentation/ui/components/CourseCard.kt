@@ -109,8 +109,8 @@ fun CourseCard(
                         text = course.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 2,
+                        overflow = TextOverflow.Clip,
                     )
 
                     Text(
@@ -121,7 +121,7 @@ fun CourseCard(
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.textSecondary,
-                        maxLines = 1,
+                        maxLines = 2,
                     )
 
                     if (isCurrent && minutesLeft != null) {
@@ -150,8 +150,8 @@ fun CourseCard(
                             text = detail,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.textSecondary.copy(alpha = 0.82f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 2,
+                            overflow = TextOverflow.Clip,
                         )
                     }
                 }

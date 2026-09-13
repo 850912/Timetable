@@ -4,7 +4,11 @@
     <string name="about_license_subtitle">查看 AndroidX、Horologist、KotlinX 等依赖许可证</string>
     <!-- Home -->
     <string name="home_title">今日课程</string>
+    <string name="home_tomorrow_title">明日课程</string>
+    <string name="home_date_title">%1$d月%2$d日课程</string>
     <string name="home_empty_course_hint">今天没有课程，是自由的一天！</string>
+    <string name="home_tomorrow_empty_course_hint">明天没有课程</string>
+    <string name="home_date_empty_course_hint">%1$d月%2$d日没有课程</string>
     <string name="home_no_timetable_hint">还没有课表，点击下方按钮去添加吧！</string>
     <string name="home_add_timetable">去添加课表</string>
     <string name="more_title">更多</string>
@@ -201,11 +205,18 @@
         <item>English</item>
     </string-array>
     <string name="home_no_course_today">今天没有课程</string>
-    <string name="course_in_progress">上课中 · %1$d分后下课</string>
+    <string name="course_in_progress">%1$d分后下课</string>
     <string name="course_next">下一节</string>
     <string name="complication_current_course_label">当前课程</string>
     <string name="complication_next_course_label">下一节课</string>
     <string name="home_day_finished_free_title">你自由了</string>
     <string name="home_view_today_timetable">查看今日课表</string>
     <string name="home_hide_today_timetable">收起今日课表</string>
+    <string name="tile_status_current">正在上课</string>
+    <string name="tile_status_next">下一节</string>
+    <string name="tile_status_finished">今天结束</string>
+    <string name="tile_status_today">今天</string>
+    <string name="tile_no_courses">今天没有课程</string>
+    <string name="tile_tap_to_open">轻点打开 Timetable</string>
+    <string name="tile_unnamed_course">未命名课程</string>
 </resources>

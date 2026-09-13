@@ -36,7 +36,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import java.time.ZoneId
 
-private const val RESOURCES_VERSION = "2"
+private const val RESOURCES_VERSION = "3"
 private const val SURFACE = 0xFF17181B.toInt()
 private const val SURFACE_ALT = 0xFF202228.toInt()
 private const val PRIMARY = 0xFF5B8CFF.toInt()
@@ -95,7 +95,7 @@ private fun tile(
     val fallback = courses.currentAndUpcoming()
     timeline.addTimelineEntry(
         TimelineBuilders.TimelineEntry.Builder()
-            .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, fallback)).build())
+            .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, fallback, hadCoursesToday = courses.isNotEmpty())).build())
             .build()
     )
 
@@ -111,7 +111,7 @@ private fun tile(
                 val upcoming = courses.drop(index).take(2)
                 timeline.addTimelineEntry(
                     TimelineBuilders.TimelineEntry.Builder()
-                        .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, upcoming)).build())
+                        .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, upcoming, hadCoursesToday = true)).build())
                         .setValidity(
                             TimelineBuilders.TimeInterval.Builder()
                                 .setStartMillis(cursor)
@@ -123,7 +123,7 @@ private fun tile(
             val during = listOf(course) + courses.drop(index + 1).take(1)
             timeline.addTimelineEntry(
                 TimelineBuilders.TimelineEntry.Builder()
-                    .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, during)).build())
+                    .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, during, hadCoursesToday = true)).build())
                     .setValidity(
                         TimelineBuilders.TimeInterval.Builder()
                             .setStartMillis(course.startEpochMillis)
@@ -136,7 +136,7 @@ private fun tile(
         if (cursor < dayEnd) {
             timeline.addTimelineEntry(
                 TimelineBuilders.TimelineEntry.Builder()
-                    .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, emptyList())).build())
+                    .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, emptyList(), hadCoursesToday = true)).build())
                     .setValidity(
                         TimelineBuilders.TimeInterval.Builder()
                             .setStartMillis(cursor)
@@ -158,46 +158,62 @@ private fun tileLayout(
     requestParams: RequestBuilders.TileRequest,
     context: Context,
     courses: List<TileCourse>,
+    hadCoursesToday: Boolean,
 ): LayoutElementBuilders.LayoutElement {
+    val nowMillis = System.currentTimeMillis()
+    val firstIsCurrent = courses.firstOrNull()?.let {
+        it.startEpochMillis > 0L && nowMillis in it.startEpochMillis until it.endEpochMillis
+    } == true
+    val status = when {
+        courses.isEmpty() && hadCoursesToday -> context.getString(R.string.tile_status_finished)
+        courses.isEmpty() -> context.getString(R.string.tile_status_today)
+        firstIsCurrent -> context.getString(R.string.tile_status_current)
+        else -> context.getString(R.string.tile_status_next)
+    }
+
     val column = LayoutElementBuilders.Column.Builder()
         .setWidth(expand())
         .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
         .addContent(
-            Text.Builder(context, if (courses.isEmpty()) "今天" else "今天课表")
-                .setColor(argb(TEXT_PRIMARY))
-                .setTypography(Typography.TYPOGRAPHY_TITLE3)
+            Text.Builder(context, status)
+                .setColor(argb(if (firstIsCurrent) AI_PURPLE else PRIMARY))
+                .setTypography(Typography.TYPOGRAPHY_CAPTION1)
+                .setMaxLines(1)
                 .build()
         )
-        .addContent(spacer(7f))
+        .addContent(spacer(5f))
 
     if (courses.isEmpty()) {
         column.addContent(
             capsule(
                 context = context,
-                title = "今天没有课程",
-                subtitle = "打开手机同步最新课表",
+                title = if (hadCoursesToday) context.getString(R.string.home_day_finished_free_title) else context.getString(R.string.tile_no_courses),
+                subtitle = if (hadCoursesToday) context.getString(R.string.home_day_finished_title) else context.getString(R.string.tile_tap_to_open),
                 accent = PRIMARY,
                 clickId = "tile_empty",
+                hero = true,
             )
         )
     } else {
         val visibleCourses = courses.take(2)
         visibleCourses.forEachIndexed { index, course ->
+            val detail = buildString {
+                append(course.start)
+                if (course.end.isNotBlank()) append("–${course.end}")
+                course.location?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+            }
             column.addContent(
                 capsule(
                     context = context,
-                    title = course.name.ifBlank { "未命名课程" },
-                    subtitle = buildString {
-                        append(course.start)
-                        if (course.end.isNotBlank()) append("–${course.end}")
-                        course.location?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
-                    },
+                    title = course.name.ifBlank { context.getString(R.string.tile_unnamed_course) },
+                    subtitle = detail,
                     accent = course.color ?: if (index == 0) PRIMARY else AI_PURPLE,
                     clickId = "tile_course_$index",
-                    compact = visibleCourses.size > 1,
+                    compact = index > 0,
+                    hero = index == 0,
                 )
             )
-            if (index < visibleCourses.lastIndex) column.addContent(spacer(3f))
+            if (index < visibleCourses.lastIndex) column.addContent(spacer(4f))
         }
     }
 
@@ -214,29 +230,30 @@ private fun capsule(
     accent: Int,
     clickId: String,
     compact: Boolean = false,
+    hero: Boolean = false,
 ): LayoutElementBuilders.LayoutElement {
     val corner = ModifiersBuilders.Corner.Builder()
-        .setRadius(dp(if (compact) 18f else 22f))
+        .setRadius(dp(if (compact) 18f else 24f))
         .build()
     val background = ModifiersBuilders.Background.Builder()
-        .setColor(argb(SURFACE))
+        .setColor(argb(if (hero) SURFACE_ALT else SURFACE))
         .setCorner(corner)
         .build()
     val padding = ModifiersBuilders.Padding.Builder()
         .setStart(dp(12f))
         .setEnd(dp(12f))
-        .setTop(dp(if (compact) 6f else 9f))
-        .setBottom(dp(if (compact) 6f else 9f))
+        .setTop(dp(if (compact) 6f else if (hero) 11f else 9f))
+        .setBottom(dp(if (compact) 6f else if (hero) 11f else 9f))
         .build()
 
     val content = LayoutElementBuilders.Column.Builder()
         .setWidth(expand())
         .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_START)
         .addContent(
-            Text.Builder(context, "●  $title")
-                .setColor(argb(accent))
-                .setTypography(Typography.TYPOGRAPHY_TITLE3)
-                .setMaxLines(1)
+            Text.Builder(context, title)
+                .setColor(argb(if (hero) TEXT_PRIMARY else accent))
+                .setTypography(if (hero) Typography.TYPOGRAPHY_TITLE2 else Typography.TYPOGRAPHY_TITLE3)
+                .setMaxLines(if (hero) 2 else 1)
                 .build()
         )
         .addContent(spacer(2f))
@@ -316,7 +333,7 @@ private fun List<TileCourse>.currentAndUpcoming(): List<TileCourse> {
             else -> null
         }
     }.sortedBy { it.second }.map { it.first }
-    return (if (activeOrUpcoming.isNotEmpty()) activeOrUpcoming else this).take(3)
+    return activeOrUpcoming.take(3)
 }
 
 private fun isWithinSlot(nowMinutes: Int, startMinutes: Int, endMinutes: Int): Boolean {

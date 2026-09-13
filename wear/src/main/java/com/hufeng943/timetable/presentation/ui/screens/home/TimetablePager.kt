@@ -213,7 +213,7 @@ private fun EmptyCoursePager(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     OneUiCapsuleSurface(
-                        title = stringResource(R.string.home_empty_course_hint),
+                        title = selectedDateEmptyTitle(selectedDate),
                         subtitle = if (events.isEmpty()) null else stringResource(R.string.home_academic_events_count, events.size),
                         icon = Icons.Rounded.EventAvailable,
                         emphasize = true,
@@ -269,6 +269,17 @@ private fun CourseListPager(
     val nestedScrollConnection = rememberPullToRefreshConnection(
         scrollState = scrollState, state = state, isTouching = { isTouching.get() })
 
+    // Opening the app during class should land on the actual highlighted course card,
+    // not on a duplicated summary card. Header occupies index 0.
+    LaunchedEffect(selectedDate, statusSummary.currentId) {
+        val currentId = statusSummary.currentId ?: return@LaunchedEffect
+        if (!isToday || statusSummary.dayFinished) return@LaunchedEffect
+        val courseIndex = coursesUi.indexOfFirst { it.timeSlot.id == currentId }
+        if (courseIndex >= 0) {
+            scrollState.scrollToItem(courseIndex + 1)
+        }
+    }
+
     LaunchedEffect(state.dragOffset) {
         if (state.dragOffset > 0) {
             scrollState.scrollToItem(0)
@@ -310,27 +321,6 @@ private fun CourseListPager(
                 rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
-                if (isToday && currentCourse != null) {
-                    item {
-                        OneUiCapsuleSurface(
-                            title = currentCourse.displayName,
-                            subtitle = stringResource(
-                                R.string.home_summary_in_class,
-                                statusSummary.minutesLeft ?: 1,
-                            ),
-                            icon = Icons.Rounded.EventAvailable,
-                            emphasize = true,
-                            titleMaxLines = 2,
-                            subtitleMaxLines = 2,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = if (showTopTime) 30.dp else 10.dp)
-                                .transformedHeight(this, transformationSpec)
-                                .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                        )
-                    }
-                }
-
                 if (isToday && statusSummary.dayFinished) {
                     item {
                         DayFinishedCard(
@@ -368,7 +358,7 @@ private fun CourseListPager(
                                 .padding(
                                     top = if (!isToday && showTopTime) 30.dp
                                     else if (!isToday) 10.dp
-                                    else if (currentCourse != null || statusSummary.dayFinished) 2.dp
+                                    else if (statusSummary.dayFinished) 2.dp
                                     else if (showTopTime) 30.dp
                                     else 10.dp
                                 )
@@ -377,13 +367,15 @@ private fun CourseListPager(
                             transformation = SurfaceTransformation(transformationSpec)
                         ) {
                             androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                val dateTitle = selectedDateCourseTitle(selectedDate)
                                 Text(
                                     text = weekNumber?.let {
-                                        stringResource(R.string.home_week_title, stringResource(R.string.home_title), it)
-                                    } ?: stringResource(R.string.home_title),
+                                        stringResource(R.string.home_week_title, dateTitle, it)
+                                    } ?: dateTitle,
                                     style = MaterialTheme.typography.titleMedium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Clip,
+                                    textAlign = TextAlign.Center,
                                 )
                                 val statusLine = if (
                                     isToday &&
@@ -443,6 +435,29 @@ private fun eventSubtitle(event: AcademicEvent, is24HourFormat: Boolean): String
         event.time?.let { append(" · ").append(it.toDisplayString(is24HourFormat)) }
         event.courseName?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
     }
+}
+
+@Composable
+private fun selectedDateEmptyTitle(selectedDate: LocalDate): String {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val javaDate = java.time.LocalDate.parse(selectedDate.toString())
+    val javaToday = java.time.LocalDate.parse(today.toString())
+    return when {
+        javaDate == javaToday -> stringResource(R.string.home_empty_course_hint)
+        javaDate == javaToday.plusDays(1) -> stringResource(R.string.home_tomorrow_empty_course_hint)
+        else -> stringResource(R.string.home_date_empty_course_hint, javaDate.monthValue, javaDate.dayOfMonth)
+    }
+}
+
+@Composable
+private fun selectedDateCourseTitle(selectedDate: LocalDate): String {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    if (selectedDate == today) return stringResource(R.string.home_title)
+    val javaDate = java.time.LocalDate.parse(selectedDate.toString())
+    if (javaDate == java.time.LocalDate.parse(today.toString()).plusDays(1)) {
+        return stringResource(R.string.home_tomorrow_title)
+    }
+    return stringResource(R.string.home_date_title, javaDate.monthValue, javaDate.dayOfMonth)
 }
 
 @Composable

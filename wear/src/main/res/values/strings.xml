@@ -11,7 +11,11 @@
     <string name="complication_label">Timetable</string>
     <!-- Home -->
     <string name="home_title">Today</string>
+    <string name="home_tomorrow_title">Tomorrow</string>
+    <string name="home_date_title">%1$d/%2$d classes</string>
     <string name="home_empty_course_hint">No classes today. Enjoy!</string>
+    <string name="home_tomorrow_empty_course_hint">No classes tomorrow</string>
+    <string name="home_date_empty_course_hint">No classes on %1$d/%2$d</string>
     <string name="home_no_timetable_hint">No timetable found. Add one to start!</string>
     <string name="home_add_timetable">Add Timetable</string>
     <string name="more_title">More</string>
@@ -217,11 +221,18 @@
         <item>English</item>
     </string-array>
     <string name="home_no_course_today">No courses today</string>
-    <string name="course_in_progress">In class · %1$d min left</string>
+    <string name="course_in_progress">%1$d min left</string>
     <string name="course_next">Next</string>
     <string name="complication_current_course_label">Current course</string>
     <string name="complication_next_course_label">Next course</string>
     <string name="home_day_finished_free_title">You’re free</string>
     <string name="home_view_today_timetable">View today’s timetable</string>
     <string name="home_hide_today_timetable">Hide today’s timetable</string>
+    <string name="tile_status_current">In class</string>
+    <string name="tile_status_next">Up next</string>
+    <string name="tile_status_finished">Finished</string>
+    <string name="tile_status_today">Today</string>
+    <string name="tile_no_courses">No classes today</string>
+    <string name="tile_tap_to_open">Tap to open Timetable</string>
+    <string name="tile_unnamed_course">Unnamed course</string>
 </resources>

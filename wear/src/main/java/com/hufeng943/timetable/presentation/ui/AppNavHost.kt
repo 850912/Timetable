@@ -10,6 +10,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.TimeTextDefaults.rememberTimeSource
+import androidx.compose.ui.graphics.Color
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -37,6 +38,7 @@ import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navController = rememberSwipeDismissableNavController()
@@ -46,11 +48,12 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         timeText = {
             if (config.isShowTopTime) {
                 TimeText(
+                    backgroundColor = Color.Transparent,
                     timeSource = if (config.is24HourFormat) {
                         rememberTimeSource("HH:mm")
                     } else {
                         rememberTimeSource("h:mm a")
-                    }
+                    },
                 )
             }
         }
