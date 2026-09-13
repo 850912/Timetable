@@ -3,16 +3,19 @@ package com.hufeng943.timetable.shared.data.repository
 import androidx.room.withTransaction
 import com.hufeng943.timetable.shared.data.dao.TimetableDao
 import com.hufeng943.timetable.shared.data.database.AppDatabase
+import com.hufeng943.timetable.shared.data.entities.AcademicEventEntity
 import com.hufeng943.timetable.shared.data.entities.CourseEntity
 import com.hufeng943.timetable.shared.data.entities.SyncRecordEntity
 import com.hufeng943.timetable.shared.data.entities.TimeSlotEntity
 import com.hufeng943.timetable.shared.data.entities.TimetableEntity
+import com.hufeng943.timetable.shared.data.mappers.toAcademicEventEntity
 import com.hufeng943.timetable.shared.data.mappers.toCourse
 import com.hufeng943.timetable.shared.data.mappers.toCourseEntity
 import com.hufeng943.timetable.shared.data.mappers.toTimeSlot
 import com.hufeng943.timetable.shared.data.mappers.toTimeSlotEntity
 import com.hufeng943.timetable.shared.data.mappers.toTimetable
 import com.hufeng943.timetable.shared.data.mappers.toTimetableEntity
+import com.hufeng943.timetable.shared.model.AcademicEvent
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
@@ -171,6 +174,49 @@ class TimetableRepositoryImpl(
         id
     }
 
+    override suspend fun upsertAcademicEvent(event: AcademicEvent, timetableId: Long): Long = db.withTransaction {
+        val now = System.currentTimeMillis()
+        val existing = event.id.takeIf { it != 0L }?.let { dao.getAcademicEventEntityById(it) }
+        val entity = event.toAcademicEventEntity(timetableId).let { candidate ->
+            if (existing == null) {
+                candidate.copy(
+                    id = 0,
+                    syncId = UUID.randomUUID().toString(),
+                    updatedAt = now,
+                    revision = 1,
+                    modifiedBy = deviceId,
+                    deletedAt = null,
+                )
+            } else {
+                candidate.copy(
+                    id = existing.id,
+                    syncId = existing.syncId.ifBlank { UUID.randomUUID().toString() },
+                    updatedAt = now,
+                    revision = existing.revision + 1,
+                    modifiedBy = deviceId,
+                    deletedAt = null,
+                )
+            }
+        }
+        val id = if (entity.id == 0L) dao.insertAcademicEvent(entity) else {
+            dao.upsertAcademicEvent(entity)
+            entity.id
+        }
+        val stored = if (entity.id == 0L) entity.copy(id = id) else entity
+        db.syncRecordDao().replacePending(
+            SyncRecordEntity(
+                entityId = id,
+                entityType = SyncEntityType.ACADEMIC_EVENT,
+                operation = SyncOperation.UPSERT,
+                revision = stored.revision,
+                updatedAt = stored.updatedAt,
+                deviceId = deviceId,
+                payloadJson = stored.toSyncPayloadJson(),
+            )
+        )
+        id
+    }
+
     override suspend fun deleteTimetable(timetableId: Long) = db.withTransaction {
         val existing = dao.getTimetableEntityById(timetableId) ?: return@withTransaction
         val now = System.currentTimeMillis()
@@ -202,6 +248,13 @@ class TimetableRepositoryImpl(
                 )
             }
         }
+        for (event in dao.getAcademicEventEntitiesByTimetableId(timetableId)) {
+            val eventRevision = event.revision + 1
+            dao.markAcademicEventDeleted(event.id, now, eventRevision, deviceId, now)
+            db.syncRecordDao().replacePending(
+                event.toDeleteRecord(SyncEntityType.ACADEMIC_EVENT, now, eventRevision)
+            )
+        }
     }
 
     override suspend fun deleteCourse(courseId: Long) = db.withTransaction {
@@ -229,6 +282,16 @@ class TimetableRepositoryImpl(
         dao.markTimeSlotDeleted(timeSlotId, now, revision, deviceId, now)
         db.syncRecordDao().replacePending(
             existing.toDeleteRecord(SyncEntityType.TIME_SLOT, now, revision)
+        )
+    }
+
+    override suspend fun deleteAcademicEvent(eventId: Long) = db.withTransaction {
+        val existing = dao.getAcademicEventEntityById(eventId) ?: return@withTransaction
+        val now = System.currentTimeMillis()
+        val revision = existing.revision + 1
+        dao.markAcademicEventDeleted(eventId, now, revision, deviceId, now)
+        db.syncRecordDao().replacePending(
+            existing.toDeleteRecord(SyncEntityType.ACADEMIC_EVENT, now, revision)
         )
     }
 
@@ -296,6 +359,26 @@ class TimetableRepositoryImpl(
         deletedAt?.let { put("deletedAt", it) }
     }.toString()
 
+    private suspend fun AcademicEventEntity.toSyncPayloadJson(): String = buildJsonObject {
+        put("id", id)
+        put("syncId", syncId)
+        put("timetableId", timetableId)
+        put("timetableSyncId", dao.getTimetableEntityById(timetableId)?.syncId ?: "")
+        put("title", title)
+        put("type", type)
+        put("dateEpochDay", dateEpochDay)
+        timeMinute?.let { put("timeMinute", it) }
+        courseName?.let { put("courseName", it) }
+        location?.let { put("location", it) }
+        note?.let { put("note", it) }
+        reminderMinutesBefore?.let { put("reminderMinutesBefore", it) }
+        put("completed", completed)
+        put("updatedAt", updatedAt)
+        put("revision", revision)
+        put("modifiedBy", modifiedBy)
+        deletedAt?.let { put("deletedAt", it) }
+    }.toString()
+
     private suspend fun TimetableEntity.toDeleteRecord(
         type: String,
         now: Long,
@@ -356,6 +439,29 @@ class TimetableRepositoryImpl(
             put("syncId", syncId)
             put("courseId", courseId)
             put("courseSyncId", dao.getCourseEntityById(courseId)?.syncId ?: "")
+            put("updatedAt", now)
+            put("revision", deleteRevision)
+            put("modifiedBy", deviceId)
+            put("deletedAt", now)
+        }.toString(),
+    )
+
+    private suspend fun AcademicEventEntity.toDeleteRecord(
+        type: String,
+        now: Long,
+        deleteRevision: Long,
+    ): SyncRecordEntity = SyncRecordEntity(
+        entityId = id,
+        entityType = type,
+        operation = SyncOperation.DELETE,
+        revision = deleteRevision,
+        updatedAt = now,
+        deviceId = deviceId,
+        payloadJson = buildJsonObject {
+            put("id", id)
+            put("syncId", syncId)
+            put("timetableId", timetableId)
+            put("timetableSyncId", dao.getTimetableEntityById(timetableId)?.syncId ?: "")
             put("updatedAt", now)
             put("revision", deleteRevision)
             put("modifiedBy", deviceId)

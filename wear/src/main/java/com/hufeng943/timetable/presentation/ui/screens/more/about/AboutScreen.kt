@@ -204,6 +204,15 @@ fun AboutScreen() {
             }
 
             item {
+                OneUiInfoCapsule(
+                    icon = Icons.Rounded.Code,
+                    text = stringResource(R.string.about_open_source_stack),
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
                 OneUiCapsuleSurface(
                     title = stringResource(R.string.about_license_title),
                     subtitle = stringResource(R.string.about_license_subtitle),

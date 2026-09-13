@@ -24,6 +24,7 @@ fun TimetableWithCourses.toTimetable(): Timetable {
         semesterStart = semesterStart,
         semesterEnd = semesterEnd,
         allCourses = this.courses.filter { it.course.deletedAt == null }.map { it.toCourse() },
+        events = this.events.filter { it.deletedAt == null }.map { it.toAcademicEvent() },
         color = tableEntity.color,
     )
 }

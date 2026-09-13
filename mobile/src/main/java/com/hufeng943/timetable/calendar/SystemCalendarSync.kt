@@ -11,6 +11,7 @@ import com.hufeng943.timetable.shared.model.resolveDate
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.plus
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 object SystemCalendarSync {
     data class Result(val inserted: Int, val calendarName: String)
@@ -74,6 +75,55 @@ object SystemCalendarSync {
             }
             date = date.plus(1, DateTimeUnit.DAY)
         }
+
+        timetable.events
+            .asSequence()
+            .filterNot { it.completed }
+            .forEach { event ->
+                val jDate = java.time.LocalDate.parse(event.date.toString())
+                val values = ContentValues().apply {
+                    put(CalendarContract.Events.CALENDAR_ID, calendar.first)
+                    put(CalendarContract.Events.TITLE, event.title.ifBlank { "学业待办" })
+                    put(CalendarContract.Events.EVENT_LOCATION, event.location)
+                    put(
+                        CalendarContract.Events.DESCRIPTION,
+                        buildString {
+                            append(marker)
+                            append(" 学业待办 · ")
+                            append(
+                                when (event.type.name) {
+                                    "ASSIGNMENT" -> "作业"
+                                    "EXAM" -> "考试"
+                                    "LAB" -> "实验"
+                                    else -> "其他"
+                                }
+                            )
+                            event.courseName?.takeIf { it.isNotBlank() }?.let { append(" · ").append(it) }
+                            event.note?.takeIf { it.isNotBlank() }?.let { append(" · ").append(it) }
+                        }
+                    )
+                    if (event.time == null) {
+                        val startMillis = jDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                        val endMillis = jDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                        put(CalendarContract.Events.DTSTART, startMillis)
+                        put(CalendarContract.Events.DTEND, endMillis)
+                        put(CalendarContract.Events.EVENT_TIMEZONE, "UTC")
+                        put(CalendarContract.Events.ALL_DAY, 1)
+                    } else {
+                        val startMillis = jDate.atTime(event.time.hour, event.time.minute)
+                            .atZone(zone).toInstant().toEpochMilli()
+                        val endMillis = jDate.atTime(event.time.hour, event.time.minute)
+                            .plusHours(1).atZone(zone).toInstant().toEpochMilli()
+                        put(CalendarContract.Events.DTSTART, startMillis)
+                        put(CalendarContract.Events.DTEND, endMillis)
+                        put(CalendarContract.Events.EVENT_TIMEZONE, zone.id)
+                        put(CalendarContract.Events.ALL_DAY, 0)
+                    }
+                    put(CalendarContract.Events.HAS_ALARM, 0)
+                }
+                resolver.insert(CalendarContract.Events.CONTENT_URI, values)?.let { inserted++ }
+            }
+
         return Result(inserted, calendar.second)
     }
 }

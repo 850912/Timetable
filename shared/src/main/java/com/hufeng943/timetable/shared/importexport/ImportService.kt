@@ -3,6 +3,7 @@ package com.hufeng943.timetable.shared.importexport
 import androidx.room.withTransaction
 import com.hufeng943.timetable.shared.data.dao.TimetableDao
 import com.hufeng943.timetable.shared.data.database.AppDatabase
+import com.hufeng943.timetable.shared.data.mappers.toAcademicEventEntity
 import com.hufeng943.timetable.shared.data.mappers.toCourseEntity
 import com.hufeng943.timetable.shared.data.mappers.toTimeSlotEntity
 import com.hufeng943.timetable.shared.data.mappers.toTimetableEntity
@@ -28,10 +29,11 @@ class ImportService @Inject constructor(
             timetables.forEach { timetable ->
                 dao.findTimetableIdByIdentity(
                     timetable.semesterName,
-                    timetable.semesterStart.toEpochDays().toLong()
+                    timetable.semesterStart.toEpochDays()
                 )?.let { timetableId ->
                     val now = System.currentTimeMillis()
                     dao.softDeleteTimeSlotsForImport(timetableId, now)
+                    dao.softDeleteAcademicEventsForImport(timetableId, now)
                     dao.softDeleteCoursesForImport(timetableId, now)
                     dao.softDeleteTimetableForImport(timetableId, now)
                 }
@@ -47,6 +49,9 @@ class ImportService @Inject constructor(
             for (slot in course.timeSlots) {
                 dao.insertTimeSlot(slot.toTimeSlotEntity(newCourseId).copy(id = 0))
             }
+        }
+        for (event in tt.events) {
+            dao.insertAcademicEvent(event.toAcademicEventEntity(newTtId).copy(id = 0))
         }
     }
 }

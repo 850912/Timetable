@@ -1,5 +1,7 @@
 package com.hufeng943.timetable.shared.export
 
+import com.hufeng943.timetable.shared.model.AcademicEvent
+import com.hufeng943.timetable.shared.model.AcademicEventType
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.ScheduleOverride
 import com.hufeng943.timetable.shared.model.TimeSlot
@@ -37,18 +39,33 @@ data class CourseBackupDto(
     val slots: List<TimeSlotBackupDto> = emptyList()
 )
 
+
+@Serializable
+data class AcademicEventBackupDto(
+    val title: String,
+    val type: Int,
+    val dateEpochDays: Long,
+    val timeMinute: Int? = null,
+    val courseName: String? = null,
+    val location: String? = null,
+    val note: String? = null,
+    val reminderMinutesBefore: Int? = null,
+    val completed: Boolean = false,
+)
+
 @Serializable
 data class TimetableBackupDto(
     val semesterName: String,
     val startEpochDays: Long,
     val endEpochDays: Long?,
     val color: Long = -1L,
-    val courses: List<CourseBackupDto> = emptyList()
+    val courses: List<CourseBackupDto> = emptyList(),
+    val events: List<AcademicEventBackupDto> = emptyList(),
 )
 
 @Serializable
 data class TimetableBackupContainer(
-    val schemaVersion: Int = 2,
+    val schemaVersion: Int = 3,
     val appVersion: String = "2.0.0",
     val backupEpochMillis: Long,
     val timetables: List<TimetableBackupDto>
@@ -95,12 +112,25 @@ object BackupManager {
                             )
                         }
                     )
+                },
+                events = tt.events.map { event ->
+                    AcademicEventBackupDto(
+                        title = event.title,
+                        type = event.type.ordinal,
+                        dateEpochDays = event.date.toEpochDays(),
+                        timeMinute = event.time?.let { it.hour * 60 + it.minute },
+                        courseName = event.courseName,
+                        location = event.location,
+                        note = event.note,
+                        reminderMinutesBefore = event.reminderMinutesBefore,
+                        completed = event.completed,
+                    )
                 }
             )
         }
 
         val container = TimetableBackupContainer(
-            schemaVersion = 2,
+            schemaVersion = 3,
             backupEpochMillis = Clock.System.now().toEpochMilliseconds(),
             timetables = dtos
         )
@@ -144,6 +174,21 @@ object BackupManager {
                 )
             }
 
+            val events = dto.events.map { event ->
+                AcademicEvent(
+                    id = 0,
+                    title = event.title,
+                    type = AcademicEventType.entries.getOrElse(event.type) { AcademicEventType.OTHER },
+                    date = LocalDate.fromEpochDays(event.dateEpochDays.toInt()),
+                    time = event.timeMinute?.let { LocalTime(it / 60, it % 60) },
+                    courseName = event.courseName,
+                    location = event.location,
+                    note = event.note,
+                    reminderMinutesBefore = event.reminderMinutesBefore,
+                    completed = event.completed,
+                )
+            }
+
             Timetable(
                 timetableId = 0,
                 semesterName = dto.semesterName,
@@ -151,6 +196,7 @@ object BackupManager {
                 semesterStart = start,
                 semesterEnd = end,
                 allCourses = courses,
+                events = events,
                 color = dto.color
             )
         }

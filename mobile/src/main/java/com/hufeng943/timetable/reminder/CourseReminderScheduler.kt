@@ -16,15 +16,16 @@ import java.time.ZoneId
 
 object CourseReminderScheduler {
     private const val DAYS_AHEAD = 14
+    private const val EVENT_DAYS_AHEAD = 30
     private const val MAINTENANCE_INTERVAL_MILLIS = 7L * 24 * 60 * 60 * 1000
     private const val MAINTENANCE_REQUEST_CODE = Int.MIN_VALUE
 
     fun schedule(context: Context, timetables: List<Timetable>) {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
         cancelPreviouslyScheduled(context, alarmManager)
-        if (!ReminderSettings.enabled(context)) {
+        val courseRemindersEnabled = ReminderSettings.enabled(context)
+        if (!courseRemindersEnabled) {
             CourseReminderReceiver.cancelAllCourseNotifications(context)
-            return
         }
 
         val offsetMinutes = ReminderSettings.offsetMinutes(context)
@@ -33,7 +34,7 @@ object CourseReminderScheduler {
         val now = System.currentTimeMillis()
         val requestCodes = mutableSetOf<Int>()
 
-        repeat(DAYS_AHEAD + 1) { dayOffset ->
+        if (courseRemindersEnabled) repeat(DAYS_AHEAD + 1) { dayOffset ->
             val date = today.plus(dayOffset, DateTimeUnit.DAY)
             timetables.flatMap { it.resolveDate(date) }.forEach { occurrence ->
                 val javaDate = java.time.LocalDate.parse(date.toString())
@@ -63,20 +64,60 @@ object CourseReminderScheduler {
                 )
             }
         }
+
+        timetables.flatMap { it.events }.asSequence()
+            .filter { !it.completed && it.reminderMinutesBefore != null }
+            .filter { event ->
+                val delta = event.date.toEpochDays() - today.toEpochDays()
+                delta in 0..EVENT_DAYS_AHEAD.toLong()
+            }
+            .forEach { event ->
+                val reminderMinutes = event.reminderMinutesBefore ?: return@forEach
+                val javaDate = java.time.LocalDate.parse(event.date.toString())
+                val eventTime = event.time ?: kotlinx.datetime.LocalTime(9, 0)
+                val eventAt = javaDate.atTime(eventTime.hour, eventTime.minute)
+                    .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                val triggerAt = eventAt - reminderMinutes * 60_000L
+                val eventKey = academicEventKey(event.id, event.date.toEpochDays())
+                scheduleOne(
+                    context = context,
+                    manager = alarmManager,
+                    requestCodes = requestCodes,
+                    requestCode = requestCode(eventKey, 3),
+                    triggerAt = triggerAt,
+                    now = now,
+                    intent = Intent(context, CourseReminderReceiver::class.java).apply {
+                        putExtra(CourseReminderReceiver.EXTRA_EVENT_KEY, eventKey)
+                        putExtra(CourseReminderReceiver.EXTRA_ACTION_TYPE, CourseReminderReceiver.ACTION_ACADEMIC_EVENT)
+                        putExtra(CourseReminderReceiver.EXTRA_EVENT_TITLE, event.title)
+                        putExtra(CourseReminderReceiver.EXTRA_EVENT_COURSE, event.courseName)
+                        putExtra(CourseReminderReceiver.EXTRA_EVENT_LOCATION, event.location)
+                        putExtra(CourseReminderReceiver.EXTRA_EVENT_DATE, event.date.toString())
+                        putExtra(CourseReminderReceiver.EXTRA_EVENT_TIME, event.time?.toString())
+                        putExtra(CourseReminderReceiver.EXTRA_EVENT_TYPE, event.type.name)
+                        putExtra(CourseReminderReceiver.EXTRA_OFFSET, reminderMinutes)
+                    },
+                )
+            }
         // Keep the rolling window alive even across long holidays where no course END
-        // alarm would otherwise run to refill the next 14 days.
-        scheduleOne(
-            context = context,
-            manager = alarmManager,
-            requestCodes = requestCodes,
-            requestCode = MAINTENANCE_REQUEST_CODE,
-            triggerAt = now + MAINTENANCE_INTERVAL_MILLIS,
-            now = now,
-            intent = Intent(context, CourseReminderReceiver::class.java).apply {
-                putExtra(CourseReminderReceiver.EXTRA_ACTION_TYPE, CourseReminderReceiver.ACTION_REFRESH)
-            },
-            preferExact = false,
-        )
+        // alarm would otherwise run to refill the next window.
+        val hasEventReminders = timetables.any { table ->
+            table.events.any { !it.completed && it.reminderMinutesBefore != null }
+        }
+        if (courseRemindersEnabled || hasEventReminders) {
+            scheduleOne(
+                context = context,
+                manager = alarmManager,
+                requestCodes = requestCodes,
+                requestCode = MAINTENANCE_REQUEST_CODE,
+                triggerAt = now + MAINTENANCE_INTERVAL_MILLIS,
+                now = now,
+                intent = Intent(context, CourseReminderReceiver::class.java).apply {
+                    putExtra(CourseReminderReceiver.EXTRA_ACTION_TYPE, CourseReminderReceiver.ACTION_REFRESH)
+                },
+                preferExact = false,
+            )
+        }
         ReminderSettings.saveScheduledRequestCodes(context, requestCodes)
     }
 
@@ -138,6 +179,9 @@ object CourseReminderScheduler {
 
     private fun eventKey(slotId: Long, epochDay: Long): Int =
         ((31L * slotId + epochDay) xor (slotId ushr 32)).toInt()
+
+    private fun academicEventKey(eventId: Long, epochDay: Long): Int =
+        ((131L * eventId + epochDay + 0x5EEDL) xor (eventId ushr 32)).toInt()
 
     private fun requestCode(eventKey: Int, phase: Int): Int = (eventKey and 0x1FFF_FFFF) * 4 + phase
 }

@@ -1,6 +1,6 @@
 <resources>
-    <string name="about_license_title">开源许可证</string>
-    <string name="about_license_subtitle">本应用使用的开源库许可证信息</string>
+    <string name="about_license_title">Open-source licenses</string>
+    <string name="about_license_subtitle">AndroidX, Horologist, KotlinX, and other dependency licenses</string>
     <string name="app_name" translatable="false">Timetable</string>
     <!--
     This string is used for square devices and overridden by hello_world in
@@ -92,18 +92,27 @@
     <string name="apperror_invalidparameter">Invalid parameter: %1$s</string>
     <string name="apperror_unexpectedempty">Unexpected empty state</string>
     <string name="apperror_unknown">An unknown error occurred: %1$s</string>
+    <string name="home_week_title">%1$s · Week %2$d</string>
+    <string name="home_academic_events_count">%1$d academic tasks</string>
+    <string name="home_summary_empty">0 classes</string>
+    <string name="home_summary_classes">%1$d classes · %2$s–%3$s</string>
+    <string name="home_summary_free"> · %1$d min free</string>
+    <string name="event_type_assignment">Assignment</string>
+    <string name="event_type_exam">Exam</string>
+    <string name="event_type_lab">Lab</string>
+    <string name="event_type_other">Task</string>
     <!-- About -->
-    <string name="about_description">    A timetable app for Wear OS and Galaxy Watch with phone sync, offline schedules, Wear Tiles, and watch-face complications.</string>
+    <string name="about_description">A timetable companion for Wear OS and Galaxy Watch with phone sync, offline schedules, reminders, academic tasks, Tiles, and complications.</string>
     <string name="about_features_title">Features</string>
     <string name="about_features_text">
-        " · Multiple timetable management\n"
-        " · Course and time-slot editing\n"
-        " · ICS calendar export / CSV spreadsheet export\n"
-        " · JSON full backup and restore\n"
-        " · Wear Tile and watch-face complications\n"
-        " · Theme presets and Wear OS dynamic colors\n"
-        " · 12/24-hour format and week-start settings\n"
-        " · Chinese / English interface"
+        " · Multiple timetables with phone ↔ watch sync\n"
+        " · Course editing, date exceptions, and quick same-day changes\n"
+        " · Assignment / exam / lab tasks with reminders\n"
+        " · Daily class count, first / last class, and free-time summary\n"
+        " · Wear Tile timeline and countdown / progress complications\n"
+        " · Weekly timetable image sharing and input suggestions\n"
+        " · ICS / CSV / JSON import, export, and system-calendar sync\n"
+        " · 12/24-hour format, themes, and Chinese / English UI"
     </string>
     <string name="about_declaration_title">Declaration</string>
     <string name="about_declaration_subtitle" translatable="false">https://github.com/HuFeng943/Timetable</string>
@@ -118,22 +127,23 @@
     <string name="about_library_open_source">✔ Open Source</string>
     <string name="about_library_version">v%1$s</string>
     <string name="about_library_developers">By %1$s</string>
-    <string name="about_changelog_title">Changelog</string>
+    <string name="about_open_source_stack">Core open-source stack: AndroidX / Wear Compose, Horologist, Room, Hilt, KotlinX Serialization / Datetime, AboutLibraries, and MaterialKolor.</string>
+    <string name="about_changelog_title">Build 10.5 highlights</string>
     <string name="about_changelog_expand_hint">Tap to expand</string>
     <string name="about_changelog">
-        " · Improved home performance for large schedules\n"
-        " · Fixed and unified 12 / 24-hour time formatting\n"
-        " · Current courses now show minutes until class ends\n"
-        " · Wear Tile now shows remaining class time\n"
-        " · Reliable Phone ↔ Watch sync with retry support\n"
-        " · Wear Tile with multiple courses and timetable colors\n"
-        " · Current / Next course watch-face complications\n"
-        " · ICS / CSV / JSON import and export"
+        " · Added assignment, exam, lab, and other academic tasks\n"
+        " · Added independent task reminders and reminder recovery\n"
+        " · Added quick same-day cancel / reschedule actions\n"
+        " · Added daily schedule stats and history-based suggestions\n"
+        " · Added weekly timetable image sharing\n"
+        " · Added next-class countdown complication\n"
+        " · Improved Tile / complication timeline behavior\n"
+        " · Improved small-screen text limits and scrollable dialogs"
     </string>
     <string name="about_original_author_name">HuFeng943</string>
     <string name="about_original_author_subtitle">Original author · Timetable project</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
-    <string name="about_developer_subtitle">Secondary development &amp; maintenance · Performance / Time Format / UI 2026.09</string>
+    <string name="about_developer_subtitle">Secondary development &amp; maintenance · Wear / Sync / Student Tools · 2026.09</string>
     <string name="developer_options_title">Developer Options</string>
     <string name="developer_version_title">App version</string>
     <string name="developer_transfer_title">File-transfer protocol</string>

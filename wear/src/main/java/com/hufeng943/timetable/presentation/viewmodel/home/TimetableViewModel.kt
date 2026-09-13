@@ -50,6 +50,17 @@ class TimetableViewModel @Inject constructor(
         initialValue = null,
     )
 
+    val selectedDateEvents = combine(allTimetables, _selectedDate) { state, date ->
+        val tables = (state as? UiState.Success)?.data.orEmpty()
+        tables.flatMap { it.events }
+            .filter { !it.completed && it.date == date }
+            .sortedWith(compareBy<com.hufeng943.timetable.shared.model.AcademicEvent> { it.time == null }.thenBy { it.time })
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000L),
+        initialValue = emptyList(),
+    )
+
     // 当前选中的课表要展示 UI 数据
     val dateCoursesUi = combine(allTimetables, _selectedDate) { state, selectedDate ->
         when (state) {

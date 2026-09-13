@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="about_license_title">开源许可证</string>
+    <string name="about_license_subtitle">查看 AndroidX、Horologist、KotlinX 等依赖许可证</string>
     <!-- Home -->
     <string name="home_title">今日课程</string>
     <string name="home_empty_course_hint">今天没有课程，是自由的一天！</string>
@@ -81,18 +83,27 @@
     <string name="apperror_invalidparameter">跳转参数错误：%1$s</string>
     <string name="apperror_unexpectedempty">意外的空状态</string>
     <string name="apperror_unknown">发生了未知的错误：%1$s</string>
+    <string name="home_week_title">%1$s · 第%2$d周</string>
+    <string name="home_academic_events_count">%1$d 项学业待办</string>
+    <string name="home_summary_empty">0 节</string>
+    <string name="home_summary_classes">%1$d节 · %2$s–%3$s</string>
+    <string name="home_summary_free"> · 空闲%1$d分</string>
+    <string name="event_type_assignment">作业</string>
+    <string name="event_type_exam">考试</string>
+    <string name="event_type_lab">实验</string>
+    <string name="event_type_other">待办</string>
     <!-- About -->
-    <string name="about_description">    一款面向 Wear OS 与 Galaxy Watch 的课程表应用。支持手机同步、离线课表、Wear Tile 与表盘复杂功能。</string>
+    <string name="about_description">一款面向 Wear OS 与 Galaxy Watch 的课程表助手，支持手机同步、离线课表、课程提醒、学业待办、Tile 与表盘复杂功能。</string>
     <string name="about_features_title">主要功能</string>
     <string name="about_features_text">
-        " · 多课表管理\n"
-        " · 课程与课时编辑\n"
-        " · ICS 日历导出 / CSV 表格导出\n"
-        " · JSON 完整备份与恢复\n"
-        " · Wear Tile 与表盘复杂功能\n"
-        " · 主题预设与 Wear OS 动态配色\n"
-        " · 12/24 小时制与每周起始日设置\n"
-        " · 中文 / English 界面"
+        " · 多课表管理与手机 ↔ 手表同步\n"
+        " · 课程编辑、日期例外与今日快捷调课\n"
+        " · 作业 / 考试 / 实验 / 待办及独立提醒\n"
+        " · 今日课程数、首末节与课间空闲统计\n"
+        " · Wear Tile 时间线与倒计时 / 进度复杂功能\n"
+        " · 本周课表图片分享与历史输入建议\n"
+        " · ICS / CSV / JSON 导入导出及系统日历同步\n"
+        " · 12/24 小时制、主题与中英文界面"
     </string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
@@ -106,22 +117,23 @@
     <string name="about_library_open_source">✔ 开源协议</string>
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
-    <string name="about_changelog_title">更新内容</string>
+    <string name="about_open_source_stack">核心开源组件：AndroidX / Wear Compose、Horologist、Room、Hilt、KotlinX Serialization / Datetime、AboutLibraries、MaterialKolor。</string>
+    <string name="about_changelog_title">Build 10.5 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
-        " · 优化大量课程 / 课时场景下的首页性能\n"
-        " · 修复并统一 12 / 24 小时制显示\n"
-        " · 当前课程显示“XX分钟下课”\n"
-        " · Wear Tile 增加当前课程剩余时间\n"
-        " · 手机 ↔ 手表可靠同步与断线重试\n"
-        " · Wear Tile 支持多课程与课表主题色\n"
-        " · 支持当前课程 / 下一节课表盘复杂功能\n"
-        " · ICS / CSV / JSON 导入导出"
+        " · 新增作业、考试、实验与其他学业待办\n"
+        " · 待办提醒可独立于课程提醒工作并自动恢复\n"
+        " · 新增今日停课 / 调课快捷操作\n"
+        " · 新增今日统计与课程 / 教室 / 教师输入建议\n"
+        " · 新增一键生成并分享本周课表图片\n"
+        " · 新增下一节课倒计时表盘复杂功能\n"
+        " · 优化 Tile / Complication 时间线更新\n"
+        " · 优化小屏文字限制与可滚动编辑弹窗"
     </string>
     <string name="about_original_author_name">HuFeng943</string>
     <string name="about_original_author_subtitle">原作者 · 原始项目 Timetable</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
-    <string name="about_developer_subtitle">二次开发与维护 · Performance / Time Format / UI 2026.09</string>
+    <string name="about_developer_subtitle">二次开发与维护 · Wear / Sync / Student Tools · 2026.09</string>
     <string name="developer_options_title">开发者选项</string>
     <string name="developer_version_title">应用版本</string>
     <string name="developer_transfer_title">文件传输协议</string>

@@ -2,6 +2,7 @@ package com.hufeng943.timetable.shared.sync
 
 import androidx.room.withTransaction
 import com.hufeng943.timetable.shared.data.database.AppDatabase
+import com.hufeng943.timetable.shared.data.entities.AcademicEventEntity
 import com.hufeng943.timetable.shared.data.entities.CourseEntity
 import com.hufeng943.timetable.shared.data.entities.SyncTombstoneEntity
 import com.hufeng943.timetable.shared.data.entities.TimeSlotEntity
@@ -34,6 +35,7 @@ class SyncApplier(private val db: AppDatabase) {
             SyncEntityType.TIMETABLE -> applyTimetable(record, root, syncId)
             SyncEntityType.COURSE -> applyCourse(record, root, syncId)
             SyncEntityType.TIME_SLOT -> applySlot(record, root, syncId)
+            SyncEntityType.ACADEMIC_EVENT -> applyAcademicEvent(record, root, syncId)
             else -> false
         }
     }
@@ -94,11 +96,45 @@ class SyncApplier(private val db: AppDatabase) {
         db.syncTombstoneDao().delete(syncId, r.entityType); return true
     }
 
+    private suspend fun applyAcademicEvent(r: SyncRecordPayload, o: kotlinx.serialization.json.JsonObject, syncId: String): Boolean {
+        val dao = db.timetableDao()
+        val existing = dao.getAcademicEventEntityBySyncId(syncId)
+        if (existing != null && !wins(r, existing.revision, existing.updatedAt, existing.modifiedBy)) return true
+        if (r.operation == SyncOperation.DELETE) {
+            if (existing != null) dao.markAcademicEventDeleted(existing.id, r.updatedAt, r.revision, r.deviceId, r.updatedAt)
+            else db.syncTombstoneDao().upsert(SyncTombstoneEntity(syncId, r.entityType, r.revision, r.updatedAt, r.deviceId))
+            return true
+        }
+        val parent = dao.getTimetableEntityBySyncId(o.str("timetableSyncId")) ?: return false
+        val entity = AcademicEventEntity(
+            id = 0,
+            syncId = syncId,
+            timetableId = parent.id,
+            title = o.str("title"),
+            type = o.int("type"),
+            dateEpochDay = o.long("dateEpochDay"),
+            timeMinute = o.intOrNull("timeMinute"),
+            courseName = o.strOrNull("courseName"),
+            location = o.strOrNull("location"),
+            note = o.strOrNull("note"),
+            reminderMinutesBefore = o.intOrNull("reminderMinutesBefore"),
+            completed = o.boolOrNull("completed") ?: false,
+            updatedAt = r.updatedAt,
+            revision = r.revision,
+            modifiedBy = r.deviceId,
+            deletedAt = null,
+        )
+        if (existing == null) dao.insertAcademicEvent(entity) else dao.upsertAcademicEvent(entity.copy(id = existing.id))
+        db.syncTombstoneDao().delete(syncId, r.entityType)
+        return true
+    }
+
     private fun entityOrder(type: String) = when (type) {
         SyncEntityType.TIMETABLE -> 0
         SyncEntityType.COURSE -> 1
         SyncEntityType.TIME_SLOT -> 2
-        else -> 3
+        SyncEntityType.ACADEMIC_EVENT -> 3
+        else -> 4
     }
 
     private fun wins(r: SyncRecordPayload, rev: Long, updated: Long, device: String) = compare(r.revision, r.updatedAt, r.deviceId, rev, updated, device) > 0
@@ -113,4 +149,6 @@ class SyncApplier(private val db: AppDatabase) {
     private fun kotlinx.serialization.json.JsonObject.long(k: String) = this[k]?.jsonPrimitive?.long ?: error("missing $k")
     private fun kotlinx.serialization.json.JsonObject.longOrNull(k: String) = this[k]?.jsonPrimitive?.long
     private fun kotlinx.serialization.json.JsonObject.int(k: String) = this[k]?.jsonPrimitive?.content?.toInt() ?: error("missing $k")
+    private fun kotlinx.serialization.json.JsonObject.intOrNull(k: String) = this[k]?.jsonPrimitive?.content?.toIntOrNull()
+    private fun kotlinx.serialization.json.JsonObject.boolOrNull(k: String) = this[k]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
 }

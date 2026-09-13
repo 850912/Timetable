@@ -5,7 +5,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Keeps all pre-sync database versions upgradeable without destructive migration.
- * Room schema history in this project is 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8.
+ * Room schema history in this project is 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9.
  */
 object AppDatabaseMigrations {
     val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -119,6 +119,34 @@ object AppDatabaseMigrations {
     val MIGRATION_7_8 = object : Migration(7, 8) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("ALTER TABLE time_slots ADD COLUMN overridesJson TEXT NOT NULL DEFAULT '[]'")
+        }
+    }
+
+    val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS academic_events (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "syncId TEXT NOT NULL DEFAULT '', " +
+                    "timetableId INTEGER NOT NULL, " +
+                    "title TEXT NOT NULL, " +
+                    "type INTEGER NOT NULL, " +
+                    "dateEpochDay INTEGER NOT NULL, " +
+                    "timeMinute INTEGER, " +
+                    "courseName TEXT, " +
+                    "location TEXT, " +
+                    "note TEXT, " +
+                    "reminderMinutesBefore INTEGER, " +
+                    "completed INTEGER NOT NULL DEFAULT 0, " +
+                    "updatedAt INTEGER NOT NULL DEFAULT 0, " +
+                    "revision INTEGER NOT NULL DEFAULT 0, " +
+                    "modifiedBy TEXT NOT NULL DEFAULT 'UNKNOWN', " +
+                    "deletedAt INTEGER, " +
+                    "FOREIGN KEY(timetableId) REFERENCES time_tables(id) ON UPDATE NO ACTION ON DELETE CASCADE)"
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_academic_events_syncId ON academic_events(syncId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_academic_events_timetableId ON academic_events(timetableId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_academic_events_dateEpochDay_completed ON academic_events(dateEpochDay, completed)")
         }
     }
 

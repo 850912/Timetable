@@ -3,6 +3,8 @@ package com.hufeng943.timetable.shared
 import com.hufeng943.timetable.shared.export.BackupManager
 import com.hufeng943.timetable.shared.export.CsvExporter
 import com.hufeng943.timetable.shared.export.CsvImporter
+import com.hufeng943.timetable.shared.model.AcademicEvent
+import com.hufeng943.timetable.shared.model.AcademicEventType
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.ScheduleOverride
 import com.hufeng943.timetable.shared.model.ScheduleOverrideType
@@ -49,6 +51,19 @@ class ExportRoundTripTest {
                 ),
             )
         ),
+        events = listOf(
+            AcademicEvent(
+                id = 15,
+                title = "期中考试",
+                type = AcademicEventType.EXAM,
+                date = LocalDate(2026, 10, 12),
+                time = LocalTime(14, 30),
+                courseName = "高等数学",
+                location = "B201",
+                note = "带计算器",
+                reminderMinutesBefore = 60,
+            )
+        ),
     )
 
     @Test fun backupPreservesOverrides() {
@@ -58,6 +73,7 @@ class ExportRoundTripTest {
         assertEquals(source.semesterStart, restored.semesterStart)
         assertNull(restored.semesterEnd)
         assertEquals(source.allCourses.single().timeSlots.single().overrides, restored.allCourses.single().timeSlots.single().overrides)
+        assertEquals(source.events.single().copy(id = 0), restored.events.single())
     }
 
     @Test fun csvPreservesSemesterAndOverrides() {

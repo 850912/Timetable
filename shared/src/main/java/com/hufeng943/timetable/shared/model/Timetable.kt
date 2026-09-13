@@ -22,6 +22,7 @@ data class Timetable(
     val semesterStart: LocalDate, // 课表开始日期
     val semesterEnd: LocalDate? = null, // 课表结束日期,有可能永不结束
     val allCourses: List<Course> = emptyList(),
+    val events: List<AcademicEvent> = emptyList(),
     val color: Long = -1L
 ) {
     init {

@@ -1,5 +1,6 @@
 package com.hufeng943.timetable.shared.data.repository
 
+import com.hufeng943.timetable.shared.model.AcademicEvent
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
@@ -10,11 +11,13 @@ interface TimetableRepository {
     suspend fun upsertTimetable(timetable: Timetable): Long
     suspend fun upsertCourse(course: Course, timetableId: Long): Long
     suspend fun upsertTimeSlot(timeSlot: TimeSlot, courseId: Long): Long
+    suspend fun upsertAcademicEvent(event: AcademicEvent, timetableId: Long): Long
 
     // 删除课表
     suspend fun deleteTimetable(timetableId: Long)
     suspend fun deleteCourse(courseId: Long)
     suspend fun deleteTimeSlot(timeSlotId: Long)
+    suspend fun deleteAcademicEvent(eventId: Long)
 
     // 获取所有课表
     fun getAllTimetables(): Flow<List<Timetable>>

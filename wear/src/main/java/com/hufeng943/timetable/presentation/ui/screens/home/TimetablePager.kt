@@ -4,6 +4,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +26,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import java.util.concurrent.atomic.AtomicBoolean
 import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnDefaults
@@ -58,8 +61,10 @@ import com.hufeng943.timetable.presentation.ui.components.PullToDatePickerState
 import com.hufeng943.timetable.presentation.ui.components.pullToDatePickerDrag
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToDatePickerState
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToRefreshConnection
+import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.home.TimetableViewModel
+import com.hufeng943.timetable.shared.model.AcademicEvent
 import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
@@ -77,6 +82,7 @@ fun TimetablePager(
     val uiState by viewModel.dateCoursesUi.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val selectedWeekNumber by viewModel.selectedWeekNumber.collectAsStateWithLifecycle()
+    val selectedDateEvents by viewModel.selectedDateEvents.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
 
@@ -109,7 +115,9 @@ fun TimetablePager(
             EmptyCoursePager(
                 state = pullToDatePickerState,
                 selectedDate = selectedDate,
-                onDateSelected = handleDateSelected
+                onDateSelected = handleDateSelected,
+                events = selectedDateEvents,
+                is24HourFormat = config.is24HourFormat,
             )
         } else {
             // Re-evaluate current/next-course state periodically.  This state must
@@ -136,7 +144,9 @@ fun TimetablePager(
                 selectedDate = selectedDate,
                 onDateSelected = handleDateSelected,
                 weekNumber = selectedWeekNumber,
-                showTopTime = config.isShowTopTime
+                showTopTime = config.isShowTopTime,
+                events = selectedDateEvents,
+                is24HourFormat = config.is24HourFormat,
             ) { courseUi, transformationSpec ->
                 val courseId = courseUi.timeSlot.id
                 CourseCard(
@@ -166,7 +176,9 @@ private fun EmptyCoursePager(
     state: PullToDatePickerState,
     modifier: Modifier = Modifier,
     selectedDate: LocalDate,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    events: List<AcademicEvent> = emptyList(),
+    is24HourFormat: Boolean = true,
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -194,15 +206,24 @@ private fun EmptyCoursePager(
                     .pullToDatePickerDrag(state),
                 contentAlignment = Alignment.Center
             ) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = Modifier.padding(top = 28.dp)
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     OneUiCapsuleSurface(
                         title = stringResource(R.string.home_empty_course_hint),
-                        subtitle = stringResource(R.string.home_empty_course_hint),
+                        subtitle = if (events.isEmpty()) null else stringResource(R.string.home_academic_events_count, events.size),
                         icon = Icons.Rounded.EventAvailable,
                         emphasize = true,
                     )
+                    events.take(1).forEach { event ->
+                        androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
+                        OneUiCapsuleSurface(
+                            title = event.title,
+                            subtitle = eventSubtitle(event, is24HourFormat),
+                            icon = Icons.Rounded.EventAvailable,
+                        )
+                    }
                 }
             }
         }
@@ -221,6 +242,8 @@ private fun CourseListPager(
     onDateSelected: (LocalDate) -> Unit,
     weekNumber: Int? = null,
     showTopTime: Boolean = false,
+    events: List<AcademicEvent> = emptyList(),
+    is24HourFormat: Boolean = true,
     modifier: Modifier = Modifier,
     itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec) -> Unit
 ) {
@@ -228,6 +251,8 @@ private fun CourseListPager(
     val transformationSpec = rememberTransformationSpec()
     val isTouching = remember { AtomicBoolean(false) }
     val focusRequester = remember { FocusRequester() }
+    val isLargeDisplay = LocalConfiguration.current.screenWidthDp >= 225
+    val daySummary = wearDaySummary(coursesUi, isLargeDisplay, is24HourFormat)
 
     val nestedScrollConnection = rememberPullToRefreshConnection(
         scrollState = scrollState, state = state, isTouching = { isTouching.get() })
@@ -284,20 +309,85 @@ private fun CourseListPager(
                             .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
                     ) {
-                        Text(
-                            text = weekNumber?.let { "${stringResource(R.string.home_title)} · 第${it}周" }
-                                ?: stringResource(R.string.home_title),
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = weekNumber?.let {
+                                    stringResource(R.string.home_week_title, stringResource(R.string.home_title), it)
+                                } ?: stringResource(R.string.home_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = daySummary,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
                 itemsIndexed(
                     items = coursesUi, key = { _, item -> itemKey(item) }) { _, item ->
                     this.itemContent(item, transformationSpec)
                 }
+                itemsIndexed(
+                    items = events,
+                    key = { _, event -> "event-${event.id}" },
+                ) { _, event ->
+                    OneUiCapsuleSurface(
+                        title = event.title,
+                        subtitle = eventSubtitle(event, is24HourFormat),
+                        icon = Icons.Rounded.EventAvailable,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .transformedHeight(this, transformationSpec)
+                            .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun eventSubtitle(event: AcademicEvent, is24HourFormat: Boolean): String {
+    val typeLabel = when (event.type) {
+        com.hufeng943.timetable.shared.model.AcademicEventType.ASSIGNMENT -> stringResource(R.string.event_type_assignment)
+        com.hufeng943.timetable.shared.model.AcademicEventType.EXAM -> stringResource(R.string.event_type_exam)
+        com.hufeng943.timetable.shared.model.AcademicEventType.LAB -> stringResource(R.string.event_type_lab)
+        com.hufeng943.timetable.shared.model.AcademicEventType.OTHER -> stringResource(R.string.event_type_other)
+    }
+    return buildString {
+        append(typeLabel)
+        event.time?.let { append(" · ").append(it.toDisplayString(is24HourFormat)) }
+        event.courseName?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+    }
+}
+
+@Composable
+private fun wearDaySummary(courses: List<CourseUi>, includeFree: Boolean, is24HourFormat: Boolean): String {
+    val ranges = courses.mapNotNull { course ->
+        val start = course.timeSlot.startTime ?: return@mapNotNull null
+        val end = course.timeSlot.endTime ?: return@mapNotNull null
+        if (end <= start) return@mapNotNull null
+        start to end
+    }.sortedBy { it.first }
+    if (ranges.isEmpty()) return stringResource(R.string.home_summary_empty)
+    var free = 0
+    var previousEnd = ranges.first().second
+    for ((start, end) in ranges.drop(1)) {
+        val gap = (start.hour * 60 + start.minute) - (previousEnd.hour * 60 + previousEnd.minute)
+        if (gap > 0) free += gap
+        if (end > previousEnd) previousEnd = end
+    }
+    val base = stringResource(
+        R.string.home_summary_classes,
+        ranges.size,
+        ranges.first().first.toDisplayString(is24HourFormat),
+        ranges.maxBy { it.second }.second.toDisplayString(is24HourFormat),
+    )
+    return if (includeFree && free > 0) base + stringResource(R.string.home_summary_free, free) else base
 }
 
 private data class CourseStatusSummary(

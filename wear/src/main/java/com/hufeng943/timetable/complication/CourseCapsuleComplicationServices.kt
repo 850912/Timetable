@@ -3,11 +3,15 @@ package com.hufeng943.timetable.complication
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.wear.watchface.complications.data.ComplicationData
+import androidx.wear.watchface.complications.data.ComplicationText
+import androidx.wear.watchface.complications.data.CountDownTimeReference
 import androidx.wear.watchface.complications.data.ComplicationType
 import androidx.wear.watchface.complications.data.LongTextComplicationData
 import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.data.RangedValueComplicationData
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
+import androidx.wear.watchface.complications.data.TimeDifferenceComplicationText
+import androidx.wear.watchface.complications.data.TimeDifferenceStyle
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
 import com.hufeng943.timetable.R
@@ -89,17 +93,37 @@ abstract class BaseCourseCapsuleService(private val mode: CapsuleMode) : Suspend
                 val elapsed = if (nowMin >= course.startMin) nowMin - course.startMin else 24 * 60 - course.startMin + nowMin
                 if (duration > 0) (elapsed.toFloat() / duration).coerceIn(0f, 1f) else 0f
             } else null
-            build(request.complicationType, course.name, title, "${course.start}–${course.end}", progress)
+            val dynamicTitle = if (mode == CapsuleMode.NEXT) {
+                val target = java.time.LocalDate.now()
+                    .atTime(course.startMin / 60, course.startMin % 60)
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toInstant()
+                TimeDifferenceComplicationText.Builder(
+                    TimeDifferenceStyle.SHORT_SINGLE_UNIT,
+                    CountDownTimeReference(target),
+                ).build()
+            } else null
+            build(request.complicationType, course.name, title, "${course.start}–${course.end}", progress, dynamicTitle)
         }
     }
 
-    private fun build(type: ComplicationType, text: String, title: String, detail: String, progress: Float?): ComplicationData? = when (type) {
+    private fun build(
+        type: ComplicationType,
+        text: String,
+        title: String,
+        detail: String,
+        progress: Float?,
+        dynamicTitle: ComplicationText? = null,
+    ): ComplicationData? {
+        val shortLabel = if (text.length > 6) text.take(5) + "…" else text
+        val resolvedTitle = dynamicTitle ?: PlainComplicationText.Builder(title).build()
+        return when (type) {
         ComplicationType.SHORT_TEXT -> ShortTextComplicationData.Builder(
-            PlainComplicationText.Builder(text).build(), PlainComplicationText.Builder("课程表 $text $detail").build()
-        ).setTitle(PlainComplicationText.Builder(title).build()).setTapAction(tapAction()).build()
+            PlainComplicationText.Builder(shortLabel).build(), PlainComplicationText.Builder("课程表 $text $detail").build()
+        ).setTitle(resolvedTitle).setTapAction(tapAction()).build()
         ComplicationType.LONG_TEXT -> LongTextComplicationData.Builder(
             PlainComplicationText.Builder("$text  $detail").build(), PlainComplicationText.Builder("课程表 $text $detail").build()
-        ).setTitle(PlainComplicationText.Builder(title).build()).setTapAction(tapAction()).build()
+        ).setTitle(resolvedTitle).setTapAction(tapAction()).build()
         ComplicationType.RANGED_VALUE -> progress?.let {
             RangedValueComplicationData.Builder(
                 it,
@@ -112,6 +136,7 @@ abstract class BaseCourseCapsuleService(private val mode: CapsuleMode) : Suspend
                 .build()
         }
         else -> null
+        }
     }
 }
 

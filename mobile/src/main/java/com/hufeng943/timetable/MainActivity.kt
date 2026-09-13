@@ -20,8 +20,10 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Spinner
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import android.text.TextUtils
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -29,9 +31,12 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
+import com.hufeng943.timetable.shared.model.AcademicEvent
+import com.hufeng943.timetable.shared.model.AcademicEventType
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.ScheduleOverrideType
 import com.hufeng943.timetable.shared.model.ScheduleOverride
@@ -40,12 +45,15 @@ import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.model.WeekPattern
 import com.hufeng943.timetable.shared.model.weekNumberFor
+import com.hufeng943.timetable.shared.model.dailySummary
+import com.hufeng943.timetable.shared.model.resolveDate
 import com.hufeng943.timetable.shared.sync.SyncManager
 import com.hufeng943.timetable.shared.sync.SyncRecordPayload
 import com.hufeng943.timetable.sync.WearOsTransport
 import com.hufeng943.timetable.sync.WearConnectionState
 import com.hufeng943.timetable.probe.WearProbeActivity
 import com.hufeng943.timetable.widget.TodayWidgetProvider
+import com.hufeng943.timetable.share.WeeklyTimetableShare
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -175,37 +183,101 @@ class MainActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dp(12) }
 
+            val today = Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
+            val summary = timetable.dailySummary(today)
+
             card.addView(TextView(this).apply {
                 text = timetable.semesterName.ifBlank { "未命名课表" }
                 textSize = 20f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
             })
             card.addView(TextView(this).apply {
                 val end = timetable.semesterEnd?.toString() ?: "长期"
-                val today = Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
                 val week = timetable.weekNumberFor(today)?.let { " · 第${it}周" }.orEmpty()
                 text = "${timetable.semesterStart} ～ $end · ${timetable.allCourses.size} 门课程$week"
-                setPadding(0, dp(5), 0, dp(8))
+                setPadding(0, dp(5), 0, dp(3))
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+            })
+            card.addView(TextView(this).apply {
+                text = if (summary.courseCount == 0) {
+                    "今日无课"
+                } else {
+                    val free = summary.freeMinutesBetweenCourses.takeIf { it > 0 }?.let { " · 课间 ${formatMinutes(it)}" }.orEmpty()
+                    "今日 ${summary.courseCount} 节 · ${summary.firstStart}–${summary.lastEnd}$free"
+                }
+                setPadding(0, 0, 0, dp(8))
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
             })
 
             timetable.allCourses.forEach { course ->
                 val slotText = course.timeSlots.joinToString("；") { slot ->
                     val day = slot.dayOfWeek?.let(::dayLabel) ?: "未定"
-                    val start = slot.startTime?.toString() ?: "--:--"
-                    val end = slot.endTime?.toString() ?: "--:--"
+                    val startTime = slot.startTime?.toString() ?: "--:--"
+                    val endTime = slot.endTime?.toString() ?: "--:--"
                     val overrideSuffix = if (slot.overrides.isNotEmpty()) " · ${slot.overrides.size}个日期例外" else ""
-                    "$day $start-$end$overrideSuffix"
+                    "$day $startTime-$endTime$overrideSuffix"
                 }.ifBlank { "暂无时间" }
                 card.addView(TextView(this).apply {
                     text = "• ${course.name}  $slotText" +
                         listOfNotNull(course.location, course.teacher).takeIf { it.isNotEmpty() }
                             ?.joinToString(prefix = "  （", postfix = "）", separator = " / ").orEmpty()
                     setPadding(0, dp(6), 0, dp(6))
+                    maxLines = 2
+                    ellipsize = TextUtils.TruncateAt.END
                     isClickable = true
                     isFocusable = true
                     setOnClickListener { showCourseActionsDialog(timetable, course) }
+                    setOnLongClickListener {
+                        showQuickCourseActionsDialog(timetable, course)
+                        true
+                    }
                 })
             }
+
+            val upcomingEvents = timetable.events
+                .filter { !it.completed && it.date >= today }
+                .sortedWith(compareBy<AcademicEvent> { it.date }.thenBy { it.time })
+            if (upcomingEvents.isNotEmpty()) {
+                card.addView(TextView(this).apply {
+                    text = "近期待办 · ${upcomingEvents.size}"
+                    textSize = 15f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    setPadding(0, dp(9), 0, dp(2))
+                })
+                upcomingEvents.take(3).forEach { event ->
+                    card.addView(TextView(this).apply {
+                        val whenText = buildString {
+                            append(event.date)
+                            event.time?.let { append(" $it") }
+                        }
+                        text = "${eventTypeLabel(event.type)} · ${event.title} · $whenText"
+                        setPadding(0, dp(4), 0, dp(4))
+                        maxLines = 1
+                        ellipsize = TextUtils.TruncateAt.END
+                        isClickable = true
+                        isFocusable = true
+                        setOnClickListener { showAcademicEventActionsDialog(timetable, event) }
+                    })
+                }
+                if (upcomingEvents.size > 3) {
+                    card.addView(TextView(this).apply {
+                        text = "另有 ${upcomingEvents.size - 3} 项待办"
+                        setPadding(0, dp(2), 0, dp(4))
+                    })
+                }
+            }
+
+            card.addView(TextView(this).apply {
+                text = "提示：长按课程可快速处理今天的停课/调课"
+                textSize = 12f
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+                setPadding(0, dp(5), 0, 0)
+            })
 
             val actions = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -223,6 +295,16 @@ class MainActivity : AppCompatActivity() {
             moreActions.addView(actionButton("复制课表") { duplicateTimetable(timetable) })
             moreActions.addView(actionButton("同步日历") { requestCalendarSync(timetable) })
             card.addView(moreActions)
+            val studentActions = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(4), 0, 0)
+            }
+            studentActions.addView(actionButton("待办管理") { showAcademicEventManagerDialog(timetable) })
+            studentActions.addView(actionButton("分享本周课表") {
+                runCatching { WeeklyTimetableShare.share(this@MainActivity, timetable) }
+                    .onFailure { toast(it.message ?: "生成分享图片失败") }
+            })
+            card.addView(studentActions)
             timetableContainer.addView(card)
         }
     }
@@ -231,6 +313,10 @@ class MainActivity : AppCompatActivity() {
         MaterialButton(this).apply {
             text = label
             isAllCaps = false
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            minimumWidth = 0
+            textSize = 13f
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginEnd = dp(4)
             }
@@ -282,9 +368,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAddCourseDialog(timetable: Timetable) {
-        val name = inputField("课程名称", "例如：高等数学")
-        val location = inputField("地点（可留空）", "例如：教学楼 A101")
-        val teacher = inputField("教师（可留空）", "例如：张老师")
+        val name = autocompleteField("课程名称", "例如：高等数学", courseSuggestions())
+        val location = autocompleteField("地点（可留空）", "例如：教学楼 A101", locationSuggestions())
+        val teacher = autocompleteField("教师（可留空）", "例如：张老师", teacherSuggestions())
         val start = inputField("开始时间", "08:00").apply { editText?.setText("08:00") }
         val end = inputField("结束时间", "09:40").apply { editText?.setText("09:40") }
         start.editText?.isFocusable = false
@@ -465,6 +551,9 @@ class MainActivity : AppCompatActivity() {
                 repository.upsertTimeSlot(slot.copy(id = 0), courseId)
             }
         }
+        timetable.events.forEach { event ->
+            repository.upsertAcademicEvent(event.copy(id = 0), timetableId)
+        }
     }
 
     private fun importTimetableFile(uri: Uri) {
@@ -559,7 +648,208 @@ class MainActivity : AppCompatActivity() {
                     repository.upsertTimeSlot(slot, courseId)
                 }
             }
+            timetable.events.forEach { event -> repository.upsertAcademicEvent(event, timetableId) }
         }
+    }
+
+    private fun showQuickCourseActionsDialog(timetable: Timetable, course: Course) {
+        val today = Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
+        val hasToday = timetable.resolveDate(today).any { it.course.id == course.id }
+        val options = arrayOf("今天停课", "今日调课 / 换教室", "恢复今天")
+        AlertDialog.Builder(this)
+            .setTitle(course.name.ifBlank { "课程" })
+            .setMessage(if (hasToday) "快速处理今天的课程" else "今天没有这门课；仍可进入日期例外手动调整")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> applyTodayCourseOverride(timetable, course, cancel = true)
+                    1 -> showScheduleOverrideDialog(timetable, course.id, ScheduleOverrideType.MODIFIED)
+                    2 -> applyTodayCourseOverride(timetable, course, cancel = false)
+                }
+            }.show()
+    }
+
+    private fun applyTodayCourseOverride(timetable: Timetable, course: Course, cancel: Boolean) {
+        val today = Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
+        val matchingSlotIds = timetable.resolveDate(today)
+            .filter { it.course.id == course.id }
+            .map { it.timeSlot.id }
+            .toSet()
+        val targetSlots = if (cancel) {
+            course.timeSlots.filter { it.id in matchingSlotIds }
+        } else {
+            course.timeSlots.filter { slot -> slot.overrides.any { it.date == today } }
+        }
+        if (targetSlots.isEmpty()) {
+            toast(if (cancel) "今天没有可停的课时" else "今天没有需要恢复的调整")
+            return
+        }
+        uiScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    targetSlots.forEach { slot ->
+                        val retained = slot.overrides.filterNot { it.date == today }
+                        val updated = if (cancel) {
+                            slot.copy(overrides = retained + ScheduleOverride(today, ScheduleOverrideType.CANCELLED))
+                        } else {
+                            slot.copy(overrides = retained)
+                        }
+                        repository.upsertTimeSlot(updated, course.id)
+                    }
+                }
+            }.onSuccess {
+                toast(if (cancel) "已将今天的 ${targetSlots.size} 个课时设为停课" else "已恢复今天的课程安排")
+            }.onFailure { toast(it.message ?: "保存失败") }
+        }
+    }
+
+    private fun showAcademicEventManagerDialog(timetable: Timetable) {
+        val ordered = timetable.events.sortedWith(
+            compareBy<AcademicEvent> { it.completed }
+                .thenBy { it.date }
+                .thenBy { it.time }
+                .thenBy { it.title },
+        )
+        val labels = buildList {
+            add("＋ 添加作业 / 考试")
+            ordered.forEach { event ->
+                val status = if (event.completed) "✓ " else ""
+                val title = event.title.ifBlank { "未命名待办" }.let { if (it.length > 24) it.take(23) + "…" else it }
+                add("$status${event.date} · ${eventTypeLabel(event.type)} · $title")
+            }
+        }
+        AlertDialog.Builder(this)
+            .setTitle("学业待办 · ${timetable.events.count { !it.completed }} 未完成")
+            .setItems(labels.toTypedArray()) { _, which ->
+                if (which == 0) {
+                    showAcademicEventDialog(timetable, null)
+                } else {
+                    ordered.getOrNull(which - 1)?.let { showAcademicEventActionsDialog(timetable, it) }
+                }
+            }
+            .setNegativeButton("关闭", null)
+            .show()
+    }
+
+    private fun showAcademicEventActionsDialog(timetable: Timetable, event: AcademicEvent) {
+        val completeLabel = if (event.completed) "标记为未完成" else "标记为完成"
+        val options = arrayOf("编辑", completeLabel, "删除")
+        AlertDialog.Builder(this)
+            .setTitle(event.title.ifBlank { "学业待办" })
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showAcademicEventDialog(timetable, event)
+                    1 -> uiScope.launch {
+                        withContext(Dispatchers.IO) {
+                            repository.upsertAcademicEvent(event.copy(completed = !event.completed), timetable.timetableId)
+                        }
+                        toast(if (event.completed) "已恢复为未完成" else "已完成")
+                    }
+                    2 -> AlertDialog.Builder(this)
+                        .setTitle("删除待办")
+                        .setMessage("确定删除“${event.title}”吗？")
+                        .setNegativeButton("取消", null)
+                        .setPositiveButton("删除") { _, _ ->
+                            uiScope.launch {
+                                withContext(Dispatchers.IO) { repository.deleteAcademicEvent(event.id) }
+                                toast("待办已删除")
+                            }
+                        }.show()
+                }
+            }.show()
+    }
+
+    private fun showAcademicEventDialog(timetable: Timetable, existing: AcademicEvent?) {
+        val title = inputField("标题", "例如：高数作业第 5 章").apply { editText?.setText(existing?.title.orEmpty()) }
+        val typeSpinner = spinner(listOf("作业", "考试", "实验", "其他"))
+        typeSpinner.setSelection(existing?.type?.ordinal ?: 0)
+        val courseName = autocompleteField(
+            "关联课程（可留空）",
+            "例如：高等数学",
+            timetable.allCourses.map { it.name }.filter { it.isNotBlank() }.distinct(),
+        ).apply { editText?.setText(existing?.courseName.orEmpty()) }
+        val date = inputField("日期", "YYYY-MM-DD").apply {
+            editText?.setText(existing?.date?.toString() ?: todayString())
+            editText?.isFocusable = false
+            editText?.setOnClickListener { showDatePicker(editText ?: return@setOnClickListener) }
+        }
+        val time = inputField("时间（可留空）", "例如：14:00；长按清除").apply {
+            editText?.setText(existing?.time?.toString().orEmpty())
+            editText?.isFocusable = false
+            editText?.setOnClickListener { showTimePicker(editText ?: return@setOnClickListener) }
+            editText?.setOnLongClickListener {
+                editText?.setText("")
+                true
+            }
+        }
+        val timeHint = TextView(this).apply {
+            text = "未设置时间时，提醒按当天 09:00 计算"
+            textSize = 12f
+            maxLines = 2
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, 0, 0, dp(4))
+        }
+        val location = autocompleteField(
+            "地点（可留空）",
+            "例如：A301",
+            locationSuggestions(),
+        ).apply { editText?.setText(existing?.location.orEmpty()) }
+        val note = inputField("备注（可留空）", "最多 200 字").apply { editText?.setText(existing?.note.orEmpty()) }
+        val reminderValues = listOf<Int?>(null, 0, 30, 60, 1440)
+        val reminderSpinner = spinner(listOf("不提醒", "准时提醒", "提前 30 分钟", "提前 1 小时", "提前 1 天"))
+        reminderSpinner.setSelection(reminderValues.indexOf(existing?.reminderMinutesBefore).takeIf { it >= 0 } ?: 0)
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(if (existing == null) "添加作业 / 考试" else "编辑作业 / 考试")
+            .setView(
+                dialogColumn(
+                    title,
+                    labeled("类型", typeSpinner),
+                    courseName,
+                    date,
+                    time,
+                    timeHint,
+                    location,
+                    note,
+                    labeled("提醒", reminderSpinner),
+                )
+            )
+            .setNegativeButton("取消", null)
+            .setPositiveButton("保存", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                runCatching {
+                    val titleText = title.text().ifBlank { throw IllegalArgumentException("请输入标题") }
+                    require(titleText.length <= 80) { "标题最多 80 个字符" }
+                    require(note.text().length <= 200) { "备注最多 200 个字符" }
+                    val parsedDate = LocalDate.parse(date.text())
+                    val parsedTime = time.text().takeIf { it.isNotBlank() }?.let(LocalTime::parse)
+                    AcademicEvent(
+                        id = existing?.id ?: 0,
+                        title = titleText,
+                        type = AcademicEventType.entries[typeSpinner.selectedItemPosition],
+                        date = parsedDate,
+                        time = parsedTime,
+                        courseName = courseName.text().takeIf { it.isNotBlank() }?.take(80),
+                        location = location.text().takeIf { it.isNotBlank() }?.take(80),
+                        note = note.text().takeIf { it.isNotBlank() },
+                        reminderMinutesBefore = reminderValues[reminderSpinner.selectedItemPosition],
+                        completed = existing?.completed ?: false,
+                    )
+                }.onSuccess { event ->
+                    uiScope.launch {
+                        withContext(Dispatchers.IO) { repository.upsertAcademicEvent(event, timetable.timetableId) }
+                        dialog.dismiss()
+                        if (event.reminderMinutesBefore != null) {
+                            if (Build.VERSION.SDK_INT >= 33) requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            requestExactAlarmAccessIfNeeded()
+                        }
+                        toast(if (existing == null) "待办已添加" else "待办已更新")
+                    }
+                }.onFailure { toast(it.message ?: "保存失败") }
+            }
+        }
+        dialog.show()
     }
 
     private fun showCourseActionsDialog(timetable: Timetable, course: Course) {
@@ -577,9 +867,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showEditCourseDialog(timetable: Timetable, course: Course) {
-        val name = inputField("课程名称", "课程名称").apply { editText?.setText(course.name) }
-        val location = inputField("地点（可留空）", "地点").apply { editText?.setText(course.location.orEmpty()) }
-        val teacher = inputField("教师（可留空）", "教师").apply { editText?.setText(course.teacher.orEmpty()) }
+        val name = autocompleteField("课程名称", "课程名称", courseSuggestions()).apply { editText?.setText(course.name) }
+        val location = autocompleteField("地点（可留空）", "地点", locationSuggestions()).apply { editText?.setText(course.location.orEmpty()) }
+        val teacher = autocompleteField("教师（可留空）", "教师", teacherSuggestions()).apply { editText?.setText(course.teacher.orEmpty()) }
         AlertDialog.Builder(this)
             .setTitle("编辑课程")
             .setView(dialogColumn(name, location, teacher))
@@ -714,12 +1004,14 @@ class MainActivity : AppCompatActivity() {
                             semesterName = source.semesterName + " 副本",
                             createdAt = Clock.System.now(),
                             allCourses = emptyList(),
+                            events = emptyList(),
                         )
                     )
                     source.allCourses.forEach { course ->
                         val newCourseId = repository.upsertCourse(course.copy(id = 0, timeSlots = emptyList()), newTableId)
                         course.timeSlots.forEach { slot -> repository.upsertTimeSlot(slot.copy(id = 0), newCourseId) }
                     }
+                    source.events.forEach { event -> repository.upsertAcademicEvent(event.copy(id = 0), newTableId) }
                 }
             }.onSuccess { toast("课表已复制") }
                 .onFailure { toast(it.message ?: "复制失败") }
@@ -738,12 +1030,16 @@ class MainActivity : AppCompatActivity() {
     private fun syncTimetableToCalendar(timetable: Timetable) {
         uiScope.launch {
             runCatching { withContext(Dispatchers.IO) { SystemCalendarSync.sync(this@MainActivity, timetable) } }
-                .onSuccess { toast("已同步 ${it.inserted} 节课到 ${it.calendarName}") }
+                .onSuccess { toast("已同步 ${it.inserted} 条日程到 ${it.calendarName}") }
                 .onFailure { toast(it.message ?: "系统日历同步失败") }
         }
     }
 
-    private fun showScheduleOverrideDialog(timetable: Timetable) {
+    private fun showScheduleOverrideDialog(
+        timetable: Timetable,
+        preselectedCourseId: Long? = null,
+        preselectedType: ScheduleOverrideType? = null,
+    ) {
         val choices = timetable.allCourses.flatMap { course -> course.timeSlots.map { course to it } }
         if (choices.isEmpty()) {
             toast("请先添加课程和上课时间")
@@ -753,7 +1049,16 @@ class MainActivity : AppCompatActivity() {
             "${course.name} · ${slot.dayOfWeek?.let(::dayLabel) ?: "未定"} ${slot.startTime ?: "--:--"}-${slot.endTime ?: "--:--"}"
         })
         val typeValues = listOf("停课", "调课/修改", "临时加课", "恢复正常")
-        val typeSpinner = spinner(typeValues)
+        val typeSpinner = spinner(typeValues).apply {
+            setSelection(
+                when (preselectedType) {
+                    ScheduleOverrideType.CANCELLED -> 0
+                    ScheduleOverrideType.MODIFIED -> 1
+                    ScheduleOverrideType.EXTRA -> 2
+                    null -> 0
+                }
+            )
+        }
         val date = inputField("日期", "YYYY-MM-DD").apply { editText?.setText(todayString()) }
         date.editText?.isFocusable = false
         date.editText?.setOnClickListener { showDatePicker(date.editText ?: return@setOnClickListener) }
@@ -766,7 +1071,9 @@ class MainActivity : AppCompatActivity() {
             start.editText?.setText(slot.startTime?.toString() ?: "08:00")
             end.editText?.setText(slot.endTime?.toString() ?: "09:40")
         }
-        fillTimes(0)
+        val initialIndex = choices.indexOfFirst { (course, _) -> course.id == preselectedCourseId }.takeIf { it >= 0 } ?: 0
+        slotSpinner.setSelection(initialIndex)
+        fillTimes(initialIndex)
         slotSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) = fillTimes(position)
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
@@ -887,12 +1194,57 @@ class MainActivity : AppCompatActivity() {
             addView(TextInputEditText(context).apply { this.hint = placeholder })
         }
 
+    private fun autocompleteField(hint: String, placeholder: String, suggestions: List<String>): TextInputLayout =
+        TextInputLayout(this).apply {
+            this.hint = hint
+            setPadding(0, dp(4), 0, dp(4))
+            addView(MaterialAutoCompleteTextView(context).apply {
+                this.hint = placeholder
+                threshold = 1
+                setAdapter(ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, suggestions.distinct().take(50)))
+            })
+        }
+
+    private fun courseSuggestions(): List<String> = currentTimetables
+        .flatMap { it.allCourses }
+        .map { it.name.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+
+    private fun locationSuggestions(): List<String> = currentTimetables
+        .flatMap { table -> table.allCourses.mapNotNull { it.location } + table.events.mapNotNull { it.location } }
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+
+    private fun teacherSuggestions(): List<String> = currentTimetables
+        .flatMap { it.allCourses }
+        .mapNotNull { it.teacher?.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+
+    private fun eventTypeLabel(type: AcademicEventType): String = when (type) {
+        AcademicEventType.ASSIGNMENT -> "作业"
+        AcademicEventType.EXAM -> "考试"
+        AcademicEventType.LAB -> "实验"
+        AcademicEventType.OTHER -> "待办"
+    }
+
+    private fun formatMinutes(minutes: Int): String = when {
+        minutes >= 60 && minutes % 60 == 0 -> "${minutes / 60} 小时"
+        minutes >= 60 -> "${minutes / 60}小时${minutes % 60}分"
+        else -> "${minutes} 分钟"
+    }
+
     private fun TextInputLayout.text(): String = editText?.text?.toString()?.trim().orEmpty()
 
-    private fun dialogColumn(vararg views: View): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        setPadding(dp(20), dp(4), dp(20), 0)
-        views.forEach { view -> addView(view) }
+    private fun dialogColumn(vararg views: View): ScrollView = ScrollView(this).apply {
+        isFillViewport = true
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(4), dp(20), dp(8))
+            views.forEach { view -> addView(view) }
+        })
     }
 
     private fun labeled(label: String, view: View): LinearLayout = LinearLayout(this).apply {
@@ -947,7 +1299,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::repository.isInitialized && currentTimetables.isNotEmpty() && ReminderSettings.enabled(this)) {
+        if (::repository.isInitialized && currentTimetables.isNotEmpty()) {
             CourseReminderScheduler.schedule(this, currentTimetables)
         }
     }
