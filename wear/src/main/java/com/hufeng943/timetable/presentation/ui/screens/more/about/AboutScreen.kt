@@ -1,11 +1,6 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.about
 
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -133,6 +128,7 @@ fun AboutScreen() {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Info,
                     text = stringResource(R.string.about_description),
+                    maxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -141,7 +137,25 @@ fun AboutScreen() {
             item {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Star,
-                    text = stringResource(R.string.about_features_text).trimMargin(),
+                    text = stringResource(R.string.about_features_schedule),
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiInfoCapsule(
+                    icon = Icons.Rounded.Star,
+                    text = stringResource(R.string.about_features_wear),
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiInfoCapsule(
+                    icon = Icons.Rounded.Star,
+                    text = stringResource(R.string.about_features_tools),
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -154,21 +168,27 @@ fun AboutScreen() {
                     icon = Icons.Rounded.History,
                     emphasize = changelogExpanded,
                     onClick = { changelogExpanded = !changelogExpanded },
+                    maxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
 
-            item {
-                AnimatedVisibility(
-                    visible = changelogExpanded,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut(),
-                ) {
+            if (changelogExpanded) {
+                item {
                     OneUiInfoCapsule(
                         icon = Icons.Rounded.History,
-                        text = stringResource(R.string.about_changelog),
-                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.about_changelog_part1),
+                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                    )
+                }
+                item {
+                    OneUiInfoCapsule(
+                        icon = Icons.Rounded.History,
+                        text = stringResource(R.string.about_changelog_part2),
+                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     )
                 }
             }
@@ -178,6 +198,7 @@ fun AboutScreen() {
                     title = stringResource(R.string.about_original_author_name),
                     subtitle = stringResource(R.string.about_original_author_subtitle),
                     icon = Icons.Rounded.Code,
+                    maxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -189,6 +210,7 @@ fun AboutScreen() {
                     subtitle = stringResource(R.string.about_developer_subtitle),
                     icon = Icons.Rounded.Person,
                     emphasize = true,
+                    maxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -197,7 +219,16 @@ fun AboutScreen() {
             item {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Info,
-                    text = stringResource(R.string.about_declaration_text).trimMargin(),
+                    text = stringResource(R.string.about_declaration_project),
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiInfoCapsule(
+                    icon = Icons.Rounded.Info,
+                    text = stringResource(R.string.about_declaration_development),
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -206,7 +237,25 @@ fun AboutScreen() {
             item {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Code,
-                    text = stringResource(R.string.about_open_source_stack),
+                    text = stringResource(R.string.about_open_source_wear),
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiInfoCapsule(
+                    icon = Icons.Rounded.Code,
+                    text = stringResource(R.string.about_open_source_data),
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiInfoCapsule(
+                    icon = Icons.Rounded.Code,
+                    text = stringResource(R.string.about_open_source_ui),
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -218,6 +267,7 @@ fun AboutScreen() {
                     subtitle = stringResource(R.string.about_license_subtitle),
                     icon = Icons.Rounded.Description,
                     onClick = { navController.navigateSingle(NavRoutes.MORE_ABOUT_LIBRARIES) },
+                    maxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )

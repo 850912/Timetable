@@ -44,6 +44,8 @@ fun OneUiCapsuleSurface(
     accentColor: Color = Color.Unspecified,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    titleMaxLines: Int = 1,
+    subtitleMaxLines: Int = 2,
 ) {
     val colors = AppTheme.colors
     val resolvedAccent = when {
@@ -106,8 +108,8 @@ fun OneUiCapsuleSurface(
                     style = MaterialTheme.typography.titleSmall,
                     color = if (destructive) MaterialTheme.colorScheme.onErrorContainer else colors.textPrimary,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLines = titleMaxLines,
+                    overflow = if (titleMaxLines == Int.MAX_VALUE) TextOverflow.Clip else TextOverflow.Ellipsis,
                 )
                 if (!subtitle.isNullOrBlank()) {
                     Text(
@@ -118,8 +120,8 @@ fun OneUiCapsuleSurface(
                         } else {
                             colors.textSecondary
                         },
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = subtitleMaxLines,
+                        overflow = if (subtitleMaxLines == Int.MAX_VALUE) TextOverflow.Clip else TextOverflow.Ellipsis,
                     )
                 }
             }

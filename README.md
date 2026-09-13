@@ -77,10 +77,19 @@ Release 构建继续使用项目现有签名配置。
 
 ## 主要开源组件
 
-项目继续基于现有依赖，不为 Build 10.5 额外引入第三方运行时库。当前核心组件版本：Wear Compose **1.6.2**、Horologist **0.7.15**、Room **2.8.4**、Hilt **2.60**、KotlinX Serialization **1.11.0**、KotlinX Datetime **0.8.0**、AboutLibraries **15.0.3**、MaterialKolor **4.1.1**。手表端“关于 → 开源许可证”读取 AboutLibraries 在构建时根据实际依赖生成的许可证清单。
+项目继续基于现有依赖，不为 3.1.0 额外引入第三方运行时库。当前核心组件版本：Wear Compose **1.6.2**、Horologist **0.7.15**、Room **2.8.4**、Hilt **2.60**、KotlinX Serialization **1.11.0**、KotlinX Datetime **0.8.0**、Coroutines **1.11.0**、AboutLibraries **15.0.3**、MaterialKolor **4.1.1**。手表端“关于 → 开源许可证”读取 AboutLibraries 在构建时根据实际依赖生成的许可证清单。
 
 开发者选项可通过在“关于应用”连续点击版本号 7 次进入，现显示应用版本、Android API / 屏幕 dp、Room schema、文件传输协议、支持格式、核心组件以及 Tile / Complication 更新策略。
 
 ## 开源协议
 
 本项目采用 **MIT License + Commons Clause** 双协议，详细条款请查看 [LICENSE](LICENSE)。
+
+
+## 3.1.0 首页与信息页优化
+
+- 版本号切换为语义化 `3.1.0`；Wear release 不再把 Git commit 数拼到可见版本号中，`versionCode` 仍独立用于构建递增。
+- Wear 首页改为“状态优先”：正在上课时先显示课程名与剩余时间；课前先显示下一节倒计时；完整今日课表继续下滑查看。当前课程在课表内使用静态描边与更强底色突出；移除下一节课程持续脉冲动画。
+- 课前倒计时按长度自动压缩为 `25分后上课` / `1时20分后上课` / `2时后上课`，按分钟边界刷新；当天课程全部结束后显示简短休息提示。
+- About 长内容拆成多张短卡片；开发者选项标题/副标题允许完整换行，并显示 versionCode，避免省略号隐藏诊断信息。
+- 开源组件说明同步到实际版本，许可证页面继续由 AboutLibraries 根据构建依赖生成。

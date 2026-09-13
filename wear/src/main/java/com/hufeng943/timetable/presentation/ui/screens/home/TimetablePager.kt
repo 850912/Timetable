@@ -147,6 +147,7 @@ fun TimetablePager(
                 showTopTime = config.isShowTopTime,
                 events = selectedDateEvents,
                 is24HourFormat = config.is24HourFormat,
+                statusSummary = statusSummary,
             ) { courseUi, transformationSpec ->
                 val courseId = courseUi.timeSlot.id
                 CourseCard(
@@ -244,6 +245,7 @@ private fun CourseListPager(
     showTopTime: Boolean = false,
     events: List<AcademicEvent> = emptyList(),
     is24HourFormat: Boolean = true,
+    statusSummary: CourseStatusSummary = CourseStatusSummary(),
     modifier: Modifier = Modifier,
     itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec) -> Unit
 ) {
@@ -251,6 +253,8 @@ private fun CourseListPager(
     val transformationSpec = rememberTransformationSpec()
     val isTouching = remember { AtomicBoolean(false) }
     val focusRequester = remember { FocusRequester() }
+    val zone = TimeZone.currentSystemDefault()
+    val isToday = selectedDate == Clock.System.todayIn(zone)
     val daySummary = wearDaySummary(coursesUi, is24HourFormat)
 
     val nestedScrollConnection = rememberPullToRefreshConnection(
@@ -282,9 +286,7 @@ private fun CourseListPager(
                 modifier = modifier
                     .fillMaxSize()
                     .focusRequester(focusRequester)
-                    .onPreRotaryScrollEvent {
-                        state.dragOffset > 0
-                    }
+                    .onPreRotaryScrollEvent { state.dragOffset > 0 }
                     .pointerInput(Unit) {
                         awaitPointerEventScope {
                             while (true) {
@@ -299,11 +301,59 @@ private fun CourseListPager(
                 rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
+                if (isToday) {
+                    item {
+                        val currentCourse = statusSummary.currentId?.let { id ->
+                            coursesUi.firstOrNull { it.timeSlot.id == id }
+                        }
+                        val nextCourse = statusSummary.nextId?.let { id ->
+                            coursesUi.firstOrNull { it.timeSlot.id == id }
+                        }
+                        val title: String
+                        val subtitle: String
+                        when {
+                            currentCourse != null -> {
+                                title = currentCourse.displayName
+                                subtitle = stringResource(
+                                    R.string.home_summary_in_class,
+                                    statusSummary.minutesLeft ?: 1,
+                                )
+                            }
+                            nextCourse != null && statusSummary.minutesUntilNext != null -> {
+                                title = untilClassText(statusSummary.minutesUntilNext)
+                                subtitle = buildString {
+                                    append(nextCourse.displayName)
+                                    nextCourse.timeSlot.startTime?.let {
+                                        append(" · ").append(it.toDisplayString(is24HourFormat))
+                                    }
+                                }
+                            }
+                            else -> {
+                                title = stringResource(R.string.home_day_finished_title)
+                                subtitle = dayFinishedMessage(selectedDate) + "\n" + stringResource(R.string.home_day_finished_scroll_hint)
+                            }
+                        }
+                        OneUiCapsuleSurface(
+                            title = title,
+                            subtitle = subtitle,
+                            icon = Icons.Rounded.EventAvailable,
+                            emphasize = currentCourse != null,
+                            titleMaxLines = Int.MAX_VALUE,
+                            subtitleMaxLines = Int.MAX_VALUE,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = if (showTopTime) 30.dp else 10.dp)
+                                .transformedHeight(this, transformationSpec)
+                                .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
+                        )
+                    }
+                }
+
                 item {
                     ListHeader(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = if (showTopTime) 30.dp else 10.dp)
+                            .padding(top = if (!isToday && showTopTime) 30.dp else if (!isToday) 10.dp else 2.dp)
                             .transformedHeight(this, transformationSpec)
                             .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
@@ -327,6 +377,7 @@ private fun CourseListPager(
                         }
                     }
                 }
+
                 itemsIndexed(
                     items = coursesUi, key = { _, item -> itemKey(item) }) { _, item ->
                     this.itemContent(item, transformationSpec)
@@ -339,6 +390,8 @@ private fun CourseListPager(
                         title = event.title,
                         subtitle = eventSubtitle(event, is24HourFormat),
                         icon = Icons.Rounded.EventAvailable,
+                        titleMaxLines = 2,
+                        subtitleMaxLines = 3,
                         modifier = Modifier
                             .fillMaxWidth()
                             .transformedHeight(this, transformationSpec)
@@ -374,26 +427,39 @@ private fun wearDaySummary(courses: List<CourseUi>, is24HourFormat: Boolean): St
         start to end
     }.sortedBy { it.first }
     if (ranges.isEmpty()) return stringResource(R.string.home_summary_empty)
-    var free = 0
-    var previousEnd = ranges.first().second
-    for ((start, end) in ranges.drop(1)) {
-        val gap = (start.hour * 60 + start.minute) - (previousEnd.hour * 60 + previousEnd.minute)
-        if (gap > 0) free += gap
-        if (end > previousEnd) previousEnd = end
-    }
-    val base = stringResource(
+    return stringResource(
         R.string.home_summary_classes,
         ranges.size,
         ranges.first().first.toDisplayString(is24HourFormat),
         ranges.maxBy { it.second }.second.toDisplayString(is24HourFormat),
     )
-    return if (free > 0) base + "\n" + stringResource(R.string.home_summary_free, free) else base
+}
+
+@Composable
+private fun untilClassText(totalMinutes: Int): String {
+    val safeMinutes = totalMinutes.coerceAtLeast(1)
+    val hours = safeMinutes / 60
+    val minutes = safeMinutes % 60
+    return stringResource(R.string.home_until_hours_minutes, hours, minutes)
+}
+
+@Composable
+private fun dayFinishedMessage(date: LocalDate): String {
+    val selector = (date.toString().hashCode() and Int.MAX_VALUE) % 4
+    return when (selector) {
+        0 -> stringResource(R.string.home_day_finished_message_1)
+        1 -> stringResource(R.string.home_day_finished_message_2)
+        2 -> stringResource(R.string.home_day_finished_message_3)
+        else -> stringResource(R.string.home_day_finished_message_4)
+    }
 }
 
 private data class CourseStatusSummary(
     val currentId: Long? = null,
     val nextId: Long? = null,
     val minutesLeft: Int? = null,
+    val minutesUntilNext: Int? = null,
+    val dayFinished: Boolean = false,
 )
 
 private fun nextCourseStatusWakeMillis(courses: List<CourseUi>, selectedDate: LocalDate): Long? {
@@ -411,7 +477,12 @@ private fun nextCourseStatusWakeMillis(courses: List<CourseUi>, selectedDate: Lo
         }
         if (start > nowSec && (nextStartSec == null || start < nextStartSec!!)) nextStartSec = start
     }
-    return nextStartSec?.let { ((it - nowSec) * 1000L).coerceAtLeast(1_000L) }
+    return nextStartSec?.let {
+        val untilStart = ((it - nowSec) * 1000L).coerceAtLeast(1_000L)
+        val nowMillis = System.currentTimeMillis()
+        val nextMinute = (60_000L - (nowMillis % 60_000L)).coerceAtLeast(1_000L)
+        minOf(untilStart, nextMinute)
+    }
 }
 
 private fun calculateCourseStatusSummary(
@@ -427,10 +498,13 @@ private fun calculateCourseStatusSummary(
     var currentMinutesLeft: Int? = null
     var nextId: Long? = null
     var smallestUntilStart = Int.MAX_VALUE
+    var latestEnd = -1
 
     for (course in courses) {
         val start = course.timeSlot.startTime?.let { it.hour * 60 + it.minute } ?: continue
         val end = course.timeSlot.endTime?.let { it.hour * 60 + it.minute } ?: continue
+        if (end <= start) continue
+        if (end > latestEnd) latestEnd = end
         if (isWithinSlot(nowMin, start, end)) {
             if (currentId == null) {
                 currentId = course.timeSlot.id
@@ -445,7 +519,9 @@ private fun calculateCourseStatusSummary(
         }
     }
 
-    return CourseStatusSummary(currentId, nextId, currentMinutesLeft)
+    val untilNext = if (nextId == null || smallestUntilStart == Int.MAX_VALUE) null else smallestUntilStart
+    val dayFinished = currentId == null && nextId == null && latestEnd >= 0 && nowMin >= latestEnd
+    return CourseStatusSummary(currentId, nextId, currentMinutesLeft, untilNext, dayFinished)
 }
 
 private fun isWithinSlot(nowMinutes: Int, startMinutes: Int, endMinutes: Int): Boolean =

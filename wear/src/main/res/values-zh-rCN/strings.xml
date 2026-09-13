@@ -87,7 +87,16 @@
     <string name="home_academic_events_count">%1$d 项学业待办</string>
     <string name="home_summary_empty">0 节</string>
     <string name="home_summary_classes">%1$d节 · %2$s–%3$s</string>
-    <string name="home_summary_free">空闲 %1$d 分</string>
+    <string name="home_until_minutes">%1$d分后上课</string>
+    <string name="home_until_hours">%1$d时后上课</string>
+    <string name="home_until_hours_minutes">%1$d时%2$02d分后上课</string>
+    <string name="home_summary_in_class">正在上课 · %1$d分后下课</string>
+    <string name="home_day_finished_title">今天课程已结束</string>
+    <string name="home_day_finished_message_1">辛苦啦，剩下的时间留给自己。</string>
+    <string name="home_day_finished_message_2">今天打卡完成，记得放松一下。</string>
+    <string name="home_day_finished_message_3">课程结束，待办可以慢慢处理。</string>
+    <string name="home_day_finished_message_4">今天的课上完了，明天继续。</string>
+    <string name="home_day_finished_scroll_hint">向下滑动可回看今天课表</string>
     <string name="event_type_assignment">作业</string>
     <string name="event_type_exam">考试</string>
     <string name="event_type_lab">实验</string>
@@ -99,15 +108,26 @@
         " · 多课表管理与手机 ↔ 手表同步\n"
         " · 课程编辑、日期例外与今日快捷调课\n"
         " · 作业 / 考试 / 实验 / 待办及独立提醒\n"
-        " · 今日课程数、首末节与课间空闲统计\n"
+        " · 首页当前课程优先、下一节倒计时与课后状态\n"
         " · Wear Tile 时间线与倒计时 / 进度复杂功能\n"
         " · 本周课表图片分享与历史输入建议\n"
         " · ICS / CSV / JSON 导入导出及系统日历同步\n"
         " · 12/24 小时制、主题与中英文界面"
     </string>
+
+    <string name="about_features_schedule">课程：多课表、日期例外、今日调课、手机 ↔ 手表同步。</string>
+    <string name="about_features_wear">Wear：首页状态优先、Tile 时间线、当前课进度与下一节倒计时复杂功能。</string>
+    <string name="about_features_tools">工具：学业待办与提醒、本周课表分享、ICS / CSV / JSON、系统日历同步。</string>
+    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.1.0。</string>
+    <string name="about_declaration_development">维护：黑白君 (HeiBaiJun)；部分开发借助生成式 AI。连续点击版本号 7 次进入开发者选项。</string>
+    <string name="about_open_source_wear">Wear UI：Wear Compose 1.6.2 · Horologist 0.7.15</string>
+    <string name="about_open_source_data">数据：Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
+    <string name="about_open_source_ui">工具：Coroutines 1.11.0 · AboutLibraries 15.0.3 · MaterialKolor 4.1.1。完整许可证见下方入口。</string>
+    <string name="about_changelog_part1">首页状态优先：当前课先显示；课前用短倒计时；课后显示休息提示。当前课程增加静态描边和更强底色。</string>
+    <string name="about_changelog_part2">About / 开发者信息拆成短卡片完整换行；版本更新为 3.1.0；保留 Tile / Complication 时间线与低频刷新策略。</string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
-        " · Wear OS 应用，版本号以上方显示为准\n"
+        " · 当前版本采用语义化版本号 3.1.0\n"
         " · 原项目：HuFeng943 / Timetable\n"
         " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
         " · 当前版本在原项目基础上持续维护与扩展\n"
@@ -118,8 +138,8 @@
     <string name="about_library_open_source">✔ 开源协议</string>
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
-    <string name="about_open_source_stack">核心开源组件：Wear Compose 1.6.2、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX Serialization 1.11.0 / Datetime 0.8.0、AboutLibraries 15.0.3、MaterialKolor 4.1.1。许可证清单由 AboutLibraries 在构建时从实际依赖生成。</string>
-    <string name="about_changelog_title">Build 10.5 更新</string>
+    <string name="about_open_source_stack">核心开源组件：Wear Compose 1.6.2、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX Serialization 1.11.0 / Datetime 0.8.0、Coroutines 1.11.0、AboutLibraries 15.0.3、MaterialKolor 4.1.1。开源许可证页面由 AboutLibraries 根据实际构建依赖生成。</string>
+    <string name="about_changelog_title">3.1.0 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
         " · 新增作业、考试、实验与其他学业待办\n"
@@ -129,9 +149,10 @@
         " · 新增一键生成并分享本周课表图片\n"
         " · 新增下一节课倒计时表盘复杂功能\n"
         " · 优化 Tile / Complication 时间线更新\n"
-        " · 修复首页统计文字被省略，改为自适应两行摘要\n"
-        " · 完善 About、许可证说明与开发者诊断信息\n"
-        " · 优化小屏文字限制与可滚动编辑弹窗"
+        " · 首页倒计时改为“时/分后上课”，避免长文本截断\n"
+        " · About / 开发者页面长文本完整换行，不再省略\n"
+        " · 当前课程打开即优先定位并强化高亮；课后显示休息提示\n"
+        " · 移除下一节课程持续脉冲动画，降低前台无效重绘"
     </string>
     <string name="about_original_author_name">HuFeng943</string>
     <string name="about_original_author_subtitle">原作者 · 原始项目 Timetable</string>
@@ -145,13 +166,15 @@
     <string name="developer_transfer_title">文件传输协议</string>
     <string name="developer_formats_title">支持格式</string>
     <string name="developer_core_title">核心组件</string>
-    <string name="developer_core_subtitle">Wear Compose 1.6.2 · Horologist 0.7.15 · Room 2.8.4 · Hilt 2.60</string>
+    <string name="developer_core_subtitle">Wear Compose 1.6.2 · Horologist 0.7.15 · Room 2.8.4 · Hilt 2.60 · KotlinX 1.11 / 0.8</string>
     <string name="developer_tile_title">Wear OS Tile</string>
     <string name="developer_tile_subtitle">课程边界使用 Timeline · 可预测更新不轮询</string>
     <string name="developer_complication_title">Complication</string>
     <string name="developer_complication_subtitle">当前课进度 + 下一节倒计时 · 系统时间驱动</string>
+    <string name="developer_home_title">首页调度策略</string>
+    <string name="developer_home_subtitle">当前课程优先定位 · 下一节倒计时按分钟边界刷新 · 课后进入静态提示</string>
     <string name="developer_effects_title">Galaxy AI 光效</string>
-    <string name="developer_effects_subtitle">轻量环境渐变 · 避免持续动画与后台耗电</string>
+    <string name="developer_effects_subtitle">轻量环境渐变 · 当前/下一课程使用静态强调，避免持续动画与后台耗电</string>
     <!-- Common -->
     <string name="today">今日</string>
     <string name="delete_confirm">确定删除吗？</string>
@@ -178,7 +201,7 @@
         <item>English</item>
     </string-array>
     <string name="home_no_course_today">今天没有课程</string>
-    <string name="course_in_progress">%1$d分钟下课</string>
+    <string name="course_in_progress">上课中 · %1$d分后下课</string>
     <string name="course_next">下一节</string>
     <string name="complication_current_course_label">当前课程</string>
     <string name="complication_next_course_label">下一节课</string>

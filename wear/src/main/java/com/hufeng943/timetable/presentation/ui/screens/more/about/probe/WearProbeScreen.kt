@@ -71,6 +71,8 @@ fun WearProbeScreen() {
                     icon = Icons.Rounded.BugReport,
                     emphasize = true,
                     onClick = { run { WearProbe.runDiagnostics(context) } },
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -81,6 +83,8 @@ fun WearProbeScreen() {
                     subtitle = "测试 MessageClient 双向通道",
                     icon = Icons.Rounded.Send,
                     onClick = { run { WearProbe.sendMessage(context) } },
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -91,6 +95,8 @@ fun WearProbeScreen() {
                     subtitle = "测试 DataClient 同步通道",
                     icon = Icons.Rounded.CloudSync,
                     onClick = { run { WearProbe.sendDataItem(context) } },
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -101,6 +107,8 @@ fun WearProbeScreen() {
                     subtitle = WearProbe.lastEvent(context),
                     icon = Icons.Rounded.Refresh,
                     onClick = { output = WearProbe.lastEvent(context) },
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -110,6 +118,8 @@ fun WearProbeScreen() {
                     title = "诊断输出",
                     subtitle = "完整结果见下方，可滚动查看",
                     icon = Icons.Rounded.BugReport,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )

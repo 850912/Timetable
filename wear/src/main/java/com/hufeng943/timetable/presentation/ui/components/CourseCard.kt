@@ -1,6 +1,7 @@
 package com.hufeng943.timetable.presentation.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,16 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
@@ -58,18 +53,19 @@ fun CourseCard(
     val courseColor = course.displayColor
     val slot = course.timeSlot
     val order = course.dailyOrder?.toString() ?: "•"
-    val pulse = if (isNext) {
-        val transition = rememberInfiniteTransition(label = "nextCoursePulse")
-        transition.animateFloat(0.82f, 1f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "alpha").value
-    } else 1f
+    val cardModifier = when {
+        isCurrent -> modifier.border(2.dp, courseColor.copy(alpha = 0.95f), CourseCapsuleShape)
+        isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.50f), CourseCapsuleShape)
+        else -> modifier
+    }
 
     Card(
         onClick = onClick,
-        modifier = modifier.alpha(pulse),
+        modifier = cardModifier,
         transformation = transformation,
         shape = CourseCapsuleShape,
         colors = CardDefaults.cardColors(
-            containerColor = courseColor.copy(alpha = if (isCurrent) 0.28f else 0.14f).compositeOver(colors.surfaceContainer),
+            containerColor = courseColor.copy(alpha = if (isCurrent) 0.40f else if (isNext) 0.20f else 0.14f).compositeOver(colors.surfaceContainer),
             contentColor = colors.textPrimary,
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -128,8 +124,9 @@ fun CourseCard(
                     if (isCurrent && minutesLeft != null) {
                         Text(
                             text = stringResource(R.string.course_in_progress, minutesLeft),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = courseColor,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colors.textPrimary,
+                            fontWeight = FontWeight.Bold,
                             maxLines = 1,
                         )
                     } else if (isNext) {

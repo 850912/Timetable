@@ -48,9 +48,11 @@ fun DeveloperOptionsScreen() {
         "API ${Build.VERSION.SDK_INT} · ${configuration.screenWidthDp}×${configuration.screenHeightDp} dp"
     }
 
-    val versionName = remember {
+    val versionSummary = remember {
         try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?"
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val name = packageInfo.versionName ?: "?"
+            "$name · code ${packageInfo.longVersionCode}"
         } catch (e: Exception) {
             Log.e("DeveloperOptions", "Unable to read version", e)
             "?"
@@ -75,9 +77,11 @@ fun DeveloperOptionsScreen() {
             item {
                 OneUiCapsuleSurface(
                     title = stringResource(R.string.developer_version_title),
-                    subtitle = versionName,
+                    subtitle = versionSummary,
                     icon = Icons.Rounded.Build,
                     emphasize = true,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -90,6 +94,8 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_runtime_title),
                     subtitle = runtimeSummary,
                     icon = Icons.Rounded.PhoneAndroid,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -102,6 +108,8 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_database_title),
                     subtitle = stringResource(R.string.developer_database_subtitle),
                     icon = Icons.Rounded.DataObject,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -116,6 +124,8 @@ fun DeveloperOptionsScreen() {
                     icon = Icons.Rounded.BugReport,
                     emphasize = true,
                     onClick = { navController.navigate(NavRoutes.MORE_ABOUT_DEVELOPER_PROBE) },
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -128,6 +138,8 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_transfer_title),
                     subtitle = "/timetable/file-transfer/v1",
                     icon = Icons.Rounded.CloudSync,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -140,6 +152,8 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_formats_title),
                     subtitle = "ICS · CSV · JSON",
                     icon = Icons.Rounded.Storage,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -152,6 +166,8 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_core_title),
                     subtitle = stringResource(R.string.developer_core_subtitle),
                     icon = Icons.Rounded.Memory,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -164,6 +180,8 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_tile_title),
                     subtitle = stringResource(R.string.developer_tile_subtitle),
                     icon = Icons.Rounded.GridView,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -176,6 +194,22 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_complication_title),
                     subtitle = stringResource(R.string.developer_complication_subtitle),
                     icon = Icons.Rounded.Schedule,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.developer_home_title),
+                    subtitle = stringResource(R.string.developer_home_subtitle),
+                    icon = Icons.Rounded.Schedule,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -189,6 +223,8 @@ fun DeveloperOptionsScreen() {
                     subtitle = stringResource(R.string.developer_effects_subtitle),
                     icon = Icons.Rounded.AutoAwesome,
                     emphasize = true,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)

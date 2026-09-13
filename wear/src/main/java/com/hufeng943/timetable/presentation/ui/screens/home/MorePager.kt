@@ -80,7 +80,7 @@ fun MorePager() {
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.Info,
                     label = stringResource(R.string.more_menu_about),
-                    secondaryLabel = "Timetable 2.0.0",
+                    secondaryLabel = "Timetable 3.1.0",
                     onClick = { navController.navigateSingle(NavRoutes.MORE_ABOUT) },
                     modifier = Modifier
                         .fillMaxWidth()
