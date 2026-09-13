@@ -34,7 +34,7 @@ object WearProbe {
     }
 
     fun runDiagnostics(context: Context): String = buildString {
-        appendLine("Build 10.1 · 正式 App Legacy Probe")
+        appendLine("3.1.0 · China Legacy Data Layer")
         appendLine("角色：手表")
         appendLine("设备：${Build.MANUFACTURER} ${Build.MODEL}")
         appendLine("Android：${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
