@@ -128,7 +128,8 @@ fun AboutScreen() {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Info,
                     text = stringResource(R.string.about_description),
-                    maxLines = Int.MAX_VALUE,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -168,7 +169,8 @@ fun AboutScreen() {
                     icon = Icons.Rounded.History,
                     emphasize = changelogExpanded,
                     onClick = { changelogExpanded = !changelogExpanded },
-                    maxLines = Int.MAX_VALUE,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -198,7 +200,8 @@ fun AboutScreen() {
                     title = stringResource(R.string.about_original_author_name),
                     subtitle = stringResource(R.string.about_original_author_subtitle),
                     icon = Icons.Rounded.Code,
-                    maxLines = Int.MAX_VALUE,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -210,7 +213,8 @@ fun AboutScreen() {
                     subtitle = stringResource(R.string.about_developer_subtitle),
                     icon = Icons.Rounded.Person,
                     emphasize = true,
-                    maxLines = Int.MAX_VALUE,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -267,7 +271,8 @@ fun AboutScreen() {
                     subtitle = stringResource(R.string.about_license_subtitle),
                     icon = Icons.Rounded.Description,
                     onClick = { navController.navigateSingle(NavRoutes.MORE_ABOUT_LIBRARIES) },
-                    maxLines = Int.MAX_VALUE,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
