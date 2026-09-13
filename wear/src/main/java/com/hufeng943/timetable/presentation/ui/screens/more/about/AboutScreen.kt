@@ -128,8 +128,7 @@ fun AboutScreen() {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Info,
                     text = stringResource(R.string.about_description),
-                    titleMaxLines = Int.MAX_VALUE,
-                    subtitleMaxLines = Int.MAX_VALUE,
+                    maxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
