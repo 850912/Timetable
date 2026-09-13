@@ -67,7 +67,7 @@ fun WearProbeScreen() {
             item {
                 OneUiCapsuleSurface(
                     title = "运行完整诊断",
-                    subtitle = "GMS · GoogleApiClient · NodeApi",
+                    subtitle = "GMS · NodeClient · connectedNodes",
                     icon = Icons.Rounded.BugReport,
                     emphasize = true,
                     onClick = { run { WearProbe.runDiagnostics(context) } },
@@ -80,7 +80,7 @@ fun WearProbeScreen() {
             item {
                 OneUiCapsuleSurface(
                     title = "手表 → 手机 Message",
-                    subtitle = "测试 Legacy MessageApi 双向通道",
+                    subtitle = "测试 MessageClient 双向通道",
                     icon = Icons.Rounded.Send,
                     onClick = { run { WearProbe.sendMessage(context) } },
                     titleMaxLines = Int.MAX_VALUE,
@@ -92,7 +92,7 @@ fun WearProbeScreen() {
             item {
                 OneUiCapsuleSurface(
                     title = "手表 → 手机 DataItem",
-                    subtitle = "测试 Legacy DataApi 同步通道",
+                    subtitle = "测试 DataClient 同步通道",
                     icon = Icons.Rounded.CloudSync,
                     onClick = { run { WearProbe.sendDataItem(context) } },
                     titleMaxLines = Int.MAX_VALUE,

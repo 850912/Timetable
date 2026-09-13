@@ -28,7 +28,7 @@ class WearProbeActivity : AppCompatActivity() {
             setPadding(dp(20), dp(20), dp(20), dp(32))
         }
         column.addView(TextView(this).apply {
-            text = "3.1.0 · China Wear Data Layer"
+            text = "Build 8 · China Wear Probe"
             textSize = 22f
             setTypeface(typeface, Typeface.BOLD)
         })

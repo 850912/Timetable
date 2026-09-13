@@ -1,13 +1,14 @@
 package com.hufeng943.timetable.transfer
 
 import android.content.Intent
+import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import com.hufeng943.timetable.shared.importexport.ImportService
-import com.hufeng943.timetable.sync.LegacyWearIo
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,7 +28,7 @@ class WearDataLayerTransferService : WearableListenerService() {
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
             val targetNodeId = dataMap.getString(WearFileTransferProtocol.KEY_TARGET_NODE_ID)
             val localNodeId = runCatching {
-                LegacyWearIo.localNodeId(this)
+                Tasks.await(Wearable.getNodeClient(this).localNode).id
             }.getOrNull()
 
             if (targetNodeId != null && targetNodeId != localNodeId) {
@@ -59,7 +60,9 @@ class WearDataLayerTransferService : WearableListenerService() {
 
             if (processed) {
                 runCatching {
-                    LegacyWearIo.deleteDataItem(this, event.dataItem.uri)
+                    Tasks.await(
+                        Wearable.getDataClient(this).deleteDataItems(event.dataItem.uri)
+                    )
                 }
             }
         }
@@ -67,7 +70,10 @@ class WearDataLayerTransferService : WearableListenerService() {
 
     private fun importAsset(asset: Asset?, replaceMatching: Boolean) {
         requireNotNull(asset) { "导入数据缺少文件内容" }
-        val bytes = LegacyWearIo.readAsset(this, asset).use { it.readBytes() }
+        val bytes = Tasks.await(Wearable.getDataClient(this).getFdForAsset(asset))
+            ?.inputStream
+            ?.use { it.readBytes() }
+            ?: throw IllegalStateException("无法读取手机发送的文件")
 
         val timetables = TimetableFileParser.parse(bytes)
         runBlocking(Dispatchers.IO) {

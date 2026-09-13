@@ -31,17 +31,32 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
+      - name: Create build log directory
+        run: mkdir -p build-logs
+
       - name: Run shared tests
-        run: ./gradlew :shared:test
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :shared:test --no-daemon --stacktrace --warning-mode all 2>&1 | tee build-logs/shared-test.log
 
       - name: Build Mobile Release
-        run: ./gradlew :mobile:assembleRelease --no-daemon
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :mobile:assembleRelease --no-daemon --stacktrace --warning-mode all 2>&1 | tee build-logs/mobile-release.log
 
       - name: Build Wear Release
-        run: ./gradlew :wear:assembleRelease --no-daemon
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :wear:assembleRelease --no-daemon --stacktrace --warning-mode all 2>&1 | tee build-logs/wear-release.log
 
       - name: Build China Legacy Probe APKs
-        run: ./gradlew :legacyprobe-mobile:assembleRelease :legacyprobe-wear:assembleRelease --no-daemon
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :legacyprobe-mobile:assembleRelease :legacyprobe-wear:assembleRelease --no-daemon --stacktrace --warning-mode all 2>&1 | tee build-logs/china-legacy-probe.log
 
       - name: Verify APK signatures
         shell: bash
@@ -95,6 +110,15 @@ jobs:
           done
 
           echo "All release APK signatures match: $MOBILE_CERT"
+
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-logs
+          path: build-logs/*.log
+          if-no-files-found: ignore
 
       - name: Upload Mobile APK
         uses: actions/upload-artifact@v4
