@@ -26,8 +26,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import java.util.concurrent.atomic.AtomicBoolean
 import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnDefaults
@@ -251,8 +251,7 @@ private fun CourseListPager(
     val transformationSpec = rememberTransformationSpec()
     val isTouching = remember { AtomicBoolean(false) }
     val focusRequester = remember { FocusRequester() }
-    val isLargeDisplay = LocalConfiguration.current.screenWidthDp >= 225
-    val daySummary = wearDaySummary(coursesUi, isLargeDisplay, is24HourFormat)
+    val daySummary = wearDaySummary(coursesUi, is24HourFormat)
 
     val nestedScrollConnection = rememberPullToRefreshConnection(
         scrollState = scrollState, state = state, isTouching = { isTouching.get() })
@@ -321,8 +320,9 @@ private fun CourseListPager(
                             Text(
                                 text = daySummary,
                                 style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 2,
+                                overflow = TextOverflow.Clip,
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -366,7 +366,7 @@ private fun eventSubtitle(event: AcademicEvent, is24HourFormat: Boolean): String
 }
 
 @Composable
-private fun wearDaySummary(courses: List<CourseUi>, includeFree: Boolean, is24HourFormat: Boolean): String {
+private fun wearDaySummary(courses: List<CourseUi>, is24HourFormat: Boolean): String {
     val ranges = courses.mapNotNull { course ->
         val start = course.timeSlot.startTime ?: return@mapNotNull null
         val end = course.timeSlot.endTime ?: return@mapNotNull null
@@ -387,7 +387,7 @@ private fun wearDaySummary(courses: List<CourseUi>, includeFree: Boolean, is24Ho
         ranges.first().first.toDisplayString(is24HourFormat),
         ranges.maxBy { it.second }.second.toDisplayString(is24HourFormat),
     )
-    return if (includeFree && free > 0) base + stringResource(R.string.home_summary_free, free) else base
+    return if (free > 0) base + "\n" + stringResource(R.string.home_summary_free, free) else base
 }
 
 private data class CourseStatusSummary(

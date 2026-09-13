@@ -1,11 +1,13 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.about
 
+import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -27,6 +29,9 @@ import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.DataObject
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.NavRoutes
@@ -37,7 +42,11 @@ fun DeveloperOptionsScreen() {
     val scrollState = rememberTransformingLazyColumnState()
     val transformationSpec = rememberTransformationSpec()
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val navController = LocalNavController.current
+    val runtimeSummary = remember(configuration.screenWidthDp, configuration.screenHeightDp) {
+        "API ${Build.VERSION.SDK_INT} · ${configuration.screenWidthDp}×${configuration.screenHeightDp} dp"
+    }
 
     val versionName = remember {
         try {
@@ -78,6 +87,30 @@ fun DeveloperOptionsScreen() {
 
             item {
                 OneUiCapsuleSurface(
+                    title = stringResource(R.string.developer_runtime_title),
+                    subtitle = runtimeSummary,
+                    icon = Icons.Rounded.PhoneAndroid,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.developer_database_title),
+                    subtitle = stringResource(R.string.developer_database_subtitle),
+                    icon = Icons.Rounded.DataObject,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
                     title = "中国区 Wear 通信探针",
                     subtitle = "检查 GMS · Node · Message · Data",
                     icon = Icons.Rounded.BugReport,
@@ -107,6 +140,18 @@ fun DeveloperOptionsScreen() {
                     title = stringResource(R.string.developer_formats_title),
                     subtitle = "ICS · CSV · JSON",
                     icon = Icons.Rounded.Storage,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.developer_core_title),
+                    subtitle = stringResource(R.string.developer_core_subtitle),
+                    icon = Icons.Rounded.Memory,
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)

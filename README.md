@@ -22,12 +22,12 @@ Timetable 是一个面向 Android 手机与 Wear OS 手表的本地优先课程�
 - 上课开始后持续通知，下课后自动结束
 - Android 12+ 在用户允许时使用精确闹钟，否则自动回退为近似提醒
 - 重启、系统时间、时区和精确闹钟权限变化后自动重建提醒
-- 一键把指定课表及未完成学业待办单向同步到系统日历
+- 一键把指定课表及未完成学业待办单向同步到系统日历，并可一键清除 Timetable 写入的当前课表日历事件
 - 一键生成并分享当前周课表 PNG 图片
 - Android 手机桌面“今日课程”小组件
 
 ### Wear OS
-- 今日课表、教学周、今日课程数 / 首末节 / 大屏空闲时间摘要
+- 今日课表、教学周、今日课程数 / 首末节 / 空闲时间两行摘要（避免圆屏截断）
 - 当天学业待办会跟随日期显示；标题与副标题按小屏限制行数并省略过长内容
 - Tile 使用课程时间边界 Timeline，减少固定频率无意义刷新
 - Current Course / Next Course Complication
@@ -77,7 +77,9 @@ Release 构建继续使用项目现有签名配置。
 
 ## 主要开源组件
 
-项目继续基于现有依赖，不为 Build 10.5 额外引入第三方运行时库。核心组件包括 AndroidX / Wear Compose、Horologist、Room、Hilt、KotlinX Serialization、KotlinX Datetime、AboutLibraries 和 MaterialKolor。手表端“关于 → 开源许可证”会读取构建时生成的依赖许可证清单。
+项目继续基于现有依赖，不为 Build 10.5 额外引入第三方运行时库。当前核心组件版本：Wear Compose **1.6.2**、Horologist **0.7.15**、Room **2.8.4**、Hilt **2.60**、KotlinX Serialization **1.11.0**、KotlinX Datetime **0.8.0**、AboutLibraries **15.0.3**、MaterialKolor **4.1.1**。手表端“关于 → 开源许可证”读取 AboutLibraries 在构建时根据实际依赖生成的许可证清单。
+
+开发者选项可通过在“关于应用”连续点击版本号 7 次进入，现显示应用版本、Android API / 屏幕 dp、Room schema、文件传输协议、支持格式、核心组件以及 Tile / Complication 更新策略。
 
 ## 开源协议
 

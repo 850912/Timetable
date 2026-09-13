@@ -87,7 +87,7 @@
     <string name="home_academic_events_count">%1$d 项学业待办</string>
     <string name="home_summary_empty">0 节</string>
     <string name="home_summary_classes">%1$d节 · %2$s–%3$s</string>
-    <string name="home_summary_free"> · 空闲%1$d分</string>
+    <string name="home_summary_free">空闲 %1$d 分</string>
     <string name="event_type_assignment">作业</string>
     <string name="event_type_exam">考试</string>
     <string name="event_type_lab">实验</string>
@@ -111,13 +111,14 @@
         " · 原项目：HuFeng943 / Timetable\n"
         " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
         " · 当前版本在原项目基础上持续维护与扩展\n"
-        " · 部分开发与维护工作借助生成式 AI 完成"
+        " · 部分开发与维护工作借助生成式 AI 完成\n"
+        " · 连续点击版本号 7 次可进入开发者选项"
     </string>
     <string name="about_library">第三方库</string>
     <string name="about_library_open_source">✔ 开源协议</string>
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
-    <string name="about_open_source_stack">核心开源组件：AndroidX / Wear Compose、Horologist、Room、Hilt、KotlinX Serialization / Datetime、AboutLibraries、MaterialKolor。</string>
+    <string name="about_open_source_stack">核心开源组件：Wear Compose 1.6.2、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX Serialization 1.11.0 / Datetime 0.8.0、AboutLibraries 15.0.3、MaterialKolor 4.1.1。许可证清单由 AboutLibraries 在构建时从实际依赖生成。</string>
     <string name="about_changelog_title">Build 10.5 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
@@ -128,6 +129,8 @@
         " · 新增一键生成并分享本周课表图片\n"
         " · 新增下一节课倒计时表盘复杂功能\n"
         " · 优化 Tile / Complication 时间线更新\n"
+        " · 修复首页统计文字被省略，改为自适应两行摘要\n"
+        " · 完善 About、许可证说明与开发者诊断信息\n"
         " · 优化小屏文字限制与可滚动编辑弹窗"
     </string>
     <string name="about_original_author_name">HuFeng943</string>
@@ -136,14 +139,19 @@
     <string name="about_developer_subtitle">二次开发与维护 · Wear / Sync / Student Tools · 2026.09</string>
     <string name="developer_options_title">开发者选项</string>
     <string name="developer_version_title">应用版本</string>
+    <string name="developer_runtime_title">运行环境</string>
+    <string name="developer_database_title">本地数据库</string>
+    <string name="developer_database_subtitle">Room schema v9 · 课程 / 例外 / 学业待办 / 同步队列</string>
     <string name="developer_transfer_title">文件传输协议</string>
     <string name="developer_formats_title">支持格式</string>
+    <string name="developer_core_title">核心组件</string>
+    <string name="developer_core_subtitle">Wear Compose 1.6.2 · Horologist 0.7.15 · Room 2.8.4 · Hilt 2.60</string>
     <string name="developer_tile_title">Wear OS Tile</string>
-    <string name="developer_tile_subtitle">标准 Wear OS Tile · 兼容 Galaxy Watch</string>
+    <string name="developer_tile_subtitle">课程边界使用 Timeline · 可预测更新不轮询</string>
     <string name="developer_complication_title">Complication</string>
-    <string name="developer_complication_subtitle">表盘课程信息入口已启用</string>
+    <string name="developer_complication_subtitle">当前课进度 + 下一节倒计时 · 系统时间驱动</string>
     <string name="developer_effects_title">Galaxy AI 光效</string>
-    <string name="developer_effects_subtitle">轻量环境渐变 · Watch7 优化</string>
+    <string name="developer_effects_subtitle">轻量环境渐变 · 避免持续动画与后台耗电</string>
     <!-- Common -->
     <string name="today">今日</string>
     <string name="delete_confirm">确定删除吗？</string>
