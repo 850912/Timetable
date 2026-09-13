@@ -221,4 +221,7 @@
     <string name="course_next">Next</string>
     <string name="complication_current_course_label">Current course</string>
     <string name="complication_next_course_label">Next course</string>
+    <string name="home_day_finished_free_title">You’re free</string>
+    <string name="home_view_today_timetable">View today’s timetable</string>
+    <string name="home_hide_today_timetable">Hide today’s timetable</string>
 </resources>

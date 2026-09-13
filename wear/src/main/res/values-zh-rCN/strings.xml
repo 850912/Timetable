@@ -205,4 +205,7 @@
     <string name="course_next">下一节</string>
     <string name="complication_current_course_label">当前课程</string>
     <string name="complication_next_course_label">下一节课</string>
+    <string name="home_day_finished_free_title">你自由了</string>
+    <string name="home_view_today_timetable">查看今日课表</string>
+    <string name="home_hide_today_timetable">收起今日课表</string>
 </resources>

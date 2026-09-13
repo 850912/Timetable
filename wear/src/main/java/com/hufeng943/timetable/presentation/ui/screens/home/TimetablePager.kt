@@ -54,6 +54,7 @@ import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
 import com.hufeng943.timetable.presentation.ui.components.CourseCard
+import com.hufeng943.timetable.presentation.ui.components.DayFinishedCard
 import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
 import com.hufeng943.timetable.presentation.ui.components.PullToDatePicker
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
@@ -256,6 +257,14 @@ private fun CourseListPager(
     val zone = TimeZone.currentSystemDefault()
     val isToday = selectedDate == Clock.System.todayIn(zone)
     val daySummary = wearDaySummary(coursesUi, is24HourFormat)
+    val currentCourse = statusSummary.currentId?.let { id ->
+        coursesUi.firstOrNull { it.timeSlot.id == id }
+    }
+    val nextCourse = statusSummary.nextId?.let { id ->
+        coursesUi.firstOrNull { it.timeSlot.id == id }
+    }
+    var showFinishedTimetable by remember(selectedDate, statusSummary.dayFinished) { mutableStateOf(false) }
+    val shouldShowCourseList = !isToday || !statusSummary.dayFinished || showFinishedTimetable
 
     val nestedScrollConnection = rememberPullToRefreshConnection(
         scrollState = scrollState, state = state, isTouching = { isTouching.get() })
@@ -301,45 +310,18 @@ private fun CourseListPager(
                 rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
-                if (isToday) {
+                if (isToday && currentCourse != null) {
                     item {
-                        val currentCourse = statusSummary.currentId?.let { id ->
-                            coursesUi.firstOrNull { it.timeSlot.id == id }
-                        }
-                        val nextCourse = statusSummary.nextId?.let { id ->
-                            coursesUi.firstOrNull { it.timeSlot.id == id }
-                        }
-                        val title: String
-                        val subtitle: String
-                        when {
-                            currentCourse != null -> {
-                                title = currentCourse.displayName
-                                subtitle = stringResource(
-                                    R.string.home_summary_in_class,
-                                    statusSummary.minutesLeft ?: 1,
-                                )
-                            }
-                            nextCourse != null && statusSummary.minutesUntilNext != null -> {
-                                title = untilClassText(statusSummary.minutesUntilNext)
-                                subtitle = buildString {
-                                    append(nextCourse.displayName)
-                                    nextCourse.timeSlot.startTime?.let {
-                                        append(" · ").append(it.toDisplayString(is24HourFormat))
-                                    }
-                                }
-                            }
-                            else -> {
-                                title = stringResource(R.string.home_day_finished_title)
-                                subtitle = dayFinishedMessage(selectedDate) + "\n" + stringResource(R.string.home_day_finished_scroll_hint)
-                            }
-                        }
                         OneUiCapsuleSurface(
-                            title = title,
-                            subtitle = subtitle,
+                            title = currentCourse.displayName,
+                            subtitle = stringResource(
+                                R.string.home_summary_in_class,
+                                statusSummary.minutesLeft ?: 1,
+                            ),
                             icon = Icons.Rounded.EventAvailable,
-                            emphasize = currentCourse != null,
-                            titleMaxLines = Int.MAX_VALUE,
-                            subtitleMaxLines = Int.MAX_VALUE,
+                            emphasize = true,
+                            titleMaxLines = 2,
+                            subtitleMaxLines = 2,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = if (showTopTime) 30.dp else 10.dp)
@@ -349,38 +331,83 @@ private fun CourseListPager(
                     }
                 }
 
-                item {
-                    ListHeader(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = if (!isToday && showTopTime) 30.dp else if (!isToday) 10.dp else 2.dp)
-                            .transformedHeight(this, transformationSpec)
-                            .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
-                        transformation = SurfaceTransformation(transformationSpec)
-                    ) {
-                        androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = weekNumber?.let {
-                                    stringResource(R.string.home_week_title, stringResource(R.string.home_title), it)
-                                } ?: stringResource(R.string.home_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = daySummary,
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 2,
-                                overflow = TextOverflow.Clip,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
+                if (isToday && statusSummary.dayFinished) {
+                    item {
+                        DayFinishedCard(
+                            title = stringResource(R.string.home_day_finished_free_title),
+                            subtitle = stringResource(R.string.home_day_finished_title),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = if (showTopTime) 30.dp else 10.dp)
+                                .transformedHeight(this, transformationSpec)
+                                .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
+                            transformation = SurfaceTransformation(transformationSpec),
+                        )
+                    }
+                    item {
+                        OneUiCapsuleSurface(
+                            title = stringResource(
+                                if (showFinishedTimetable) R.string.home_hide_today_timetable
+                                else R.string.home_view_today_timetable
+                            ),
+                            icon = Icons.Rounded.EventAvailable,
+                            onClick = { showFinishedTimetable = !showFinishedTimetable },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .transformedHeight(this, transformationSpec)
+                                .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
+                        )
                     }
                 }
 
-                itemsIndexed(
-                    items = coursesUi, key = { _, item -> itemKey(item) }) { _, item ->
-                    this.itemContent(item, transformationSpec)
+                if (shouldShowCourseList) {
+                    item {
+                        ListHeader(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    top = if (!isToday && showTopTime) 30.dp
+                                    else if (!isToday) 10.dp
+                                    else if (currentCourse != null || statusSummary.dayFinished) 2.dp
+                                    else if (showTopTime) 30.dp
+                                    else 10.dp
+                                )
+                                .transformedHeight(this, transformationSpec)
+                                .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
+                            transformation = SurfaceTransformation(transformationSpec)
+                        ) {
+                            androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = weekNumber?.let {
+                                        stringResource(R.string.home_week_title, stringResource(R.string.home_title), it)
+                                    } ?: stringResource(R.string.home_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                val statusLine = if (
+                                    isToday &&
+                                    currentCourse == null &&
+                                    nextCourse != null &&
+                                    statusSummary.minutesUntilNext != null
+                                ) {
+                                    untilClassText(statusSummary.minutesUntilNext)
+                                } else null
+                                Text(
+                                    text = if (statusLine == null) daySummary else "$daySummary\n$statusLine",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Clip,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+                    }
+
+                    itemsIndexed(
+                        items = coursesUi, key = { _, item -> itemKey(item) }) { _, item ->
+                        this.itemContent(item, transformationSpec)
+                    }
                 }
                 itemsIndexed(
                     items = events,
@@ -441,17 +468,6 @@ private fun untilClassText(totalMinutes: Int): String {
     val hours = safeMinutes / 60
     val minutes = safeMinutes % 60
     return stringResource(R.string.home_until_hours_minutes, hours, minutes)
-}
-
-@Composable
-private fun dayFinishedMessage(date: LocalDate): String {
-    val selector = (date.toString().hashCode() and Int.MAX_VALUE) % 4
-    return when (selector) {
-        0 -> stringResource(R.string.home_day_finished_message_1)
-        1 -> stringResource(R.string.home_day_finished_message_2)
-        2 -> stringResource(R.string.home_day_finished_message_3)
-        else -> stringResource(R.string.home_day_finished_message_4)
-    }
 }
 
 private data class CourseStatusSummary(
