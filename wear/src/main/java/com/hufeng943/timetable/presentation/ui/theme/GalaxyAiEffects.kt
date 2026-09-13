@@ -10,7 +10,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.graphicsLayer
 
 /**
  * Lightweight Galaxy AI inspired ambient light treatment.
@@ -38,16 +37,15 @@ fun GalaxyAiAmbientLayer(
             .background(
                 Brush.linearGradient(
                     colorStops = arrayOf(
-                        0.00f to primary.copy(alpha = 0.28f * effectAlpha),
-                        0.34f to midGlow.copy(alpha = 0.14f * effectAlpha),
-                        0.68f to endGlow.copy(alpha = 0.10f * effectAlpha),
-                        1.00f to secondary.copy(alpha = 0.04f * effectAlpha),
+                        0.00f to primary.copy(alpha = 0.18f * effectAlpha),
+                        0.30f to midGlow.copy(alpha = 0.11f * effectAlpha),
+                        0.72f to endGlow.copy(alpha = 0.07f * effectAlpha),
+                        1.00f to secondary.copy(alpha = 0.03f * effectAlpha),
                     ),
                     start = Offset.Zero,
                     end = Offset(520f, 180f),
                 )
             )
-            .graphicsLayer { alpha = 0.95f }
     )
 }
 

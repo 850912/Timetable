@@ -1,6 +1,7 @@
 package com.hufeng943.timetable.presentation.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -48,13 +49,14 @@ fun OneUiCapsuleSurface(
     subtitleMaxLines: Int = 2,
 ) {
     val colors = AppTheme.colors
+    val vividDeleteRed = Color(0xFFFF453A)
     val resolvedAccent = when {
-        destructive -> MaterialTheme.colorScheme.error
+        destructive -> vividDeleteRed
         accentColor != Color.Unspecified -> accentColor
         else -> colors.primary
     }
     val backgroundColor = when {
-        destructive -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.72f)
+        destructive -> vividDeleteRed.copy(alpha = 0.22f)
         selected -> colors.primary.copy(alpha = 0.18f)
         else -> colors.surfaceContainer
     }
@@ -63,6 +65,10 @@ fun OneUiCapsuleSurface(
         .fillMaxWidth()
         .clip(OneUiCapsuleShape)
         .background(backgroundColor)
+        .then(
+            if (destructive) Modifier.border(1.dp, vividDeleteRed.copy(alpha = 0.82f), OneUiCapsuleShape)
+            else Modifier
+        )
     root = when {
         onClick != null && onLongClick != null -> root.combinedClickable(
             onClick = onClick,
@@ -106,7 +112,7 @@ fun OneUiCapsuleSurface(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleSmall,
-                    color = if (destructive) MaterialTheme.colorScheme.onErrorContainer else colors.textPrimary,
+                    color = if (destructive) vividDeleteRed else colors.textPrimary,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = titleMaxLines,
                     overflow = if (titleMaxLines == Int.MAX_VALUE) TextOverflow.Clip else TextOverflow.Ellipsis,
@@ -116,7 +122,7 @@ fun OneUiCapsuleSurface(
                         text = subtitle,
                         style = MaterialTheme.typography.labelSmall,
                         color = if (destructive) {
-                            MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.78f)
+                            vividDeleteRed.copy(alpha = 0.82f)
                         } else {
                             colors.textSecondary
                         },

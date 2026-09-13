@@ -11,11 +11,15 @@ import com.hufeng943.timetable.tile.MainTileService
 
 /** Refreshes system-rendered Wear surfaces after local timetable data changes. */
 object WearSurfaceRefresher {
-    fun refresh(context: Context) {
+    fun refreshTile(context: Context) {
         runCatching {
             TileService.getUpdater(context.applicationContext)
                 .requestUpdate(MainTileService::class.java)
         }
+    }
+
+    fun refresh(context: Context) {
+        refreshTile(context)
         listOf(
             MainComplicationService::class.java,
             CurrentCourseComplicationService::class.java,

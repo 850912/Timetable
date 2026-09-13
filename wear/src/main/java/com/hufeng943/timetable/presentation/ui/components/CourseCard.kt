@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
@@ -57,9 +59,9 @@ fun CourseCard(
     val slot = course.timeSlot
     val order = course.dailyOrder?.toString() ?: "•"
     val cardModifier = when {
-        isCurrent -> modifier.border(2.dp, courseColor.copy(alpha = 0.95f), CourseCapsuleShape)
-        isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.50f), CourseCapsuleShape)
-        else -> modifier
+        isCurrent -> modifier.border(2.dp, courseColor.copy(alpha = 0.98f), CourseCapsuleShape)
+        isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.46f), CourseCapsuleShape)
+        else -> modifier.border(0.6.dp, Color.White.copy(alpha = 0.07f), CourseCapsuleShape)
     }
 
     Card(
@@ -68,7 +70,7 @@ fun CourseCard(
         transformation = transformation,
         shape = CourseCapsuleShape,
         colors = CardDefaults.cardColors(
-            containerColor = courseColor.copy(alpha = if (isCurrent) 0.40f else if (isNext) 0.20f else 0.14f).compositeOver(colors.surfaceContainer),
+            containerColor = courseColor.copy(alpha = if (isCurrent) 0.30f else if (isNext) 0.15f else 0.09f).compositeOver(colors.surfaceContainer),
             contentColor = colors.textPrimary,
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -81,7 +83,22 @@ fun CourseCard(
         ) {
             GalaxyAiAmbientLayer(
                 shape = CourseCapsuleShape,
-                strength = 0.55f,
+                strength = if (isCurrent) 0.72f else if (isNext) 0.44f else 0.28f,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color.Transparent,
+                                courseColor.copy(alpha = if (isCurrent) 0.90f else 0.45f),
+                                Color.White.copy(alpha = 0.24f),
+                                Color.Transparent,
+                            )
+                        )
+                    )
             )
 
             Row(
@@ -108,7 +125,7 @@ fun CourseCard(
                     Text(
                         text = course.displayName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.SemiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Clip,
                     )
@@ -128,7 +145,7 @@ fun CourseCard(
                         Text(
                             text = stringResource(R.string.course_in_progress, minutesLeft),
                             style = MaterialTheme.typography.labelMedium,
-                            color = colors.textPrimary,
+                            color = courseColor,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                         )
@@ -161,12 +178,13 @@ fun CourseCard(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.10f)),
+                        .background(courseColor.copy(alpha = if (isCurrent) 0.26f else 0.16f))
+                        .border(0.8.dp, courseColor.copy(alpha = 0.42f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = order,
-                        color = colors.textPrimary,
+                        color = if (isCurrent) Color.White else colors.textPrimary,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                     )
@@ -206,7 +224,17 @@ fun DayFinishedCard(
         ) {
             GalaxyAiAmbientLayer(
                 shape = CourseCapsuleShape,
-                strength = 0.48f,
+                strength = 0.40f,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color.Transparent, accent.copy(alpha = 0.55f), Color.White.copy(alpha = 0.20f), Color.Transparent)
+                        )
+                    )
             )
 
             Row(
@@ -251,7 +279,8 @@ fun DayFinishedCard(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.10f)),
+                        .background(accent.copy(alpha = 0.16f))
+                        .border(0.8.dp, accent.copy(alpha = 0.32f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
