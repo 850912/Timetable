@@ -102,7 +102,8 @@ object SystemCalendarSync {
                             event.note?.takeIf { it.isNotBlank() }?.let { append(" · ").append(it) }
                         }
                     )
-                    if (event.time == null) {
+                    val eventTime = event.time
+                    if (eventTime == null) {
                         val startMillis = jDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
                         val endMillis = jDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
                         put(CalendarContract.Events.DTSTART, startMillis)
@@ -110,9 +111,9 @@ object SystemCalendarSync {
                         put(CalendarContract.Events.EVENT_TIMEZONE, "UTC")
                         put(CalendarContract.Events.ALL_DAY, 1)
                     } else {
-                        val startMillis = jDate.atTime(event.time.hour, event.time.minute)
+                        val startMillis = jDate.atTime(eventTime.hour, eventTime.minute)
                             .atZone(zone).toInstant().toEpochMilli()
-                        val endMillis = jDate.atTime(event.time.hour, event.time.minute)
+                        val endMillis = jDate.atTime(eventTime.hour, eventTime.minute)
                             .plusHours(1).atZone(zone).toInstant().toEpochMilli()
                         put(CalendarContract.Events.DTSTART, startMillis)
                         put(CalendarContract.Events.DTEND, endMillis)
