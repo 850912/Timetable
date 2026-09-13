@@ -20,6 +20,16 @@ object SystemCalendarSync {
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED
 
+    fun clear(context: Context, timetable: Timetable): Int {
+        check(hasPermission(context)) { "缺少系统日历权限" }
+        val marker = "[Timetable:${timetable.timetableId}]"
+        return context.contentResolver.delete(
+            CalendarContract.Events.CONTENT_URI,
+            "${CalendarContract.Events.DESCRIPTION} LIKE ?",
+            arrayOf("$marker%"),
+        )
+    }
+
     fun sync(context: Context, timetable: Timetable): Result {
         check(hasPermission(context)) { "缺少系统日历权限" }
         val resolver = context.contentResolver

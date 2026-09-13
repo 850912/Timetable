@@ -82,6 +82,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var syncProgress: ProgressBar
     private var currentTimetables: List<Timetable> = emptyList()
     private var pendingCalendarTimetable: Timetable? = null
+    private var pendingCalendarAction: CalendarAction = CalendarAction.SYNC
+
+    private enum class CalendarAction { SYNC, CLEAR }
 
     private val openDocument = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) importTimetableFile(uri)
@@ -94,8 +97,17 @@ class MainActivity : AppCompatActivity() {
     private val requestCalendarPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         val granted = result[Manifest.permission.READ_CALENDAR] == true && result[Manifest.permission.WRITE_CALENDAR] == true
         val table = pendingCalendarTimetable
+        val action = pendingCalendarAction
         pendingCalendarTimetable = null
-        if (granted && table != null) syncTimetableToCalendar(table) else if (!granted) toast("需要日历读写权限才能同步")
+        pendingCalendarAction = CalendarAction.SYNC
+        if (granted && table != null) {
+            when (action) {
+                CalendarAction.SYNC -> syncTimetableToCalendar(table)
+                CalendarAction.CLEAR -> clearTimetableFromCalendar(table)
+            }
+        } else if (!granted) {
+            toast("需要日历读写权限才能操作系统日历")
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -293,8 +305,14 @@ class MainActivity : AppCompatActivity() {
             }
             moreActions.addView(actionButton("日期例外") { showScheduleOverrideDialog(timetable) })
             moreActions.addView(actionButton("复制课表") { duplicateTimetable(timetable) })
-            moreActions.addView(actionButton("同步日历") { requestCalendarSync(timetable) })
             card.addView(moreActions)
+            val calendarActions = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(4), 0, 0)
+            }
+            calendarActions.addView(actionButton("同步日历") { requestCalendarSync(timetable) })
+            calendarActions.addView(actionButton("清除日历") { requestCalendarClear(timetable) })
+            card.addView(calendarActions)
             val studentActions = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, dp(4), 0, 0)
@@ -1023,7 +1041,29 @@ class MainActivity : AppCompatActivity() {
             syncTimetableToCalendar(timetable)
         } else {
             pendingCalendarTimetable = timetable
+            pendingCalendarAction = CalendarAction.SYNC
             requestCalendarPermissions.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
+        }
+    }
+
+    private fun requestCalendarClear(timetable: Timetable) {
+        if (SystemCalendarSync.hasPermission(this)) {
+            clearTimetableFromCalendar(timetable)
+        } else {
+            pendingCalendarTimetable = timetable
+            pendingCalendarAction = CalendarAction.CLEAR
+            requestCalendarPermissions.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
+        }
+    }
+
+    private fun clearTimetableFromCalendar(timetable: Timetable) {
+        uiScope.launch {
+            runCatching { withContext(Dispatchers.IO) { SystemCalendarSync.clear(this@MainActivity, timetable) } }
+                .onSuccess { deleted ->
+                    if (deleted > 0) toast("已清除 $deleted 条 Timetable 日历日程")
+                    else toast("系统日历中没有该课表添加的日程")
+                }
+                .onFailure { toast(it.message ?: "清除系统日历失败") }
         }
     }
 
@@ -1190,16 +1230,17 @@ class MainActivity : AppCompatActivity() {
     private fun inputField(hint: String, placeholder: String): TextInputLayout =
         TextInputLayout(this).apply {
             this.hint = hint
+            placeholderText = placeholder
             setPadding(0, dp(4), 0, dp(4))
-            addView(TextInputEditText(context).apply { this.hint = placeholder })
+            addView(TextInputEditText(context))
         }
 
     private fun autocompleteField(hint: String, placeholder: String, suggestions: List<String>): TextInputLayout =
         TextInputLayout(this).apply {
             this.hint = hint
+            placeholderText = placeholder
             setPadding(0, dp(4), 0, dp(4))
             addView(MaterialAutoCompleteTextView(context).apply {
-                this.hint = placeholder
                 threshold = 1
                 setAdapter(ArrayAdapter(context, android.R.layout.simple_dropdown_item_1line, suggestions.distinct().take(50)))
             })
