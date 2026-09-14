@@ -35,7 +35,7 @@ configure<ApplicationExtension> {
         minSdk = 28
         targetSdk = 37
 
-        versionCode = 1if (isRelease) commitCountProvider.get() else 1
+        versionCode = if (isRelease) commitCountProvider.get() else 1
         versionName = if (isRelease) versionPrefix else "$versionPrefix-dev"
     }
 
