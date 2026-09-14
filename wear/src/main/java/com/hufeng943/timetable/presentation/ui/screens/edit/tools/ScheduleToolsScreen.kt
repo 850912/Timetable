@@ -8,6 +8,7 @@ import androidx.compose.material.icons.rounded.EventBusy
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Tune
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,7 +69,7 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
             val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
             var action by remember { mutableStateOf(BatchAction.SHIFT) }
             var startDate by remember { mutableStateOf(maxOf(today, timetable.semesterStart)) }
-            var endDate by remember { mutableStateOf(maxOf(today, timetable.semesterStart)) }
+            var endDate by remember { mutableStateOf<LocalDate?>(timetable.semesterEnd?.let { maxOf(it, maxOf(today, timetable.semesterStart)) }) }
             var courseIndex by remember { mutableStateOf(0) }
             var offset by remember { mutableStateOf(10) }
             var useWindow by remember { mutableStateOf(false) }
@@ -76,9 +77,15 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
             var windowEnd by remember { mutableStateOf(LocalTime(18, 0)) }
             var page by remember { mutableStateOf(ScheduleToolPage.MAIN) }
 
+            BackHandler(enabled = page != ScheduleToolPage.MAIN) { page = ScheduleToolPage.MAIN }
+
             when (page) {
-                ScheduleToolPage.START_DATE -> DatePage(startDate) { startDate = it; if (endDate < it) endDate = it; page = ScheduleToolPage.MAIN }
-                ScheduleToolPage.END_DATE -> DatePage(endDate) { endDate = it; page = ScheduleToolPage.MAIN }
+                ScheduleToolPage.START_DATE -> DatePage(startDate) { picked ->
+                    startDate = picked
+                    if (endDate != null && endDate!! < picked) endDate = picked
+                    page = ScheduleToolPage.MAIN
+                }
+                ScheduleToolPage.END_DATE -> DatePage(endDate ?: maxOf(today, timetable.semesterStart)) { endDate = it; page = ScheduleToolPage.MAIN }
                 ScheduleToolPage.WINDOW_START -> TimePage(windowStart, config.is24HourFormat) { windowStart = it; page = ScheduleToolPage.MAIN }
                 ScheduleToolPage.WINDOW_END -> TimePage(windowEnd, config.is24HourFormat) { windowEnd = it; page = ScheduleToolPage.MAIN }
                 ScheduleToolPage.OFFSET -> TextEditScreen("移动分钟（负数=前移）", offset.toString()) {
@@ -88,7 +95,7 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
                 ScheduleToolPage.MAIN -> {
                     val selectedCourse = timetable.allCourses.getOrNull(courseIndex - 1)
                     val scopeTitle = selectedCourse?.name ?: "全部课程"
-                    val valid = endDate >= startDate && (!useWindow || windowEnd > windowStart) && (action != BatchAction.SHIFT || offset != 0)
+                    val valid = (endDate == null || endDate!! >= startDate) && (!useWindow || windowEnd > windowStart) && (action != BatchAction.SHIFT || offset != 0)
                     val scroll = rememberTransformingLazyColumnState()
                     val transform = rememberTransformationSpec()
                     ScreenScaffold(
@@ -176,9 +183,10 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
                             }
                             item {
                                 OneUiCapsuleSurface(
-                                    title = "结束：${endDate.toDisplayString()}",
-                                    subtitle = "点按选择生效结束日期",
+                                    title = "结束：${endDate?.toDisplayString() ?: "永不结束"}",
+                                    subtitle = if (endDate == null) "点按选择结束日期" else "点按选择日期 · 长按设为永不结束",
                                     onClick = { page = ScheduleToolPage.END_DATE },
+                                    onLongClick = { endDate = null },
                                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                                 )

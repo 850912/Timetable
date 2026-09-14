@@ -3,6 +3,7 @@ package com.hufeng943.timetable.shared
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.ScheduleBatchOperations
 import com.hufeng943.timetable.shared.model.ScheduleOverrideType
+import com.hufeng943.timetable.shared.model.OpenEndedBatchAction
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.model.WeekPattern
@@ -104,4 +105,45 @@ class ScheduleBatchOperationsTest {
         assertTrue(matches[11].isNullOrEmpty())
         assertEquals(listOf(LocalDate(2026, 9, 14)), matches[12])
     }
+    @Test fun openEndedShiftOnlyChangesRegularOccurrencesFromStartDate() {
+        val slot = TimeSlot(
+            id = 20,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime(8, 0),
+            endTime = LocalTime(9, 0),
+        )
+        val updated = ScheduleBatchOperations.applyOpenEnded(
+            slot, LocalDate(2026, 9, 15), OpenEndedBatchAction.SHIFT, 20,
+        )
+        val timetable = table(updated)
+
+        // Monday before the range is unchanged.
+        assertEquals(LocalTime(8, 0), timetable.resolveDate(LocalDate(2026, 9, 14)).single().startTime)
+        // A non-Monday inside the range must not be forced into existence.
+        assertTrue(timetable.resolveDate(LocalDate(2026, 9, 16)).isEmpty())
+        // Following Mondays inherit the open-ended adjustment.
+        assertEquals(LocalTime(8, 20), timetable.resolveDate(LocalDate(2026, 9, 21)).single().startTime)
+    }
+
+    @Test fun restoringPartOfOpenEndedRangeSplitsTheRange() {
+        val slot = TimeSlot(
+            id = 21,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime(8, 0),
+            endTime = LocalTime(9, 0),
+        )
+        val shifted = ScheduleBatchOperations.applyOpenEnded(
+            slot, LocalDate(2026, 9, 14), OpenEndedBatchAction.SHIFT, 30,
+        )
+        val restored = ScheduleBatchOperations.clearRange(
+            shifted, LocalDate(2026, 9, 21), LocalDate(2026, 9, 28),
+        )
+        val timetable = table(restored)
+
+        assertEquals(LocalTime(8, 30), timetable.resolveDate(LocalDate(2026, 9, 14)).single().startTime)
+        assertEquals(LocalTime(8, 0), timetable.resolveDate(LocalDate(2026, 9, 21)).single().startTime)
+        assertEquals(LocalTime(8, 0), timetable.resolveDate(LocalDate(2026, 9, 28)).single().startTime)
+        assertEquals(LocalTime(8, 30), timetable.resolveDate(LocalDate(2026, 10, 5)).single().startTime)
+    }
+
 }

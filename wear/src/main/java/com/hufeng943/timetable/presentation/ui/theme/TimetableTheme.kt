@@ -23,101 +23,101 @@ val AmoledBlackColorScheme = ColorScheme(
 )
 
 val DeepBlueColorScheme = ColorScheme(
-    primary = Color(0xFF64B5F6),
-    primaryContainer = Color(0xFF1976D2),
-    secondary = Color(0xFF42A5F5),
-    secondaryContainer = Color(0xFF0D47A1),
+    primary = Color(0xFF9CB7CF),
+    primaryContainer = Color(0xFF29445A),
+    secondary = Color(0xFF8FAABD),
+    secondaryContainer = Color(0xFF203443),
     background = Color.Black,
     surfaceContainer = Color(0xFF181A1F),
     onPrimary = Color.Black,
     onSecondary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White,
-    onSurfaceVariant = Color(0xFFB0BEC5)
+    onSurfaceVariant = Color(0xFFB8C1C8)
 )
 
 val CyanTealColorScheme = ColorScheme(
-    primary = Color(0xFF4DB6AC),
-    primaryContainer = Color(0xFF00796B),
-    secondary = Color(0xFF26A69A),
-    secondaryContainer = Color(0xFF004D40),
+    primary = Color(0xFF91B9B3),
+    primaryContainer = Color(0xFF31524D),
+    secondary = Color(0xFF87AAA5),
+    secondaryContainer = Color(0xFF263E3A),
     background = Color.Black,
     surfaceContainer = Color(0xFF181A1F),
     onPrimary = Color.Black,
     onSecondary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White,
-    onSurfaceVariant = Color(0xFFB2DFDB)
+    onSurfaceVariant = Color(0xFFB8CBC8)
 )
 
 val RoyalPurpleColorScheme = ColorScheme(
-    primary = Color(0xFFE040FB),
-    primaryContainer = Color(0xFF7B1FA2),
-    secondary = Color(0xFFAB47BC),
-    secondaryContainer = Color(0xFF4A148C),
+    primary = Color(0xFFB9A7C8),
+    primaryContainer = Color(0xFF493A55),
+    secondary = Color(0xFFA997B7),
+    secondaryContainer = Color(0xFF362C40),
     background = Color.Black,
     surfaceContainer = Color(0xFF181A1F),
     onPrimary = Color.Black,
     onSecondary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White,
-    onSurfaceVariant = Color(0xFFE1BEE7)
+    onSurfaceVariant = Color(0xFFC8BECF)
 )
 
 val SunsetOrangeColorScheme = ColorScheme(
-    primary = Color(0xFFFFB74D),
-    primaryContainer = Color(0xFFE65100),
-    secondary = Color(0xFFFF9800),
-    secondaryContainer = Color(0xFFBF360C),
+    primary = Color(0xFFC9AD8E),
+    primaryContainer = Color(0xFF594536),
+    secondary = Color(0xFFBDA58C),
+    secondaryContainer = Color(0xFF43352C),
     background = Color.Black,
     surfaceContainer = Color(0xFF181A1F),
     onPrimary = Color.Black,
     onSecondary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White,
-    onSurfaceVariant = Color(0xFFFFE0B2)
+    onSurfaceVariant = Color(0xFFD3C6B8)
 )
 
 
 val GraphiteColorScheme = ColorScheme(
-    primary = Color(0xFFD5D9E0),
-    primaryContainer = Color(0xFF34373D),
-    secondary = Color(0xFFAEB5BF),
-    secondaryContainer = Color(0xFF292C31),
-    background = Color.Black,
-    surfaceContainer = Color(0xFF191A1D),
-    onPrimary = Color(0xFF111216),
-    onSecondary = Color(0xFF111216),
-    onBackground = Color(0xFFF4F5F7),
-    onSurface = Color(0xFFF4F5F7),
-    onSurfaceVariant = Color(0xFFB7BBC2)
+    primary = Color(0xFFD6C8B8),
+    primaryContainer = Color(0xFF3B342E),
+    secondary = Color(0xFFB8AEA3),
+    secondaryContainer = Color(0xFF2D2925),
+    background = Color(0xFF050505),
+    surfaceContainer = Color(0xFF1B1917),
+    onPrimary = Color(0xFF211C17),
+    onSecondary = Color(0xFF211C17),
+    onBackground = Color(0xFFF1ECE6),
+    onSurface = Color(0xFFF1ECE6),
+    onSurfaceVariant = Color(0xFFC3BAB0)
 )
 
 val AuroraColorScheme = ColorScheme(
-    primary = Color(0xFF8BE8D3),
-    primaryContainer = Color(0xFF17463F),
-    secondary = Color(0xFFB8A7FF),
-    secondaryContainer = Color(0xFF39305E),
-    background = Color.Black,
-    surfaceContainer = Color(0xFF171A1D),
-    onPrimary = Color(0xFF071F1A),
-    onSecondary = Color(0xFF17102E),
-    onBackground = Color(0xFFF4FFFC),
-    onSurface = Color(0xFFF4FFFC),
-    onSurfaceVariant = Color(0xFFB8C9C5)
+    primary = Color(0xFF9ABDB6),
+    primaryContainer = Color(0xFF29413C),
+    secondary = Color(0xFFAFA9C4),
+    secondaryContainer = Color(0xFF393546),
+    background = Color(0xFF030505),
+    surfaceContainer = Color(0xFF171A19),
+    onPrimary = Color(0xFF14201D),
+    onSecondary = Color(0xFF1D1A25),
+    onBackground = Color(0xFFEAF1EF),
+    onSurface = Color(0xFFEAF1EF),
+    onSurfaceVariant = Color(0xFFBAC6C3)
 )
 val SakuraPinkColorScheme = ColorScheme(
-    primary = Color(0xFFFF80AB),
-    primaryContainer = Color(0xFFC2185B),
-    secondary = Color(0xFFF06292),
-    secondaryContainer = Color(0xFF880E4F),
+    primary = Color(0xFFC4A5B0),
+    primaryContainer = Color(0xFF533A43),
+    secondary = Color(0xFFB79AA4),
+    secondaryContainer = Color(0xFF3E2C33),
     background = Color.Black,
     surfaceContainer = Color(0xFF181A1F),
     onPrimary = Color.Black,
     onSecondary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White,
-    onSurfaceVariant = Color(0xFFF8BBD0)
+    onSurfaceVariant = Color(0xFFD0C0C5)
 )
 
 

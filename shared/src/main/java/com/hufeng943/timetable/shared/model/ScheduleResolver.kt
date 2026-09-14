@@ -42,13 +42,16 @@ fun Timetable.resolveDate(date: LocalDate): List<ResolvedSchedule> {
     return buildList {
         for (course in allCourses) {
             for (slot in course.timeSlots) {
-                val override = slot.overrides.lastOrNull { it.date == date }
+                val override = slot.overrides.lastOrNull { override ->
+                    date >= override.date && (override.endDate?.let { date <= it } ?: (date == override.date))
+                }
                 if (override?.type == ScheduleOverrideType.CANCELLED) continue
 
                 val regular = slot.dayOfWeek == date.dayOfWeek && slot.matchesWeek(week)
                 val forced = override?.type == ScheduleOverrideType.EXTRA
-                val modified = override?.type == ScheduleOverrideType.MODIFIED
-                if (!regular && !forced && !modified) continue
+                // MODIFIED changes a regular occurrence; it must not create lessons on every day
+                // when used as a date-range override. EXTRA is the only forcing override.
+                if (!regular && !forced) continue
 
                 val start = override?.startTime ?: slot.startTime ?: continue
                 val end = override?.endTime ?: slot.endTime ?: continue

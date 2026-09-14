@@ -153,6 +153,126 @@ object ScheduleBatchOperations {
             .toList()
     }
 
+
+    /** Apply a recurring override from [startDate] onward without materialising years of dates. */
+    fun applyOpenEnded(
+        slot: TimeSlot,
+        startDate: LocalDate,
+        action: OpenEndedBatchAction,
+        offsetMinutes: Int = 0,
+    ): TimeSlot {
+        if (slot.recurrence == WeekPattern.DATE_ONLY) {
+            val dates = slot.overrides.asSequence()
+                .filter { it.date >= startDate }
+                .filter { it.type == ScheduleOverrideType.EXTRA || it.type == ScheduleOverrideType.MODIFIED || it.type == ScheduleOverrideType.CANCELLED }
+                .map { it.date }.distinct().toList()
+            return when (action) {
+                OpenEndedBatchAction.SHIFT -> shiftDates(slot, dates, offsetMinutes)
+                OpenEndedBatchAction.CANCEL -> cancelDates(slot, dates)
+                OpenEndedBatchAction.RESTORE -> clearDates(slot, dates)
+            }
+        }
+
+        if (action == OpenEndedBatchAction.RESTORE) return clearFrom(slot, startDate)
+        val baseStart = requireNotNull(slot.startTime) { "课时缺少开始时间" }
+        val baseEnd = requireNotNull(slot.endTime) { "课时缺少结束时间" }
+        val rangeOverride = when (action) {
+            OpenEndedBatchAction.CANCEL -> ScheduleOverride(
+                date = startDate, endDate = LocalDate(9999, 12, 31), type = ScheduleOverrideType.CANCELLED,
+                startTime = baseStart, endTime = baseEnd,
+            )
+            OpenEndedBatchAction.SHIFT -> {
+                require(offsetMinutes != 0) { "移动分钟不能为 0" }
+                val shiftedStart = baseStart.shiftSameDay(offsetMinutes)
+                val shiftedEnd = baseEnd.shiftSameDay(offsetMinutes)
+                require(shiftedEnd > shiftedStart) { "调整后结束时间必须晚于开始时间" }
+                ScheduleOverride(
+                    date = startDate, endDate = LocalDate(9999, 12, 31), type = ScheduleOverrideType.MODIFIED,
+                    startTime = shiftedStart, endTime = shiftedEnd,
+                )
+            }
+            OpenEndedBatchAction.RESTORE -> error("handled above")
+        }
+        return slot.copy(overrides = slot.overrides + rangeOverride)
+    }
+
+    /** Clear exact and range overrides from [startDate] onward, preserving earlier history. */
+    fun clearFrom(slot: TimeSlot, startDate: LocalDate): TimeSlot {
+        val previousDay = LocalDate.fromEpochDays(startDate.toEpochDays() - 1)
+        val restored = buildList {
+            slot.overrides.forEach { override ->
+                val rangeEnd = override.endDate
+                if (rangeEnd != null) {
+                    when {
+                        rangeEnd < startDate -> add(override)
+                        override.date < startDate -> add(override.copy(endDate = previousDay))
+                        else -> Unit
+                    }
+                } else if (override.date < startDate) {
+                    add(override)
+                } else if (slot.recurrence == WeekPattern.DATE_ONLY && override.type == ScheduleOverrideType.CANCELLED) {
+                    add(override.copy(type = ScheduleOverrideType.EXTRA))
+                }
+            }
+        }
+        return slot.copy(overrides = restored)
+    }
+
+
+    /** Remove date overrides inside an inclusive range, splitting long-running overrides when needed. */
+    fun clearRange(
+        slot: TimeSlot,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        timeWindowStart: LocalTime? = null,
+        timeWindowEnd: LocalTime? = null,
+    ): TimeSlot {
+        require(endDate >= startDate) { "结束日期不能早于开始日期" }
+        val before = LocalDate.fromEpochDays(startDate.toEpochDays() - 1)
+        val after = LocalDate.fromEpochDays(endDate.toEpochDays() + 1)
+        val result = buildList {
+            slot.overrides.forEach { override ->
+                val overrideEnd = override.endDate ?: override.date
+                val overlapsDate = override.date <= endDate && overrideEnd >= startDate
+                val start = override.startTime ?: slot.startTime
+                val finish = override.endTime ?: slot.endTime
+                val overlapsTime = when {
+                    timeWindowStart == null && timeWindowEnd == null -> true
+                    start == null || finish == null -> false
+                    timeWindowStart != null && timeWindowEnd != null -> start < timeWindowEnd && finish > timeWindowStart
+                    timeWindowStart != null -> finish > timeWindowStart
+                    else -> start < requireNotNull(timeWindowEnd)
+                }
+                if (!overlapsDate || !overlapsTime) {
+                    add(override)
+                    return@forEach
+                }
+
+                if (override.endDate == null) {
+                    if (slot.recurrence == WeekPattern.DATE_ONLY && override.type == ScheduleOverrideType.CANCELLED) {
+                        add(override.copy(type = ScheduleOverrideType.EXTRA))
+                    }
+                    return@forEach
+                }
+
+                if (override.date < startDate) add(override.copy(endDate = before))
+                if (overrideEnd > endDate) add(override.copy(date = after))
+            }
+        }
+        return slot.copy(overrides = result)
+    }
+
+    fun overlapsWindow(slot: TimeSlot, start: LocalTime?, end: LocalTime?): Boolean {
+        if (start == null && end == null) return true
+        val slotStart = slot.startTime ?: return false
+        val slotEnd = slot.endTime ?: return false
+        return when {
+            start != null && end != null -> slotStart < end && slotEnd > start
+            start != null -> slotEnd > start
+            else -> slotStart < requireNotNull(end)
+        }
+    }
+
     fun matchingDates(
         timetable: Timetable,
         startDate: LocalDate,
@@ -179,6 +299,8 @@ object ScheduleBatchOperations {
         return result
     }
 }
+
+enum class OpenEndedBatchAction { SHIFT, CANCEL, RESTORE }
 
 private fun LocalTime.shiftSameDay(offsetMinutes: Int): LocalTime {
     val minuteOfDay = hour * 60 + minute + offsetMinutes

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.hufeng943.timetable.presentation.ui.NavArgs
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.model.ScheduleBatchOperations
+import com.hufeng943.timetable.shared.model.OpenEndedBatchAction
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.surface.WearSurfaceRefresher
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -60,7 +61,7 @@ class ScheduleToolsViewModel @Inject constructor(
     fun apply(
         action: BatchAction,
         startDate: LocalDate,
-        endDate: LocalDate,
+        endDate: LocalDate?,
         offsetMinutes: Int,
         courseId: Long?,
         timeWindowStart: LocalTime?,
@@ -70,32 +71,54 @@ class ScheduleToolsViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 val timetable = requireNotNull(repository.getTimetableById(id).first())
-                val matching = if (action == BatchAction.RESTORE) emptyMap() else {
-                    ScheduleBatchOperations.matchingDates(
-                        timetable, startDate, endDate, timeWindowStart, timeWindowEnd,
-                    )
-                }
-                timetable.allCourses
-                    .asSequence()
-                    .filter { courseId == null || it.id == courseId }
-                    .forEach { course ->
-                        course.timeSlots.forEach slotLoop@ { slot ->
-                            val dates = if (action == BatchAction.RESTORE) {
-                                ScheduleBatchOperations.overrideDates(
-                                    slot, startDate, endDate, timeWindowStart, timeWindowEnd,
+                if (endDate == null) {
+                    timetable.allCourses
+                        .asSequence()
+                        .filter { courseId == null || it.id == courseId }
+                        .forEach { course ->
+                            course.timeSlots.forEach slotLoop@ { slot ->
+                                if (!ScheduleBatchOperations.overlapsWindow(slot, timeWindowStart, timeWindowEnd)) return@slotLoop
+                                val updated = ScheduleBatchOperations.applyOpenEnded(
+                                    slot = slot,
+                                    startDate = startDate,
+                                    action = when (action) {
+                                        BatchAction.SHIFT -> OpenEndedBatchAction.SHIFT
+                                        BatchAction.CANCEL -> OpenEndedBatchAction.CANCEL
+                                        BatchAction.RESTORE -> OpenEndedBatchAction.RESTORE
+                                    },
+                                    offsetMinutes = offsetMinutes,
                                 )
-                            } else {
-                                matching[slot.id].orEmpty()
+                                if (updated != slot) repository.upsertTimeSlot(updated, course.id)
                             }
-                            if (dates.isEmpty()) return@slotLoop
-                            val updated = when (action) {
-                                BatchAction.SHIFT -> ScheduleBatchOperations.shiftDates(slot, dates, offsetMinutes)
-                                BatchAction.CANCEL -> ScheduleBatchOperations.cancelDates(slot, dates)
-                                BatchAction.RESTORE -> ScheduleBatchOperations.clearDates(slot, dates)
-                            }
-                            if (updated != slot) repository.upsertTimeSlot(updated, course.id)
                         }
+                } else {
+                    val matching = if (action == BatchAction.RESTORE) emptyMap() else {
+                        ScheduleBatchOperations.matchingDates(
+                            timetable, startDate, endDate, timeWindowStart, timeWindowEnd,
+                        )
                     }
+                    timetable.allCourses
+                        .asSequence()
+                        .filter { courseId == null || it.id == courseId }
+                        .forEach { course ->
+                            course.timeSlots.forEach slotLoop@ { slot ->
+                                val updated = if (action == BatchAction.RESTORE) {
+                                    ScheduleBatchOperations.clearRange(
+                                        slot, startDate, endDate, timeWindowStart, timeWindowEnd,
+                                    )
+                                } else {
+                                    val dates = matching[slot.id].orEmpty()
+                                    if (dates.isEmpty()) return@slotLoop
+                                    when (action) {
+                                        BatchAction.SHIFT -> ScheduleBatchOperations.shiftDates(slot, dates, offsetMinutes)
+                                        BatchAction.CANCEL -> ScheduleBatchOperations.cancelDates(slot, dates)
+                                        BatchAction.RESTORE -> slot
+                                    }
+                                }
+                                if (updated != slot) repository.upsertTimeSlot(updated, course.id)
+                            }
+                        }
+                }
                 WearSurfaceRefresher.refresh(appContext)
                 _completed.tryEmit(Unit)
             }.onFailure { _state.value = ScheduleToolsState.Error(it.message ?: "批量处理失败") }

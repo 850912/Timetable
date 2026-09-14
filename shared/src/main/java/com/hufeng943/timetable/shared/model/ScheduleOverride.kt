@@ -19,6 +19,8 @@ data class ScheduleOverride(
     val endTime: LocalTime? = null,
     val location: String? = null,
     val remark: String? = null,
+    /** Inclusive end date for a range override. Null keeps legacy exact-date semantics. */
+    val endDate: LocalDate? = null,
 )
 
 @Serializable
