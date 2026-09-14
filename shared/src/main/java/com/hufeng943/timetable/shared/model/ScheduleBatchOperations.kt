@@ -155,6 +155,52 @@ object ScheduleBatchOperations {
 
 
     /** Apply a recurring override from [startDate] onward without materialising years of dates. */
+    /** Apply one compact inclusive date-range rule to a recurring slot.
+     * DATE_ONLY slots are intentionally handled by the concrete-date helpers.
+     */
+    fun applyRange(
+        slot: TimeSlot,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        action: OpenEndedBatchAction,
+        offsetMinutes: Int = 0,
+    ): TimeSlot {
+        require(endDate >= startDate) { "结束日期不能早于开始日期" }
+        if (slot.recurrence == WeekPattern.DATE_ONLY) {
+            val dates = slot.overrides.asSequence()
+                .filter { it.date in startDate..endDate }
+                .filter { it.type == ScheduleOverrideType.EXTRA || it.type == ScheduleOverrideType.MODIFIED || it.type == ScheduleOverrideType.CANCELLED }
+                .map { it.date }.distinct().toList()
+            return when (action) {
+                OpenEndedBatchAction.SHIFT -> shiftDates(slot, dates, offsetMinutes)
+                OpenEndedBatchAction.CANCEL -> cancelDates(slot, dates)
+                OpenEndedBatchAction.RESTORE -> clearRange(slot, startDate, endDate)
+            }
+        }
+        if (action == OpenEndedBatchAction.RESTORE) return clearRange(slot, startDate, endDate)
+
+        val baseStart = requireNotNull(slot.startTime) { "课时缺少开始时间" }
+        val baseEnd = requireNotNull(slot.endTime) { "课时缺少结束时间" }
+        val rangeOverride = when (action) {
+            OpenEndedBatchAction.CANCEL -> ScheduleOverride(
+                date = startDate, endDate = endDate, type = ScheduleOverrideType.CANCELLED,
+                startTime = baseStart, endTime = baseEnd,
+            )
+            OpenEndedBatchAction.SHIFT -> {
+                require(offsetMinutes != 0) { "移动分钟不能为 0" }
+                val shiftedStart = baseStart.shiftSameDay(offsetMinutes)
+                val shiftedEnd = baseEnd.shiftSameDay(offsetMinutes)
+                require(shiftedEnd > shiftedStart) { "调整后结束时间必须晚于开始时间" }
+                ScheduleOverride(
+                    date = startDate, endDate = endDate, type = ScheduleOverrideType.MODIFIED,
+                    startTime = shiftedStart, endTime = shiftedEnd,
+                )
+            }
+            OpenEndedBatchAction.RESTORE -> error("handled above")
+        }
+        return slot.copy(overrides = slot.overrides + rangeOverride)
+    }
+
     fun applyOpenEnded(
         slot: TimeSlot,
         startDate: LocalDate,

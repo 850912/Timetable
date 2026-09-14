@@ -36,9 +36,7 @@ fun TimeSlotListScreen(
             )
         }
         DynamicSubTheme(seedColor = data.color) {
-        TimeSlotListPager(timeSlots = sortedTimeSlots, onMultiDateSlot = {
-            navController.navigateSingle(NavRoutes.multiDateSlot(data.id))
-        }, onAddTimeSlot = {
+        TimeSlotListPager(timeSlots = sortedTimeSlots, onAddTimeSlot = {
             navController.navigateSingle(NavRoutes.editTimeSlot(data.id))
         }, onTimeSlotClick = { timeSlotId ->
             navController.navigateSingle(NavRoutes.editTimeSlot(data.id, timeSlotId))

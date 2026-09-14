@@ -13,4 +13,6 @@ object InternalNavRoutes {
     const val END_TIME = "end_time"
     const val WEEK_DAY = "week_day"
     const val RECURRENCE = "recurrence"
+    const val DATE_SELECTION = "date_selection"
+    const val DATE_ANCHOR = "date_anchor"
 }

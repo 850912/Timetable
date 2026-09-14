@@ -146,4 +146,45 @@ class ScheduleBatchOperationsTest {
         assertEquals(LocalTime(8, 30), timetable.resolveDate(LocalDate(2026, 10, 5)).single().startTime)
     }
 
+    @Test fun finiteRangeShiftAppliesAndStopsAtEndDate() {
+        val slot = TimeSlot(
+            id = 30,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime(8, 0),
+            endTime = LocalTime(9, 0),
+        )
+        val updated = ScheduleBatchOperations.applyRange(
+            slot = slot,
+            startDate = LocalDate(2026, 9, 14),
+            endDate = LocalDate(2026, 9, 28),
+            action = OpenEndedBatchAction.SHIFT,
+            offsetMinutes = 25,
+        )
+        val timetable = table(updated)
+
+        assertEquals(LocalTime(8, 25), timetable.resolveDate(LocalDate(2026, 9, 14)).single().startTime)
+        assertEquals(LocalTime(8, 25), timetable.resolveDate(LocalDate(2026, 9, 28)).single().startTime)
+        assertEquals(LocalTime(8, 0), timetable.resolveDate(LocalDate(2026, 10, 5)).single().startTime)
+    }
+
+    @Test fun newerRangeRuleOverridesOlderRangeRule() {
+        val slot = TimeSlot(
+            id = 31,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime(8, 0),
+            endTime = LocalTime(9, 0),
+        )
+        val first = ScheduleBatchOperations.applyRange(
+            slot, LocalDate(2026, 9, 14), LocalDate(2026, 10, 12), OpenEndedBatchAction.SHIFT, 10,
+        )
+        val second = ScheduleBatchOperations.applyRange(
+            first, LocalDate(2026, 9, 21), LocalDate(2026, 9, 28), OpenEndedBatchAction.SHIFT, 30,
+        )
+        val timetable = table(second)
+
+        assertEquals(LocalTime(8, 10), timetable.resolveDate(LocalDate(2026, 9, 14)).single().startTime)
+        assertEquals(LocalTime(8, 30), timetable.resolveDate(LocalDate(2026, 9, 21)).single().startTime)
+        assertEquals(LocalTime(8, 10), timetable.resolveDate(LocalDate(2026, 10, 5)).single().startTime)
+    }
+
 }

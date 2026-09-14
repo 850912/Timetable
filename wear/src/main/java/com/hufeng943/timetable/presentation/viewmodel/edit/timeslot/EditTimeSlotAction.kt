@@ -2,6 +2,7 @@ package com.hufeng943.timetable.presentation.viewmodel.edit.timeslot
 
 import com.hufeng943.timetable.shared.model.WeekPattern
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 
 sealed class EditTimeSlotAction {
@@ -9,6 +10,7 @@ sealed class EditTimeSlotAction {
     data class UpdateEndTime(val endTime: LocalTime) : EditTimeSlotAction()
     data class UpdateDayOfWeek(val dayOfWeek: DayOfWeek) : EditTimeSlotAction()
     data class UpdateRecurrence(val recurrence: WeekPattern) : EditTimeSlotAction()
+    data class UpdateSelectedDates(val dates: Set<LocalDate>) : EditTimeSlotAction()
     data class UpdateRemark(val remark: String?) : EditTimeSlotAction()
     object Upsert : EditTimeSlotAction()
     object Delete : EditTimeSlotAction()

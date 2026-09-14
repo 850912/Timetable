@@ -20,7 +20,7 @@ configure<ApplicationExtension> {
         minSdk = 30
         targetSdk = 36
         versionCode = 4
-        versionName = "3.3.1"
+        versionName = "3.3.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -28,7 +28,6 @@ import com.hufeng943.timetable.presentation.ui.screens.edit.timeslot.EditTimeSlo
 import com.hufeng943.timetable.presentation.ui.screens.edit.timeslot.TimeSlotListScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.TimetableListScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableScreen
-import com.hufeng943.timetable.presentation.ui.screens.edit.tools.MultiDateSlotScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.tools.ScheduleToolsScreen
 import com.hufeng943.timetable.presentation.ui.screens.home.HomeScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.about.AboutLibrariesScreen
@@ -159,9 +158,6 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     EditTimeSlotScreen()
                 }
 
-                composable(NavRoutes.MULTI_DATE_SLOT) {
-                    MultiDateSlotScreen()
-                }
 
                 composable(NavRoutes.SCHEDULE_TOOLS) {
                     ScheduleToolsScreen()

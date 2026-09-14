@@ -38,13 +38,15 @@ fun EditTimeSlotMainPager(
     onEndTimeClick: () -> Unit,
     onDayOfWeekClick: () -> Unit,
     onRecurrenceClick: () -> Unit,
+    onDateSelectionClick: () -> Unit,
     onRemarkClick: () -> Unit,
     onRemarkLongClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val scrollState = rememberTransformingLazyColumnState()
     val transformationSpec = rememberTransformationSpec()
-    val canSave = timeSlot.startTime != null && timeSlot.endTime != null && timeSlot.dayOfWeek != null
+    val selectedDates = timeSlot.selectedDates
+    val canSave = timeSlot.startTime != null && timeSlot.endTime != null && (selectedDates.isNotEmpty() || timeSlot.dayOfWeek != null)
 
     ScreenScaffold(
         scrollState = scrollState,
@@ -91,27 +93,44 @@ fun EditTimeSlotMainPager(
                 )
             }
 
-            item {
-                OneUiCapsuleSurface(
-                    title = stringResource(R.string.edit_timeslot_week),
-                    subtitle = timeSlot.dayOfWeek?.toDisplayString(TextStyle.FULL_STANDALONE) ?: stringResource(R.string.not_set),
-                    icon = Icons.Rounded.DateRange,
-                    emphasize = timeSlot.dayOfWeek == null,
-                    onClick = onDayOfWeekClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
-                )
+            if (timeSlot.id == 0L) {
+                item {
+                    OneUiCapsuleSurface(
+                        title = "日期",
+                        subtitle = if (selectedDates.isEmpty()) "未指定 · 点按选择，可多选" else "已选 ${selectedDates.size} 天 · 指定日期课时",
+                        icon = Icons.Rounded.DateRange,
+                        emphasize = selectedDates.isEmpty() && timeSlot.dayOfWeek == null,
+                        selected = selectedDates.isNotEmpty(),
+                        onClick = onDateSelectionClick,
+                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                    )
+                }
             }
 
-            item {
-                OneUiCapsuleSurface(
-                    title = stringResource(R.string.edit_timeslot_repeat),
-                    subtitle = timeSlot.recurrence.toDisplayString(),
-                    icon = Icons.Rounded.Refresh,
-                    onClick = onRecurrenceClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
-                )
+            if (selectedDates.isEmpty()) {
+                item {
+                    OneUiCapsuleSurface(
+                        title = stringResource(R.string.edit_timeslot_week),
+                        subtitle = timeSlot.dayOfWeek?.toDisplayString(TextStyle.FULL_STANDALONE) ?: stringResource(R.string.not_set),
+                        icon = Icons.Rounded.DateRange,
+                        emphasize = timeSlot.dayOfWeek == null,
+                        onClick = onDayOfWeekClick,
+                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                    )
+                }
+
+                item {
+                    OneUiCapsuleSurface(
+                        title = stringResource(R.string.edit_timeslot_repeat),
+                        subtitle = timeSlot.recurrence.toDisplayString(),
+                        icon = Icons.Rounded.Refresh,
+                        onClick = onRecurrenceClick,
+                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                    )
+                }
             }
 
             item {

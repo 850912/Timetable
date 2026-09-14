@@ -2,6 +2,10 @@ package com.hufeng943.timetable.presentation.ui.screens.edit.tools
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.EventBusy
@@ -58,8 +62,9 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val nav = LocalNavController.current
     val config = LocalAppConfig.current
+    var applySuccess by remember { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(viewModel) {
-        viewModel.completed.collect { nav.popSafe() }
+        viewModel.completed.collect { applySuccess = true }
     }
     when (val current = state) {
         ScheduleToolsState.Loading -> ScreenScaffold { }
@@ -79,7 +84,18 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
 
             BackHandler(enabled = page != ScheduleToolPage.MAIN) { page = ScheduleToolPage.MAIN }
 
-            when (page) {
+            AnimatedContent(
+                targetState = page,
+                transitionSpec = {
+                    if (targetState == ScheduleToolPage.MAIN) {
+                        slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+                    } else {
+                        slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+                    }
+                },
+                label = "schedule_tool_page",
+            ) { activePage ->
+            when (activePage) {
                 ScheduleToolPage.START_DATE -> DatePage(startDate) { picked ->
                     startDate = picked
                     if (endDate != null && endDate!! < picked) endDate = picked
@@ -104,6 +120,7 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
                             EdgeButton(
                                 enabled = valid,
                                 onClick = {
+                                    applySuccess = false
                                     viewModel.apply(
                                         action, startDate, endDate, offset, selectedCourse?.id,
                                         if (useWindow) windowStart else null,
@@ -121,6 +138,17 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
                                     transformation = SurfaceTransformation(transform),
                                 ) { Text("批量调时 / 停课") }
                             }
+                            if (applySuccess) item {
+                                OneUiCapsuleSurface(
+                                    title = "已应用",
+                                    subtitle = "更改已写入课表，可返回首页查看实际时间",
+                                    icon = Icons.Rounded.Check,
+                                    selected = true,
+                                    onClick = { applySuccess = false },
+                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                                )
+                            }
                             item {
                                 OneUiCapsuleSurface(
                                     title = "今天全部停课",
@@ -128,6 +156,7 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
                                     icon = Icons.Rounded.EventBusy,
                                     emphasize = true,
                                     onClick = {
+                                        applySuccess = false
                                         viewModel.apply(BatchAction.CANCEL, today, today, 0, null, null, null)
                                     },
                                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
@@ -214,6 +243,7 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
                         }
                     }
                 }
+            }
             }
         }
     }

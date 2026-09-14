@@ -13,9 +13,14 @@ import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.surface.WearSurfaceRefresher
 import com.hufeng943.timetable.shared.model.TimeSlot
+import com.hufeng943.timetable.shared.model.ScheduleOverride
+import com.hufeng943.timetable.shared.model.ScheduleOverrideType
+import com.hufeng943.timetable.shared.model.WeekPattern
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -34,6 +39,8 @@ class EditTimeSlotViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<UiState<TimeSlotUi>>(UiState.Loading)
     val uiState = _uiState.asStateFlow()
+    private val _completed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val completed = _completed.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -69,7 +76,37 @@ class EditTimeSlotViewModel @Inject constructor(
             }
 
             is EditTimeSlotAction.UpdateDayOfWeek -> updateSuccessState { it.copy(dayOfWeek = action.dayOfWeek) }
-            is EditTimeSlotAction.UpdateRecurrence -> updateSuccessState { it.copy(recurrence = action.recurrence) }
+            is EditTimeSlotAction.UpdateRecurrence -> updateSuccessState { current ->
+                current.copy(
+                    recurrence = action.recurrence,
+                    overrides = if (current.id == 0L && action.recurrence != WeekPattern.DATE_ONLY) emptyList() else current.overrides,
+                )
+            }
+            is EditTimeSlotAction.UpdateSelectedDates -> updateSuccessState { current ->
+                val dates = action.dates.toList().sorted()
+                if (dates.isEmpty()) {
+                    current.copy(
+                        recurrence = if (current.recurrence == WeekPattern.DATE_ONLY) WeekPattern.EVERY_WEEK else current.recurrence,
+                        overrides = if (current.id == 0L) emptyList() else current.overrides,
+                    )
+                } else {
+                    val start = current.startTime
+                    val end = current.endTime
+                    current.copy(
+                        dayOfWeek = dates.first().dayOfWeek,
+                        recurrence = WeekPattern.DATE_ONLY,
+                        overrides = dates.map { date ->
+                            ScheduleOverride(
+                                date = date,
+                                type = ScheduleOverrideType.EXTRA,
+                                startTime = start,
+                                endTime = end,
+                                remark = current.remark,
+                            )
+                        },
+                    )
+                }
+            }
             is EditTimeSlotAction.UpdateRemark -> updateSuccessState { it.copy(remark = action.remark) }
             EditTimeSlotAction.Upsert -> upsertTimeSlot()
             EditTimeSlotAction.Delete -> deleteTimeSlot()
@@ -90,8 +127,23 @@ class EditTimeSlotViewModel @Inject constructor(
                     (uiState.value as? UiState.Success)?.data ?: throw AppError.UnexpectedEmpty()
                 val courseId = cId ?: throw AppError.InvalidParameter(NavArgs.COURSE_ID)
 
-                repository.upsertTimeSlot(currentUi.toTimeSlot(), courseId)
+                val normalized = if (currentUi.recurrence == WeekPattern.DATE_ONLY && currentUi.selectedDates.isNotEmpty()) {
+                    currentUi.toTimeSlot().copy(
+                        dayOfWeek = currentUi.selectedDates.minOrNull()!!.dayOfWeek,
+                        overrides = currentUi.selectedDates.sorted().map { date ->
+                            ScheduleOverride(
+                                date = date,
+                                type = ScheduleOverrideType.EXTRA,
+                                startTime = currentUi.startTime,
+                                endTime = currentUi.endTime,
+                                remark = currentUi.remark,
+                            )
+                        },
+                    )
+                } else currentUi.toTimeSlot()
+                repository.upsertTimeSlot(normalized, courseId)
                 WearSurfaceRefresher.refresh(appContext)
+                _completed.tryEmit(Unit)
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)
             }

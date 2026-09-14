@@ -92,29 +92,23 @@ class ScheduleToolsViewModel @Inject constructor(
                             }
                         }
                 } else {
-                    val matching = if (action == BatchAction.RESTORE) emptyMap() else {
-                        ScheduleBatchOperations.matchingDates(
-                            timetable, startDate, endDate, timeWindowStart, timeWindowEnd,
-                        )
-                    }
                     timetable.allCourses
                         .asSequence()
                         .filter { courseId == null || it.id == courseId }
                         .forEach { course ->
                             course.timeSlots.forEach slotLoop@ { slot ->
-                                val updated = if (action == BatchAction.RESTORE) {
-                                    ScheduleBatchOperations.clearRange(
-                                        slot, startDate, endDate, timeWindowStart, timeWindowEnd,
-                                    )
-                                } else {
-                                    val dates = matching[slot.id].orEmpty()
-                                    if (dates.isEmpty()) return@slotLoop
-                                    when (action) {
-                                        BatchAction.SHIFT -> ScheduleBatchOperations.shiftDates(slot, dates, offsetMinutes)
-                                        BatchAction.CANCEL -> ScheduleBatchOperations.cancelDates(slot, dates)
-                                        BatchAction.RESTORE -> slot
-                                    }
-                                }
+                                if (!ScheduleBatchOperations.overlapsWindow(slot, timeWindowStart, timeWindowEnd)) return@slotLoop
+                                val updated = ScheduleBatchOperations.applyRange(
+                                    slot = slot,
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    action = when (action) {
+                                        BatchAction.SHIFT -> OpenEndedBatchAction.SHIFT
+                                        BatchAction.CANCEL -> OpenEndedBatchAction.CANCEL
+                                        BatchAction.RESTORE -> OpenEndedBatchAction.RESTORE
+                                    },
+                                    offsetMinutes = offsetMinutes,
+                                )
                                 if (updated != slot) repository.upsertTimeSlot(updated, course.id)
                             }
                         }

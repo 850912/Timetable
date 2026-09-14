@@ -6,6 +6,7 @@ import com.hufeng943.timetable.R
 import com.hufeng943.timetable.shared.model.WeekPattern
 import com.hufeng943.timetable.shared.model.ScheduleOverride
 import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 
 data class TimeSlotUi(
@@ -18,6 +19,13 @@ data class TimeSlotUi(
     val overrides: List<ScheduleOverride> = emptyList(),
     val color: androidx.compose.ui.graphics.Color
 ) {
+
+    val selectedDates: Set<LocalDate>
+        get() = overrides.asSequence()
+            .filter { it.endDate == null && it.type != com.hufeng943.timetable.shared.model.ScheduleOverrideType.CANCELLED }
+            .map { it.date }
+            .toSet()
+
     val displayRemark: String
         @Composable
         get() = remark ?: stringResource(R.string.not_set)
