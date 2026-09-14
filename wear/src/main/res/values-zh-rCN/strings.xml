@@ -88,6 +88,7 @@
     <string name="apperror_unexpectedempty">意外的空状态</string>
     <string name="apperror_unknown">发生了未知的错误：%1$s</string>
     <string name="home_week_title">%1$s · 第%2$d周</string>
+    <string name="home_week_progress_title">%1$s · 第%2$d/%3$d周</string>
     <string name="home_academic_events_count">%1$d 项学业待办</string>
     <string name="home_summary_empty">0 节</string>
     <string name="home_summary_classes">%1$d节 · %2$s–%3$s</string>
@@ -122,16 +123,16 @@
     <string name="about_features_schedule">课程：多课表、日期例外、今日调课、手机 ↔ 手表同步。</string>
     <string name="about_features_wear">Wear：首页状态优先、Tile 时间线、当前课进度与下一节倒计时复杂功能。</string>
     <string name="about_features_tools">工具：学业待办与提醒、本周课表分享、ICS / CSV / JSON、系统日历同步。</string>
-    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.1.0。</string>
+    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.2.0。</string>
     <string name="about_declaration_development">维护：黑白君 (HeiBaiJun)；部分开发借助生成式 AI。连续点击版本号 7 次进入开发者选项。</string>
     <string name="about_open_source_wear">Wear UI：Wear Compose 1.6.2 · Horologist 0.7.15</string>
     <string name="about_open_source_data">数据：Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">工具：Coroutines 1.11.0 · AboutLibraries 15.0.3 · MaterialKolor 4.1.1。完整许可证见下方入口。</string>
-    <string name="about_changelog_part1">首页状态优先：当前课先显示；课前用短倒计时；课后显示休息提示。当前课程增加静态描边和更强底色。</string>
-    <string name="about_changelog_part2">About / 开发者信息拆成短卡片完整换行；版本更新为 3.1.0；保留 Tile / Complication 时间线与低频刷新策略。</string>
+    <string name="about_changelog_part1">3.2.0：冷启动去掉前台 Tile 刷新竞争，国行桥接延后到首屏稳定后；课程编辑会直接刷新 Tile / Complication。</string>
+    <string name="about_changelog_part2">课表视觉升级：当前课程加入实时进度条；手机端新增今日课表层级与课程色卡片，同时保留原有全部课程管理。</string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
-        " · 当前版本采用语义化版本号 3.1.0\n"
+        " · 当前版本采用语义化版本号 3.2.0\n"
         " · 原项目：HuFeng943 / Timetable\n"
         " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
         " · 当前版本在原项目基础上持续维护与扩展\n"
@@ -143,20 +144,17 @@
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
     <string name="about_open_source_stack">核心开源组件：Wear Compose 1.6.2、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX Serialization 1.11.0 / Datetime 0.8.0、Coroutines 1.11.0、AboutLibraries 15.0.3、MaterialKolor 4.1.1。开源许可证页面由 AboutLibraries 根据实际构建依赖生成。</string>
-    <string name="about_changelog_title">3.1.0 更新</string>
+    <string name="about_changelog_title">3.2.0 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
-        " · 新增作业、考试、实验与其他学业待办\n"
-        " · 待办提醒可独立于课程提醒工作并自动恢复\n"
-        " · 新增今日停课 / 调课快捷操作\n"
-        " · 新增今日统计与课程 / 教室 / 教师输入建议\n"
-        " · 新增一键生成并分享本周课表图片\n"
-        " · 新增下一节课倒计时表盘复杂功能\n"
-        " · 优化 Tile / Complication 时间线更新\n"
-        " · 首页倒计时改为“时/分后上课”，避免长文本截断\n"
-        " · About / 开发者页面长文本完整换行，不再省略\n"
-        " · 当前课程打开即优先定位并强化高亮；课后显示休息提示\n"
-        " · 移除下一节课程持续脉冲动画，降低前台无效重绘"
+        " · 冷启动不再主动触发 Tile 数据读取，减少首次打开竞争\n"
+        " · 国行 Wear Data Layer bootstrap 延后到首屏稳定后执行\n"
+        " · 手表本地课程 / 课时 / 课表保存后立即刷新 Tile 与复杂功能\n"
+        " · Tile 继续使用课程 Timeline，周期刷新改为安全兜底而不是主要更新机制\n"
+        " · 当前课程卡新增实时课程进度条，保持静态高级感而不增加持续动画\n"
+        " · 手机端新增今日课表视觉区，正在上课课程会自动强化\n"
+        " · 有学期结束日期时显示第 N/总周数 周，查看学期进度更直观\n"
+        " · 保留 Hybrid Data Layer、中国版 Legacy fallback 与现有签名配置"
     </string>
     <string name="about_original_author_name">HuFeng943</string>
     <string name="about_original_author_subtitle">原作者 · 原始项目 Timetable</string>

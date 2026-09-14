@@ -17,7 +17,6 @@ import androidx.compose.runtime.getValue
 import com.hufeng943.timetable.presentation.ui.AppNavHost
 import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 import com.hufeng943.timetable.surface.WearSurfaceRefresher
@@ -43,16 +42,6 @@ class MainActivity : ComponentActivity() {
             newBase.createConfigurationContext(configuration)
         } else newBase
         super.attachBaseContext(context)
-    }
-
-    override fun onPostResume() {
-        super.onPostResume()
-        // Do not compete with the first UI frame. A delayed request keeps Samsung
-        // Tiles fresh after the app has been opened without adding cold-start work.
-        lifecycleScope.launch {
-            delay(1_500L)
-            WearSurfaceRefresher.refreshTile(this@MainActivity)
-        }
     }
 
     override fun onStop() {

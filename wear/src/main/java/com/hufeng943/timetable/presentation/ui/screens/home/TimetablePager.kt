@@ -83,6 +83,7 @@ fun TimetablePager(
     val uiState by viewModel.dateCoursesUi.collectAsStateWithLifecycle()
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val selectedWeekNumber by viewModel.selectedWeekNumber.collectAsStateWithLifecycle()
+    val selectedSemesterWeekCount by viewModel.selectedSemesterWeekCount.collectAsStateWithLifecycle()
     val selectedDateEvents by viewModel.selectedDateEvents.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
@@ -145,6 +146,7 @@ fun TimetablePager(
                 selectedDate = selectedDate,
                 onDateSelected = handleDateSelected,
                 weekNumber = selectedWeekNumber,
+                totalWeekCount = selectedSemesterWeekCount,
                 showTopTime = config.isShowTopTime,
                 events = selectedDateEvents,
                 is24HourFormat = config.is24HourFormat,
@@ -243,6 +245,7 @@ private fun CourseListPager(
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
     weekNumber: Int? = null,
+    totalWeekCount: Int? = null,
     showTopTime: Boolean = false,
     events: List<AcademicEvent> = emptyList(),
     is24HourFormat: Boolean = true,
@@ -369,9 +372,12 @@ private fun CourseListPager(
                             androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 val dateTitle = selectedDateCourseTitle(selectedDate)
                                 Text(
-                                    text = weekNumber?.let {
-                                        stringResource(R.string.home_week_title, dateTitle, it)
-                                    } ?: dateTitle,
+                                    text = when {
+                                        weekNumber != null && totalWeekCount != null && totalWeekCount >= weekNumber ->
+                                            stringResource(R.string.home_week_progress_title, dateTitle, weekNumber, totalWeekCount)
+                                        weekNumber != null -> stringResource(R.string.home_week_title, dateTitle, weekNumber)
+                                        else -> dateTitle
+                                    },
                                     style = MaterialTheme.typography.titleMedium,
                                     maxLines = 2,
                                     overflow = TextOverflow.Clip,

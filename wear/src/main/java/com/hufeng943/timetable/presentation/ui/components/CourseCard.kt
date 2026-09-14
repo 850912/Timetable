@@ -58,6 +58,12 @@ fun CourseCard(
     val courseColor = course.displayColor
     val slot = course.timeSlot
     val order = course.dailyOrder?.toString() ?: "•"
+    val classProgress = if (isCurrent && minutesLeft != null && slot.startTime != null && slot.endTime != null) {
+        val startMinutes = slot.startTime.hour * 60 + slot.startTime.minute
+        val endMinutes = slot.endTime.hour * 60 + slot.endTime.minute
+        val total = (endMinutes - startMinutes).coerceAtLeast(1)
+        ((total - minutesLeft).toFloat() / total.toFloat()).coerceIn(0f, 1f)
+    } else null
     val cardModifier = when {
         isCurrent -> modifier.border(2.dp, courseColor.copy(alpha = 0.98f), CourseCapsuleShape)
         isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.46f), CourseCapsuleShape)
@@ -149,6 +155,28 @@ fun CourseCard(
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                         )
+                        classProgress?.let { progress ->
+                            Spacer(Modifier.height(5.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(3.dp)
+                                    .clip(RoundedCornerShape(99.dp))
+                                    .background(Color.White.copy(alpha = 0.10f))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(progress)
+                                        .fillMaxHeight()
+                                        .clip(RoundedCornerShape(99.dp))
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(courseColor.copy(alpha = 0.72f), courseColor)
+                                            )
+                                        )
+                                )
+                            }
+                        }
                     } else if (isNext) {
                         Text(
                             text = stringResource(R.string.course_next),

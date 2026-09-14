@@ -77,7 +77,7 @@ Release 构建继续使用项目现有签名配置。
 
 ## 主要开源组件
 
-项目继续基于现有依赖，不为 3.1.0 额外引入第三方运行时库。当前核心组件版本：Wear Compose **1.6.2**、Horologist **0.7.15**、Room **2.8.4**、Hilt **2.60**、KotlinX Serialization **1.11.0**、KotlinX Datetime **0.8.0**、Coroutines **1.11.0**、AboutLibraries **15.0.3**、MaterialKolor **4.1.1**。手表端“关于 → 开源许可证”读取 AboutLibraries 在构建时根据实际依赖生成的许可证清单。
+项目继续基于现有依赖，不为 3.2.0 额外引入第三方运行时库。当前核心组件版本：Wear Compose **1.6.2**、Horologist **0.7.15**、Room **2.8.4**、Hilt **2.60**、KotlinX Serialization **1.11.0**、KotlinX Datetime **0.8.0**、Coroutines **1.11.0**、AboutLibraries **15.0.3**、MaterialKolor **4.1.1**。手表端“关于 → 开源许可证”读取 AboutLibraries 在构建时根据实际依赖生成的许可证清单。
 
 开发者选项可通过在“关于应用”连续点击版本号 7 次进入，现显示应用版本、Android API / 屏幕 dp、Room schema、文件传输协议、支持格式、核心组件以及 Tile / Complication 更新策略。
 
@@ -85,6 +85,16 @@ Release 构建继续使用项目现有签名配置。
 
 本项目采用 **MIT License + Commons Clause** 双协议，详细条款请查看 [LICENSE](LICENSE)。
 
+
+
+## 3.2.0 Performance / Surface / Timetable
+
+- Wear 冷启动移除前台主动 Tile 刷新，国行 Data Layer bootstrap 延后到首屏稳定后，减少 Compose / Room / Play services 竞争。
+- 手表端保存或删除课表、课程、课时时立即请求 Tile / Complication 更新；手机同步完成后的原有刷新路径继续保留。
+- Tile 继续依靠课程 Timeline 处理上课边界，周期 freshness 调整为 60 分钟兜底，不再作为主要实时更新机制。
+- 当前课程卡加入轻量课程进度条，不增加持续脉冲动画或额外 graphicsLayer。
+- 手机端课表卡新增“今日课表”视觉区，使用课程色、当前课强调和更清晰的信息层级；原有完整课程管理仍保留。
+- Hybrid Data Layer、中国版 Legacy fallback、Room schema 与签名配置不变。
 
 ## 3.1.0 首页与信息页优化
 

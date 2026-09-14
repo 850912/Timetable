@@ -1,5 +1,6 @@
 package com.hufeng943.timetable.presentation.viewmodel.edit.timetable
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -11,8 +12,10 @@ import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toTimetableUi
 import com.hufeng943.timetable.presentation.viewmodel.AppError
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
+import com.hufeng943.timetable.surface.WearSurfaceRefresher
 import com.hufeng943.timetable.shared.model.Timetable
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -24,7 +27,9 @@ import kotlin.time.Clock
 
 @HiltViewModel
 class EditTimetableViewModel @Inject constructor(
-    private val repository: TimetableRepository, savedStateHandle: SavedStateHandle
+    private val repository: TimetableRepository,
+    @ApplicationContext private val appContext: Context,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val tId: Long? = savedStateHandle.get<String>(NavArgs.TABLE_ID)?.toLongOrNull()
     val toDay = Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -89,6 +94,7 @@ class EditTimetableViewModel @Inject constructor(
                 val currentUi =
                     (uiState.value as? UiState.Success)?.data ?: throw AppError.UnexpectedEmpty()
                 repository.upsertTimetable(currentUi.toTimetable())
+                WearSurfaceRefresher.refresh(appContext)
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)
             }
@@ -102,6 +108,7 @@ class EditTimetableViewModel @Inject constructor(
 
             if (timetableId != 0L) {
                 repository.deleteTimetable(timetableId)
+                WearSurfaceRefresher.refresh(appContext)
             }
 
             true

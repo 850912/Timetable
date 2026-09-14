@@ -12,10 +12,10 @@ class TimetableApp : Application() {
         super.onCreate()
         // Data Layer bootstrap touches Google Play services and can contend with the
         // first Compose/Room frame on a watch. Keep the China compatibility bootstrap,
-        // but let the launcher render first.
+        // but let Compose/Room finish the cold-start path first.
         Handler(Looper.getMainLooper()).postDelayed(
             { WearBridgeBootstrap.start(this) },
-            2_500L,
+            7_000L,
         )
     }
 }

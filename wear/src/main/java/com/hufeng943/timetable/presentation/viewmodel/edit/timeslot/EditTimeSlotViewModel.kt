@@ -1,5 +1,6 @@
 package com.hufeng943.timetable.presentation.viewmodel.edit.timeslot
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,8 +11,10 @@ import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toTimeSlotUi
 import com.hufeng943.timetable.presentation.viewmodel.AppError
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
+import com.hufeng943.timetable.surface.WearSurfaceRefresher
 import com.hufeng943.timetable.shared.model.TimeSlot
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -21,6 +24,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EditTimeSlotViewModel @Inject constructor(
     private val repository: TimetableRepository,
+    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -87,6 +91,7 @@ class EditTimeSlotViewModel @Inject constructor(
                 val courseId = cId ?: throw AppError.InvalidParameter(NavArgs.COURSE_ID)
 
                 repository.upsertTimeSlot(currentUi.toTimeSlot(), courseId)
+                WearSurfaceRefresher.refresh(appContext)
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)
             }
@@ -100,6 +105,7 @@ class EditTimeSlotViewModel @Inject constructor(
                     ?: throw AppError.TimeSlotNotFound(null)
                 if (slotId != 0L) {
                     repository.deleteTimeSlot(slotId)
+                    WearSurfaceRefresher.refresh(appContext)
                 }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)

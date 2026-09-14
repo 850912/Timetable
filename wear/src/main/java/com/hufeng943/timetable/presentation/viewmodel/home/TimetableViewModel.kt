@@ -50,6 +50,17 @@ class TimetableViewModel @Inject constructor(
         initialValue = null,
     )
 
+    val selectedSemesterWeekCount = combine(allTimetables, _selectedDate) { state, date ->
+        val tables = (state as? UiState.Success)?.data.orEmpty()
+        tables.filter { it.weekNumberFor(date) != null }
+            .mapNotNull { table -> table.semesterEnd?.let { table.weekNumberFor(it) } }
+            .maxOrNull()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000L),
+        initialValue = null,
+    )
+
     val selectedDateEvents = combine(allTimetables, _selectedDate) { state, date ->
         val tables = (state as? UiState.Success)?.data.orEmpty()
         tables.flatMap { it.events }

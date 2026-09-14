@@ -1,5 +1,6 @@
 package com.hufeng943.timetable.presentation.viewmodel.edit.course
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -11,8 +12,10 @@ import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toCourseUi
 import com.hufeng943.timetable.presentation.viewmodel.AppError
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
+import com.hufeng943.timetable.surface.WearSurfaceRefresher
 import com.hufeng943.timetable.shared.model.Course
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -22,6 +25,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EditCourseViewModel @Inject constructor(
     private val repository: TimetableRepository,
+    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val cId: Long? =
@@ -75,6 +79,7 @@ class EditCourseViewModel @Inject constructor(
                     (uiState.value as? UiState.Success)?.data ?: throw AppError.UnexpectedEmpty()
                 val tableId = tId ?: throw AppError.InvalidParameter(NavArgs.TABLE_ID)
                 repository.upsertCourse(currentUi.toCourse(), tableId)
+                WearSurfaceRefresher.refresh(appContext)
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)
             }
@@ -90,6 +95,7 @@ class EditCourseViewModel @Inject constructor(
                     )
                 if (courseId != 0L) {
                     repository.deleteCourse(courseId)
+                    WearSurfaceRefresher.refresh(appContext)
                 }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e)

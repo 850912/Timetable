@@ -36,7 +36,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import java.time.ZoneId
 
-private const val RESOURCES_VERSION = "4"
+private const val RESOURCES_VERSION = "5"
 private const val SURFACE = 0xFF17181B.toInt()
 private const val SURFACE_ALT = 0xFF202228.toInt()
 private const val PRIMARY = 0xFF5B8CFF.toInt()
@@ -150,7 +150,7 @@ private fun tile(
     return TileBuilders.Tile.Builder()
         .setResourcesVersion(RESOURCES_VERSION)
         .setTileTimeline(timeline.build())
-        .setFreshnessIntervalMillis(15 * 60 * 1000L)
+        .setFreshnessIntervalMillis(60 * 60 * 1000L)
         .build()
 }
 

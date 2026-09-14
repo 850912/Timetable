@@ -69,6 +69,8 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.todayIn
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
 class MainActivity : AppCompatActivity() {
@@ -207,7 +209,13 @@ class MainActivity : AppCompatActivity() {
             })
             card.addView(TextView(this).apply {
                 val end = timetable.semesterEnd?.toString() ?: "长期"
-                val week = timetable.weekNumberFor(today)?.let { " · 第${it}周" }.orEmpty()
+                val currentWeek = timetable.weekNumberFor(today)
+                val totalWeeks = timetable.semesterEnd?.let { timetable.weekNumberFor(it) }
+                val week = when {
+                    currentWeek != null && totalWeeks != null && totalWeeks >= currentWeek -> " · 第${currentWeek}/${totalWeeks}周"
+                    currentWeek != null -> " · 第${currentWeek}周"
+                    else -> ""
+                }
                 text = "${timetable.semesterStart} ～ $end · ${timetable.allCourses.size} 门课程$week"
                 setPadding(0, dp(5), 0, dp(3))
                 maxLines = 1
@@ -223,6 +231,74 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, 0, 0, dp(8))
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
+            })
+
+            val todayOccurrences = timetable.resolveDate(today)
+            if (todayOccurrences.isNotEmpty()) {
+                card.addView(TextView(this).apply {
+                    text = "今日课表"
+                    textSize = 15f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    setPadding(0, dp(4), 0, dp(6))
+                })
+                val nowTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
+                todayOccurrences.forEach { occurrence ->
+                    val isCurrent = nowTime >= occurrence.startTime && nowTime < occurrence.endTime
+                    val accent = occurrence.course.color.takeIf { it != -1L }?.toInt() ?: resolvePrimaryColor()
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(dp(10), dp(9), dp(10), dp(9))
+                        background = GradientDrawable().apply {
+                            cornerRadius = dp(18).toFloat()
+                            setColor(withAlpha(accent, if (isCurrent) 46 else 22))
+                            setStroke(dp(if (isCurrent) 2 else 1), withAlpha(accent, if (isCurrent) 220 else 92))
+                        }
+                    }
+                    row.layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = dp(7) }
+                    row.addView(View(this).apply {
+                        background = GradientDrawable().apply {
+                            cornerRadius = dp(99).toFloat()
+                            setColor(accent)
+                        }
+                        layoutParams = LinearLayout.LayoutParams(dp(4), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                            marginEnd = dp(10)
+                        }
+                    })
+                    row.addView(LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                        addView(TextView(this@MainActivity).apply {
+                            text = occurrence.course.name.ifBlank { "未命名课程" }
+                            textSize = if (isCurrent) 17f else 16f
+                            setTypeface(typeface, if (isCurrent) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                            maxLines = 2
+                            ellipsize = TextUtils.TruncateAt.END
+                        })
+                        addView(TextView(this@MainActivity).apply {
+                            text = buildString {
+                                append("${occurrence.startTime}–${occurrence.endTime}")
+                                occurrence.location?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+                                if (isCurrent) append(" · 上课中")
+                            }
+                            textSize = 13f
+                            setPadding(0, dp(2), 0, 0)
+                            maxLines = 2
+                            ellipsize = TextUtils.TruncateAt.END
+                        })
+                    })
+                    row.setOnClickListener { showCourseActionsDialog(timetable, occurrence.course) }
+                    card.addView(row)
+                }
+            }
+
+            card.addView(TextView(this).apply {
+                text = "全部课程"
+                textSize = 14f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(0, dp(6), 0, dp(2))
             })
 
             timetable.allCourses.forEach { course ->
@@ -1333,6 +1409,16 @@ class MainActivity : AppCompatActivity() {
             value.data
         } else Color.WHITE
     }
+
+    private fun resolvePrimaryColor(): Int {
+        val value = android.util.TypedValue()
+        return if (theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, value, true)) {
+            value.data
+        } else 0xFF6750A4.toInt()
+    }
+
+    private fun withAlpha(color: Int, alpha: Int): Int =
+        Color.argb(alpha.coerceIn(0, 255), Color.red(color), Color.green(color), Color.blue(color))
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 

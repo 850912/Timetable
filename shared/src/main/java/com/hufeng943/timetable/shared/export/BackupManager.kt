@@ -66,7 +66,7 @@ data class TimetableBackupDto(
 @Serializable
 data class TimetableBackupContainer(
     val schemaVersion: Int = 3,
-    val appVersion: String = "3.1.0",
+    val appVersion: String = "3.2.0",
     val backupEpochMillis: Long,
     val timetables: List<TimetableBackupDto>
 )
