@@ -123,16 +123,16 @@
     <string name="about_features_schedule">课程：多课表、日期例外、今日调课、手机 ↔ 手表同步。</string>
     <string name="about_features_wear">Wear：首页状态优先、Tile 时间线、当前课进度与下一节倒计时复杂功能。</string>
     <string name="about_features_tools">工具：学业待办与提醒、本周课表分享、ICS / CSV / JSON、系统日历同步。</string>
-    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.2.0。</string>
+    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.2.1。</string>
     <string name="about_declaration_development">维护：黑白君 (HeiBaiJun)；部分开发借助生成式 AI。连续点击版本号 7 次进入开发者选项。</string>
     <string name="about_open_source_wear">Wear UI：Wear Compose 1.6.2 · Horologist 0.7.15</string>
     <string name="about_open_source_data">数据：Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">工具：Coroutines 1.11.0 · AboutLibraries 15.0.3 · MaterialKolor 4.1.1。完整许可证见下方入口。</string>
-    <string name="about_changelog_part1">3.2.0：冷启动去掉前台 Tile 刷新竞争，国行桥接延后到首屏稳定后；课程编辑会直接刷新 Tile / Complication。</string>
+    <string name="about_changelog_part1">3.2.1：新增按需加载的本周课表、同步状态中心，并增强上课中的下一节上下文；Wear 系统表面继续采用事件驱动刷新。</string>
     <string name="about_changelog_part2">课表视觉升级：当前课程加入实时进度条；手机端新增今日课表层级与课程色卡片，同时保留原有全部课程管理。</string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
-        " · 当前版本采用语义化版本号 3.2.0\n"
+        " · 当前版本采用语义化版本号 3.2.1\n"
         " · 原项目：HuFeng943 / Timetable\n"
         " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
         " · 当前版本在原项目基础上持续维护与扩展\n"
@@ -144,7 +144,7 @@
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
     <string name="about_open_source_stack">核心开源组件：Wear Compose 1.6.2、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX Serialization 1.11.0 / Datetime 0.8.0、Coroutines 1.11.0、AboutLibraries 15.0.3、MaterialKolor 4.1.1。开源许可证页面由 AboutLibraries 根据实际构建依赖生成。</string>
-    <string name="about_changelog_title">3.2.0 更新</string>
+    <string name="about_changelog_title">3.2.1 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
         " · 冷启动不再主动触发 Tile 数据读取，减少首次打开竞争\n"
@@ -205,6 +205,7 @@
     <string name="home_no_course_today">今天没有课程</string>
     <string name="course_in_progress">%1$d分后下课</string>
     <string name="course_next">下一节</string>
+    <string name="course_class_mode_next">下课后 · %1$s · %2$d分后</string>
     <string name="complication_current_course_label">当前课程</string>
     <string name="complication_next_course_label">下一节课</string>
     <string name="home_day_finished_free_title">你自由了</string>

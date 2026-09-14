@@ -19,6 +19,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.HorizontalScrollView
 import android.widget.Spinner
 import android.widget.ScrollView
 import android.widget.TextView
@@ -68,6 +69,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -152,6 +156,9 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.buttonSyncAll).setOnClickListener {
             syncToWatch(forceFullSnapshot = true)
+        }
+        findViewById<MaterialButton>(R.id.buttonSyncStatus).setOnClickListener {
+            showSyncStatusDialog()
         }
         findViewById<MaterialButton>(R.id.buttonReminderSettings).setOnClickListener {
             showReminderSettingsDialog()
@@ -394,12 +401,62 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, dp(4), 0, 0)
             }
             studentActions.addView(actionButton("待办管理") { showAcademicEventManagerDialog(timetable) })
-            studentActions.addView(actionButton("分享本周课表") {
+            studentActions.addView(actionButton("本周课表") { showWeeklyScheduleDialog(timetable) })
+            card.addView(studentActions)
+            val shareActions = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(4), 0, 0)
+            }
+            shareActions.addView(actionButton("分享本周课表") {
                 runCatching { WeeklyTimetableShare.share(this@MainActivity, timetable) }
                     .onFailure { toast(it.message ?: "生成分享图片失败") }
             })
-            card.addView(studentActions)
+            card.addView(shareActions)
             timetableContainer.addView(card)
+        }
+    }
+
+    private fun showWeeklyScheduleDialog(timetable: Timetable) {
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        val mondayOffset = (today.dayOfWeek.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber).mod(7)
+        val weekStart = today.minus(mondayOffset.toLong(), DateTimeUnit.DAY)
+        val schedule = WeeklyScheduleView(this, timetable, weekStart).apply {
+            layoutParams = ViewGroup.LayoutParams(dp(760), dp(560))
+            setPadding(dp(4), dp(4), dp(4), dp(4))
+        }
+        val scroller = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(schedule)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("本周课表 · ${weekStart.monthNumber}/${weekStart.dayOfMonth}")
+            .setView(scroller)
+            .setPositiveButton("关闭", null)
+            .show()
+    }
+
+    private fun showSyncStatusDialog() {
+        uiScope.launch {
+            val dao = TimetableDatabaseProvider.database(this@MainActivity).syncRecordDao()
+            val connected = WearConnectionState.connected.value
+                ?: withContext(Dispatchers.IO) { wearTransport.isAvailable() }
+            val pending = withContext(Dispatchers.IO) { dao.pendingCount() }
+            val failed = withContext(Dispatchers.IO) { dao.permanentlyFailedCount() }
+            val stateText = if (connected) "已连接" else "未连接"
+            val message = buildString {
+                append("手表连接：$stateText\n")
+                append("待同步变更：$pending\n")
+                append("失败变更：$failed\n")
+                append("传输策略：现代 Wearable + 中国区 Legacy fallback\n")
+                append("自动同步：已开启")
+            }
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle("同步状态中心")
+                .setMessage(message)
+                .setNeutralButton("通信诊断") { _, _ -> startActivity(Intent(this@MainActivity, WearProbeActivity::class.java)) }
+                .setNegativeButton("关闭", null)
+                .setPositiveButton("立即同步") { _, _ -> syncToWatch(forceFullSnapshot = true) }
+                .show()
         }
     }
 

@@ -158,6 +158,10 @@ fun TimetablePager(
                     isCurrent = statusSummary.currentId == courseId,
                     isNext = statusSummary.nextId == courseId,
                     minutesLeft = if (statusSummary.currentId == courseId) statusSummary.minutesLeft else null,
+                    nextCourseName = if (statusSummary.currentId == courseId) {
+                        coursesUi.firstOrNull { it.timeSlot.id == statusSummary.nextId }?.displayName
+                    } else null,
+                    minutesUntilNext = if (statusSummary.currentId == courseId) statusSummary.minutesUntilNext else null,
                     is24HourFormat = config.is24HourFormat,
                     modifier = Modifier
                         .fillMaxWidth()

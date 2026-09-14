@@ -51,6 +51,8 @@ fun CourseCard(
     isCurrent: Boolean = false,
     isNext: Boolean = false,
     minutesLeft: Int? = null,
+    nextCourseName: String? = null,
+    minutesUntilNext: Int? = null,
     is24HourFormat: Boolean = true,
     onClick: () -> Unit
 ) {
@@ -176,6 +178,16 @@ fun CourseCard(
                                         )
                                 )
                             }
+                        }
+                        if (!nextCourseName.isNullOrBlank() && minutesUntilNext != null) {
+                            Spacer(Modifier.height(5.dp))
+                            Text(
+                                text = stringResource(R.string.course_class_mode_next, nextCourseName, minutesUntilNext),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = colors.textSecondary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Clip,
+                            )
                         }
                     } else if (isNext) {
                         Text(
