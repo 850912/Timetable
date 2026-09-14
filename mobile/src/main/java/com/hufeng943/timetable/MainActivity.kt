@@ -1412,7 +1412,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun resolvePrimaryColor(): Int {
         val value = android.util.TypedValue()
-        return if (theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, value, true)) {
+        return if (theme.resolveAttribute(android.R.attr.colorAccent, value, true)) {
             value.data
         } else 0xFF6750A4.toInt()
     }
