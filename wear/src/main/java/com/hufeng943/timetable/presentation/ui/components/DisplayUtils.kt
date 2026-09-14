@@ -19,6 +19,7 @@ fun WeekPattern.toDisplayString() = when (this) {
     WeekPattern.EVERY_WEEK -> stringResource(R.string.every_week)
     WeekPattern.ODD_WEEK -> stringResource(R.string.odd_week)
     WeekPattern.EVEN_WEEK -> stringResource(R.string.even_week)
+    WeekPattern.DATE_ONLY -> stringResource(R.string.date_only)
 }
 
 fun DayOfWeek.toDisplayString(textStyle: TextStyle): String =

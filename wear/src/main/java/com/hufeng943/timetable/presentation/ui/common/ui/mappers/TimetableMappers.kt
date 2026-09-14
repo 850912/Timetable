@@ -70,6 +70,7 @@ fun TimetableUi.toDayCoursesUi(
                         WeekPattern.EVERY_WEEK -> true
                         WeekPattern.ODD_WEEK -> weekIndex % 2 != 0
                         WeekPattern.EVEN_WEEK -> weekIndex % 2 == 0
+                        WeekPattern.DATE_ONLY -> false
                     }
         }.map { slot ->
             val effectiveColor = if (course.color == Color.Unspecified) color else course.color

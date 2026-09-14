@@ -51,8 +51,10 @@ fun ThemePresetSelectPager(currentPreset: ThemePreset, onPresetSelect: (ThemePre
                     title = preset.title,
                     subtitle = when (preset) {
                         ThemePreset.AMOLED_BLACK -> "省电极黑 · 高对比度"
-                        ThemePreset.SYSTEM_DYNAMIC -> "跟随系统动态配色"
-                        else -> "AMOLED 胶囊 · Galaxy AI 强调光效"
+                        ThemePreset.SYSTEM_DYNAMIC -> "跟随系统动态配色 · 不覆盖课程强调色"
+                        ThemePreset.GRAPHITE -> "低饱和钛金质感 · 夜间更耐看"
+                        ThemePreset.AURORA -> "青紫柔光 · 新版胶囊层级"
+                        else -> "AMOLED 胶囊 · 课程/课表强调色保持独立"
                     },
                     icon = Icons.Rounded.Palette,
                     selected = preset == currentPreset,

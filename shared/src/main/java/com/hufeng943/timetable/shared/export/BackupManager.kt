@@ -66,7 +66,7 @@ data class TimetableBackupDto(
 @Serializable
 data class TimetableBackupContainer(
     val schemaVersion: Int = 3,
-    val appVersion: String = "3.2.1",
+    val appVersion: String = "3.3.0",
     val backupEpochMillis: Long,
     val timetables: List<TimetableBackupDto>
 )
@@ -99,6 +99,7 @@ object BackupManager {
                                 WeekPattern.EVERY_WEEK -> 0
                                 WeekPattern.ODD_WEEK -> 1
                                 WeekPattern.EVEN_WEEK -> 2
+                                WeekPattern.DATE_ONLY -> 3
                             }
                             TimeSlotBackupDto(
                                 dayOfWeek = dow.ordinal + 1,
@@ -152,6 +153,7 @@ object BackupManager {
                     val rec = when (sDto.recurrence) {
                         1 -> WeekPattern.ODD_WEEK
                         2 -> WeekPattern.EVEN_WEEK
+                        3 -> WeekPattern.DATE_ONLY
                         else -> WeekPattern.EVERY_WEEK
                     }
                     TimeSlot(

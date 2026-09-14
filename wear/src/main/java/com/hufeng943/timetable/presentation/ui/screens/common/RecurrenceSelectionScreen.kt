@@ -26,7 +26,7 @@ import com.hufeng943.timetable.shared.model.WeekPattern
 
 @Composable
 fun RecurrenceSelectionScreen(initialPattern: WeekPattern, onPatternSelected: (WeekPattern) -> Unit) {
-    val patterns = remember { WeekPattern.entries }
+    val patterns = remember { WeekPattern.entries.filter { it != WeekPattern.DATE_ONLY } }
     val initialIndex = remember(patterns, initialPattern) { patterns.indexOf(initialPattern).coerceAtLeast(0) + 1 }
     val scrollState = rememberTransformingLazyColumnState(initialAnchorItemIndex = initialIndex)
     val transformationSpec = rememberTransformationSpec()

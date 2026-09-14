@@ -41,8 +41,23 @@ class SyncApplier(private val db: AppDatabase) {
     }
 
     private suspend fun applyTimetable(r: SyncRecordPayload, o: kotlinx.serialization.json.JsonObject, syncId: String): Boolean {
-        val dao = db.timetableDao(); val existing = dao.getTimetableEntityBySyncId(syncId)
-        if (existing != null && !wins(r, existing.revision, existing.updatedAt, existing.modifiedBy)) return true
+        val dao = db.timetableDao()
+        val direct = dao.getTimetableEntityBySyncId(syncId)
+        val semanticMatches = if (direct == null && r.operation != SyncOperation.DELETE) {
+            dao.findTimetablesByIdentity(o.str("semesterName"), o.long("semesterStartEpochDay"))
+        } else emptyList()
+        val semanticExisting = semanticMatches.firstOrNull()
+        if (semanticMatches.size > 1) {
+            semanticMatches.drop(1).forEach { duplicate ->
+                // Collapse stale full-sync copies without generating new local sync records.
+                dao.softDeleteTimeSlotsForImport(duplicate.id, r.updatedAt)
+                dao.softDeleteAcademicEventsForImport(duplicate.id, r.updatedAt)
+                dao.softDeleteCoursesForImport(duplicate.id, r.updatedAt)
+                dao.softDeleteTimetableForImport(duplicate.id, r.updatedAt)
+            }
+        }
+        val existing = direct ?: semanticExisting
+        if (existing != null && !wins(r, existing.revision, existing.updatedAt, existing.modifiedBy) && direct != null) return true
         if (r.operation == SyncOperation.DELETE) {
             if (existing != null) dao.markTimetableDeleted(existing.id, r.updatedAt, r.revision, r.deviceId, r.updatedAt)
             else db.syncTombstoneDao().upsert(SyncTombstoneEntity(syncId, r.entityType, r.revision, r.updatedAt, r.deviceId))
@@ -63,8 +78,12 @@ class SyncApplier(private val db: AppDatabase) {
         }
         val parentSync = o.str("timetableSyncId")
         val parent = dao.getTimetableEntityBySyncId(parentSync) ?: return false
+        val semanticExisting = if (existing == null) {
+            dao.findCoursesByIdentity(parent.id, o.str("name"), o.strOrNull("location"), o.strOrNull("teacher")).singleOrNull()
+        } else null
+        val resolvedExisting = existing ?: semanticExisting
         val entity = CourseEntity(0, syncId, parent.id, o.str("name"), o.strOrNull("location"), o.long("color"), o.strOrNull("teacher"), r.updatedAt, r.revision, r.deviceId, null)
-        if (existing == null) dao.insertCourse(entity) else dao.upsertCourse(entity.copy(id = existing.id))
+        if (resolvedExisting == null) dao.insertCourse(entity) else dao.upsertCourse(entity.copy(id = resolvedExisting.id))
         db.syncTombstoneDao().delete(syncId, r.entityType); return true
     }
 
@@ -77,6 +96,16 @@ class SyncApplier(private val db: AppDatabase) {
             return true
         }
         val parent = dao.getCourseEntityBySyncId(o.str("courseSyncId")) ?: return false
+        val semanticExisting = if (existing == null) {
+            dao.findTimeSlotsByIdentity(
+                parent.id,
+                o.int("dayOfWeek"),
+                o.int("startMinute"),
+                o.int("endMinute"),
+                o.int("recurrence"),
+            ).singleOrNull()
+        } else null
+        val resolvedExisting = existing ?: semanticExisting
         val entity = TimeSlotEntity(
             id = 0,
             syncId = syncId,
@@ -92,7 +121,7 @@ class SyncApplier(private val db: AppDatabase) {
             modifiedBy = r.deviceId,
             deletedAt = null,
         )
-        if (existing == null) dao.insertTimeSlot(entity) else dao.upsertTimeSlot(entity.copy(id = existing.id))
+        if (resolvedExisting == null) dao.insertTimeSlot(entity) else dao.upsertTimeSlot(entity.copy(id = resolvedExisting.id))
         db.syncTombstoneDao().delete(syncId, r.entityType); return true
     }
 
@@ -106,6 +135,23 @@ class SyncApplier(private val db: AppDatabase) {
             return true
         }
         val parent = dao.getTimetableEntityBySyncId(o.str("timetableSyncId")) ?: return false
+        // Legacy full snapshots (pre-3.3) did not carry syncId. Reuse an event only
+        // when every user-visible field matches and the match is unambiguous.
+        val semanticExisting = if (existing == null) {
+            dao.findAcademicEventsByIdentity(
+                timetableId = parent.id,
+                title = o.str("title"),
+                type = o.int("type"),
+                dateEpochDay = o.long("dateEpochDay"),
+                timeMinute = o.intOrNull("timeMinute"),
+                courseName = o.strOrNull("courseName"),
+                location = o.strOrNull("location"),
+                note = o.strOrNull("note"),
+                reminderMinutesBefore = o.intOrNull("reminderMinutesBefore"),
+                completed = o.boolOrNull("completed") ?: false,
+            ).singleOrNull()
+        } else null
+        val resolvedExisting = existing ?: semanticExisting
         val entity = AcademicEventEntity(
             id = 0,
             syncId = syncId,
@@ -124,7 +170,7 @@ class SyncApplier(private val db: AppDatabase) {
             modifiedBy = r.deviceId,
             deletedAt = null,
         )
-        if (existing == null) dao.insertAcademicEvent(entity) else dao.upsertAcademicEvent(entity.copy(id = existing.id))
+        if (resolvedExisting == null) dao.insertAcademicEvent(entity) else dao.upsertAcademicEvent(entity.copy(id = resolvedExisting.id))
         db.syncTombstoneDao().delete(syncId, r.entityType)
         return true
     }

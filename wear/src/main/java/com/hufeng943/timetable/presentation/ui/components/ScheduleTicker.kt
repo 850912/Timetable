@@ -30,7 +30,7 @@ data class LiveCountdownState(
 enum class TickerFrequency {
     STOPPED,
     LOW_FREQUENCY,
-    SECOND_LEVEL
+    ACTIVE_COUNTDOWN
 }
 
 @Immutable
@@ -66,9 +66,13 @@ fun rememberScheduleSeconds(
                     val delayMillis = (nextWakeSeconds * 1000L).coerceIn(1_000L, 15 * 60_000L)
                     delay(delayMillis)
                 }
-                TickerFrequency.SECOND_LEVEL -> {
-                    val delayMillis = 1000L - (nowMillis % 1000L)
-                    delay(if (delayMillis > 0) delayMillis else 1000L)
+                TickerFrequency.ACTIVE_COUNTDOWN -> {
+                    // A watch does not need a 1 Hz recomposition for an entire class.
+                    // Five-second alignment keeps the countdown feeling live while cutting
+                    // foreground wakeups/recompositions by ~80%.
+                    val tickMillis = 5_000L
+                    val delayMillis = tickMillis - (nowMillis % tickMillis)
+                    delay(if (delayMillis > 0) delayMillis else tickMillis)
                 }
             }
         }
@@ -126,7 +130,7 @@ private fun calculateTickerMode(
     }
 
     return when {
-        requiresSecondTick -> TickerFrequency.SECOND_LEVEL
+        requiresSecondTick -> TickerFrequency.ACTIVE_COUNTDOWN
         hasUpcoming -> TickerFrequency.LOW_FREQUENCY
         else -> TickerFrequency.STOPPED
     }

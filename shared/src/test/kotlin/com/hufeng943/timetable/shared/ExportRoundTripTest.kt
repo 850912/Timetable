@@ -10,6 +10,7 @@ import com.hufeng943.timetable.shared.model.ScheduleOverride
 import com.hufeng943.timetable.shared.model.ScheduleOverrideType
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
+import com.hufeng943.timetable.shared.model.WeekPattern
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
@@ -84,4 +85,36 @@ class ExportRoundTripTest {
         assertNull(restored.semesterEnd)
         assertEquals(source.allCourses.single().timeSlots.single().overrides, restored.allCourses.single().timeSlots.single().overrides)
     }
+    @Test fun backupAndCsvPreserveDateOnlyRecurrence() {
+        val oneOff = source.copy(
+            allCourses = listOf(
+                source.allCourses.single().copy(
+                    timeSlots = listOf(
+                        source.allCourses.single().timeSlots.single().copy(
+                            recurrence = WeekPattern.DATE_ONLY,
+                            overrides = listOf(
+                                ScheduleOverride(
+                                    date = LocalDate(2026, 9, 16),
+                                    type = ScheduleOverrideType.EXTRA,
+                                    startTime = LocalTime(13, 0),
+                                    endTime = LocalTime(14, 0),
+                                )
+                            ),
+                        )
+                    )
+                )
+            )
+        )
+
+        val backupOut = ByteArrayOutputStream()
+        BackupManager.backup(backupOut, listOf(oneOff))
+        val backupRestored = BackupManager.restore(ByteArrayInputStream(backupOut.toByteArray())).single()
+        assertEquals(WeekPattern.DATE_ONLY, backupRestored.allCourses.single().timeSlots.single().recurrence)
+
+        val csvOut = ByteArrayOutputStream()
+        CsvExporter.streamCsv(csvOut, listOf(oneOff))
+        val csvRestored = CsvImporter.parseCsv(csvOut.toString(Charsets.UTF_8.name())).single()
+        assertEquals(WeekPattern.DATE_ONLY, csvRestored.allCourses.single().timeSlots.single().recurrence)
+    }
+
 }

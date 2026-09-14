@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.shared.model.WeekPattern
+import com.hufeng943.timetable.shared.model.ScheduleOverride
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalTime
 
@@ -14,6 +15,7 @@ data class TimeSlotUi(
     val dayOfWeek: DayOfWeek?,
     val recurrence: WeekPattern,
     val remark: String?,
+    val overrides: List<ScheduleOverride> = emptyList(),
     val color: androidx.compose.ui.graphics.Color
 ) {
     val displayRemark: String

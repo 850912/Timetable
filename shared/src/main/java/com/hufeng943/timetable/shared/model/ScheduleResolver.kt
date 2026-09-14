@@ -34,6 +34,7 @@ fun TimeSlot.matchesWeek(week: Int): Boolean = when (recurrence) {
     WeekPattern.EVERY_WEEK -> true
     WeekPattern.ODD_WEEK -> week % 2 == 1
     WeekPattern.EVEN_WEEK -> week % 2 == 0
+    WeekPattern.DATE_ONLY -> false
 }
 
 fun Timetable.resolveDate(date: LocalDate): List<ResolvedSchedule> {

@@ -36,7 +36,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import java.time.ZoneId
 
-private const val RESOURCES_VERSION = "5"
+private const val RESOURCES_VERSION = "6"
 private const val SURFACE = 0xFF17181B.toInt()
 private const val SURFACE_ALT = 0xFF202228.toInt()
 private const val PRIMARY = 0xFF5B8CFF.toInt()
@@ -55,6 +55,8 @@ private data class TileCourse(
     val color: Int?,
     val startEpochMillis: Long = 0L,
     val endEpochMillis: Long = 0L,
+    val position: Int = 0,
+    val total: Int = 0,
 )
 
 @OptIn(ExperimentalHorologistApi::class)
@@ -164,11 +166,26 @@ private fun tileLayout(
     val firstIsCurrent = courses.firstOrNull()?.let {
         it.startEpochMillis > 0L && nowMillis in it.startEpochMillis until it.endEpochMillis
     } == true
+    val firstCourse = courses.firstOrNull()
     val status = when {
         courses.isEmpty() && hadCoursesToday -> context.getString(R.string.tile_status_finished)
         courses.isEmpty() -> context.getString(R.string.tile_status_today)
-        firstIsCurrent -> context.getString(R.string.tile_status_current)
-        else -> context.getString(R.string.tile_status_next)
+        firstIsCurrent -> buildString {
+            append(context.getString(R.string.tile_status_current))
+            if (firstCourse != null && firstCourse.position > 0) append(" · 第${firstCourse.position}/${firstCourse.total}节")
+            if (firstCourse != null) {
+                val left = ((firstCourse.endEpochMillis - nowMillis) / 60000L).coerceAtLeast(1L)
+                append(" · 余${left}分")
+            }
+        }
+        else -> buildString {
+            append(context.getString(R.string.tile_status_next))
+            if (firstCourse != null) {
+                val wait = ((firstCourse.startEpochMillis - nowMillis) / 60000L).coerceAtLeast(0L)
+                append(" · ${wait}分后")
+                if (firstCourse.position > 0) append(" · 第${firstCourse.position}/${firstCourse.total}节")
+            }
+        }
     }
 
     val column = LayoutElementBuilders.Column.Builder()
@@ -201,6 +218,11 @@ private fun tileLayout(
                 append(course.start)
                 if (course.end.isNotBlank()) append("–${course.end}")
                 course.location?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+                course.teacher?.takeIf { it.isNotBlank() }?.let { append("\n$it") }
+                if (course.position > 0) {
+                    if (!course.teacher.isNullOrBlank()) append(" · ") else append("\n")
+                    append("第${course.position}/${course.total}节")
+                }
             }
             column.addContent(
                 capsule(
@@ -318,7 +340,9 @@ private fun List<Timetable>.coursesForDate(date: LocalDate, is24Hour: Boolean): 
             endEpochMillis = endEpoch,
         )
     }
-}.sortedBy { it.startEpochMillis }
+}.sortedBy { it.startEpochMillis }.let { sorted ->
+    sorted.mapIndexed { index, course -> course.copy(position = index + 1, total = sorted.size) }
+}
 
 private fun List<TileCourse>.currentAndUpcoming(): List<TileCourse> {
     if (isEmpty()) return emptyList()

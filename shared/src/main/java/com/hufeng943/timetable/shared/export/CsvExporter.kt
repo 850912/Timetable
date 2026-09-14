@@ -39,6 +39,7 @@ object CsvExporter {
                             WeekPattern.EVERY_WEEK -> "每周"
                             WeekPattern.ODD_WEEK -> "单周"
                             WeekPattern.EVEN_WEEK -> "双周"
+                            WeekPattern.DATE_ONLY -> "仅指定日期"
                         }
 
                         writer.write(escapeCsv(timetable.semesterName) + ",")

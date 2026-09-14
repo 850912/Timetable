@@ -4,6 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class WeekPattern { // 单双周课程
-    EVERY_WEEK, ODD_WEEK, EVEN_WEEK
+    EVERY_WEEK, ODD_WEEK, EVEN_WEEK, DATE_ONLY
 }
 

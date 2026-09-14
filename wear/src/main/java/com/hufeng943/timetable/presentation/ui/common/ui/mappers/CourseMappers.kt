@@ -39,6 +39,7 @@ fun Course.toDayCoursesUi(
         WeekPattern.EVERY_WEEK -> true
         WeekPattern.ODD_WEEK -> isOddWeek
         WeekPattern.EVEN_WEEK -> !isOddWeek
+        WeekPattern.DATE_ONLY -> false
     }
 }.map { slot ->
     toCourseUi(slot)

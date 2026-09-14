@@ -11,6 +11,7 @@ fun TimeSlot.toTimeSlotUi(color: Long): TimeSlotUi = TimeSlotUi(
     dayOfWeek = dayOfWeek,
     recurrence = recurrence,
     remark = remark,
+    overrides = overrides,
     color = if (color == -1L) Color.Unspecified else Color(color),
 )
 
@@ -20,5 +21,6 @@ fun TimeSlotUi.toTimeSlot(): TimeSlot = TimeSlot(
     endTime = endTime,
     dayOfWeek = dayOfWeek,
     recurrence = recurrence,
-    remark = remark
+    remark = remark,
+    overrides = overrides
 )

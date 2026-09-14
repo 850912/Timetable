@@ -27,15 +27,20 @@ class ImportService @Inject constructor(
     suspend fun importReplacingMatchesAtomic(timetables: List<Timetable>) {
         db.withTransaction {
             timetables.forEach { timetable ->
-                dao.findTimetableIdByIdentity(
+                val matches = dao.findTimetableIdsByIdentity(
                     timetable.semesterName,
                     timetable.semesterStart.toEpochDays()
-                )?.let { timetableId ->
+                )
+                if (matches.isNotEmpty()) {
                     val now = System.currentTimeMillis()
-                    dao.softDeleteTimeSlotsForImport(timetableId, now)
-                    dao.softDeleteAcademicEventsForImport(timetableId, now)
-                    dao.softDeleteCoursesForImport(timetableId, now)
-                    dao.softDeleteTimetableForImport(timetableId, now)
+                    // Clean every stale copy, not only the first one. Older builds could
+                    // accumulate identical snapshots when manual full sync was repeated.
+                    matches.forEach { timetableId ->
+                        dao.softDeleteTimeSlotsForImport(timetableId, now)
+                        dao.softDeleteAcademicEventsForImport(timetableId, now)
+                        dao.softDeleteCoursesForImport(timetableId, now)
+                        dao.softDeleteTimetableForImport(timetableId, now)
+                    }
                 }
                 insertTimetableGraph(timetable)
             }

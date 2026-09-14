@@ -67,6 +67,7 @@ object CsvImporter {
             val recurrence = when (recStr) {
                 "单周" -> WeekPattern.ODD_WEEK
                 "双周" -> WeekPattern.EVEN_WEEK
+                "仅指定日期", "指定日期", "date_only" -> WeekPattern.DATE_ONLY
                 else -> WeekPattern.EVERY_WEEK
             }
 

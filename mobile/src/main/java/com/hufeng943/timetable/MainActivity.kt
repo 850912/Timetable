@@ -5,6 +5,7 @@ import android.app.AlarmManager
 import com.hufeng943.timetable.reminder.ReminderSettings
 import com.hufeng943.timetable.reminder.CourseReminderScheduler
 import android.widget.CheckBox
+import android.text.InputType
 import android.os.Build
 import android.Manifest
 import android.app.TimePickerDialog
@@ -41,6 +42,7 @@ import com.hufeng943.timetable.shared.model.AcademicEventType
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.ScheduleOverrideType
 import com.hufeng943.timetable.shared.model.ScheduleOverride
+import com.hufeng943.timetable.shared.model.ScheduleBatchOperations
 import com.hufeng943.timetable.calendar.SystemCalendarSync
 import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
@@ -374,9 +376,17 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, dp(5), 0, 0)
             })
 
-            val actions = LinearLayout(this).apply {
+            val quickScheduleActions = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, dp(8), 0, 0)
+            }
+            quickScheduleActions.addView(actionButton("多日期课时") { showMultiDateCourseDialog(timetable) })
+            quickScheduleActions.addView(actionButton("批量调时/停课") { showBatchScheduleDialog(timetable) })
+            card.addView(quickScheduleActions)
+
+            val actions = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(4), 0, 0)
             }
             actions.addView(actionButton("添加课程") { showAddCourseDialog(timetable) })
             actions.addView(actionButton("同步") { syncToWatch(forceFullSnapshot = true) })
@@ -691,6 +701,7 @@ class MainActivity : AppCompatActivity() {
         null, "", "每周", "every", "weekly" -> WeekPattern.EVERY_WEEK
         "单周", "odd", "odd_week" -> WeekPattern.ODD_WEEK
         "双周", "even", "even_week" -> WeekPattern.EVEN_WEEK
+        "仅指定日期", "date_only" -> WeekPattern.DATE_ONLY
         else -> throw IllegalArgumentException("无法识别重复方式：$value")
     }
 
@@ -838,11 +849,10 @@ class MainActivity : AppCompatActivity() {
             runCatching {
                 withContext(Dispatchers.IO) {
                     targetSlots.forEach { slot ->
-                        val retained = slot.overrides.filterNot { it.date == today }
                         val updated = if (cancel) {
-                            slot.copy(overrides = retained + ScheduleOverride(today, ScheduleOverrideType.CANCELLED))
+                            ScheduleBatchOperations.cancelDates(slot, listOf(today))
                         } else {
-                            slot.copy(overrides = retained)
+                            ScheduleBatchOperations.clearDates(slot, listOf(today))
                         }
                         repository.upsertTimeSlot(updated, course.id)
                     }
@@ -852,6 +862,233 @@ class MainActivity : AppCompatActivity() {
             }.onFailure { toast(it.message ?: "保存失败") }
         }
     }
+
+    private fun showMultiDateCourseDialog(timetable: Timetable) {
+        val courseValues = listOf("＋ 新建课程") + timetable.allCourses.map { it.name.ifBlank { "未命名课程" } }
+        val courseSpinner = spinner(courseValues)
+        val name = autocompleteField("课程名称", "例如：补课 / 实验课", courseSuggestions())
+        val location = autocompleteField("地点（可留空）", "例如：A101", locationSuggestions())
+        val teacher = autocompleteField("教师（可留空）", "例如：张老师", teacherSuggestions())
+        val start = inputField("开始时间", "08:00").apply { editText?.setText("08:00") }
+        val end = inputField("结束时间", "09:40").apply { editText?.setText("09:40") }
+        start.editText?.isFocusable = false
+        end.editText?.isFocusable = false
+        start.editText?.setOnClickListener { showTimePicker(start.editText ?: return@setOnClickListener) }
+        end.editText?.setOnClickListener { showTimePicker(end.editText ?: return@setOnClickListener) }
+
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        val rangeEnd = timetable.semesterEnd ?: LocalDate.fromEpochDays(today.toEpochDays() + 83)
+        val last = minOf(rangeEnd, LocalDate.fromEpochDays(today.toEpochDays() + 83))
+        val candidateDates = buildList {
+            var date = maxOf(today, timetable.semesterStart)
+            while (date <= last) {
+                add(date)
+                date = LocalDate.fromEpochDays(date.toEpochDays() + 1)
+            }
+        }
+        val selectedDates = linkedSetOf<LocalDate>()
+        val dateButton = MaterialButton(this).apply {
+            text = "选择日期（0）"
+            isAllCaps = false
+            setOnClickListener {
+                if (candidateDates.isEmpty()) {
+                    toast("当前学期没有可选择的日期")
+                    return@setOnClickListener
+                }
+                val labels = candidateDates.map { "${it.monthNumber}/${it.dayOfMonth} · ${dayLabel(it.dayOfWeek)}" }.toTypedArray()
+                val checked = candidateDates.map { it in selectedDates }.toBooleanArray()
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("多选上课日期 · 最多显示未来 84 天")
+                    .setMultiChoiceItems(labels, checked) { _, which, isChecked ->
+                        val date = candidateDates[which]
+                        if (isChecked) selectedDates += date else selectedDates -= date
+                    }
+                    .setNegativeButton("清空") { _, _ ->
+                        selectedDates.clear()
+                        text = "选择日期（0）"
+                    }
+                    .setPositiveButton("完成") { _, _ ->
+                        text = if (selectedDates.isEmpty()) "选择日期（0）" else "已选 ${selectedDates.size} 天 · ${selectedDates.minOrNull()} 起"
+                    }
+                    .show()
+            }
+        }
+
+        courseSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val creating = position == 0
+                name.visibility = if (creating) View.VISIBLE else View.GONE
+                teacher.visibility = if (creating) View.VISIBLE else View.GONE
+                if (!creating) {
+                    val course = timetable.allCourses[position - 1]
+                    location.editText?.setText(course.location.orEmpty())
+                }
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("多日期创建课时")
+            .setView(dialogColumn(labeled("添加到", courseSpinner), name, location, teacher, dateButton, start, end))
+            .setNegativeButton("取消", null)
+            .setPositiveButton("创建", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                runCatching {
+                    if (selectedDates.isEmpty()) throw IllegalArgumentException("请至少选择一个日期")
+                    val startTime = LocalTime.parse(start.text())
+                    val endTime = LocalTime.parse(end.text())
+                    if (endTime <= startTime) throw IllegalArgumentException("结束时间必须晚于开始时间")
+                    Triple(startTime, endTime, selectedDates.toList())
+                }.onSuccess { (startTime, endTime, dates) ->
+                    uiScope.launch {
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                val selectedPosition = courseSpinner.selectedItemPosition
+                                val courseId: Long
+                                if (selectedPosition == 0) {
+                                    val courseName = name.text().ifBlank { throw IllegalArgumentException("请输入课程名称") }
+                                    courseId = repository.upsertCourse(
+                                        Course(
+                                            name = courseName,
+                                            location = location.text().takeIf { it.isNotBlank() },
+                                            teacher = teacher.text().takeIf { it.isNotBlank() },
+                                        ),
+                                        timetable.timetableId,
+                                    )
+                                } else {
+                                    courseId = timetable.allCourses[selectedPosition - 1].id
+                                }
+                                val slot = ScheduleBatchOperations.dateOnlySlot(
+                                    dates = dates,
+                                    startTime = startTime,
+                                    endTime = endTime,
+                                    location = location.text().takeIf { it.isNotBlank() },
+                                )
+                                repository.upsertTimeSlot(slot, courseId)
+                            }
+                        }.onSuccess {
+                            dialog.dismiss()
+                            toast("已创建 ${dates.size} 个指定日期课时")
+                        }.onFailure { toast(it.message ?: "创建失败") }
+                    }
+                }.onFailure { toast(it.message ?: "创建失败") }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun showBatchScheduleDialog(timetable: Timetable) {
+        if (timetable.allCourses.none { it.timeSlots.isNotEmpty() }) {
+            toast("请先添加课程和课时")
+            return
+        }
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        val from = inputField("生效开始日期", "YYYY-MM-DD").apply { editText?.setText(maxOf(today, timetable.semesterStart).toString()) }
+        val to = inputField("生效结束日期", "YYYY-MM-DD").apply { editText?.setText((timetable.semesterEnd ?: LocalDate.fromEpochDays(today.toEpochDays() + 30)).toString()) }
+        from.editText?.isFocusable = false
+        to.editText?.isFocusable = false
+        from.editText?.setOnClickListener { showDatePicker(from.editText ?: return@setOnClickListener) }
+        to.editText?.setOnClickListener { showDatePicker(to.editText ?: return@setOnClickListener) }
+
+        val courseSpinner = spinner(listOf("全部课程") + timetable.allCourses.map { it.name.ifBlank { "未命名课程" } })
+        val actionSpinner = spinner(listOf("统一后移/前移", "停课", "恢复正常"))
+        val offset = inputField("移动分钟（前移填负数）", "例如：10 或 -15").apply {
+            editText?.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
+            editText?.setText("10")
+        }
+        val useWindow = CheckBox(this).apply { text = "只处理与指定时间段重叠的课时" }
+        val windowStart = inputField("时间段开始", "08:00").apply { editText?.setText("08:00") }
+        val windowEnd = inputField("时间段结束", "18:00").apply { editText?.setText("18:00") }
+        windowStart.editText?.isFocusable = false
+        windowEnd.editText?.isFocusable = false
+        windowStart.editText?.setOnClickListener { showTimePicker(windowStart.editText ?: return@setOnClickListener) }
+        windowEnd.editText?.setOnClickListener { showTimePicker(windowEnd.editText ?: return@setOnClickListener) }
+        fun updateVisibility() {
+            offset.visibility = if (actionSpinner.selectedItemPosition == 0) View.VISIBLE else View.GONE
+            val visible = if (useWindow.isChecked) View.VISIBLE else View.GONE
+            windowStart.visibility = visible
+            windowEnd.visibility = visible
+        }
+        actionSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) = updateVisibility()
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
+        }
+        useWindow.setOnCheckedChangeListener { _, _ -> updateVisibility() }
+        updateVisibility()
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("批量调整课程")
+            .setView(dialogColumn(labeled("范围", courseSpinner), labeled("操作", actionSpinner), from, to, offset, useWindow, windowStart, windowEnd))
+            .setNegativeButton("取消", null)
+            .setPositiveButton("应用", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                runCatching {
+                    val startDate = LocalDate.parse(from.text())
+                    val endDate = LocalDate.parse(to.text())
+                    if (endDate < startDate) throw IllegalArgumentException("结束日期不能早于开始日期")
+                    val startWindow = if (useWindow.isChecked) LocalTime.parse(windowStart.text()) else null
+                    val endWindow = if (useWindow.isChecked) LocalTime.parse(windowEnd.text()) else null
+                    if (startWindow != null && endWindow != null && endWindow <= startWindow) throw IllegalArgumentException("时间段结束必须晚于开始")
+                    val offsetMinutes = if (actionSpinner.selectedItemPosition == 0) offset.text().toIntOrNull()
+                        ?: throw IllegalArgumentException("请输入移动分钟数") else 0
+                    BatchScheduleInput(startDate, endDate, startWindow, endWindow, offsetMinutes)
+                }.onSuccess { input ->
+                    uiScope.launch {
+                        runCatching {
+                            withContext(Dispatchers.IO) {
+                                val selectedCourseId = courseSpinner.selectedItemPosition.takeIf { it > 0 }
+                                    ?.let { timetable.allCourses[it - 1].id }
+                                val matching = ScheduleBatchOperations.matchingDates(
+                                    timetable, input.startDate, input.endDate, input.windowStart, input.windowEnd
+                                )
+                                var changed = 0
+                                timetable.allCourses
+                                    .filter { selectedCourseId == null || it.id == selectedCourseId }
+                                    .forEach { course ->
+                                        course.timeSlots.forEach slotLoop@ { slot ->
+                                            val dates = if (actionSpinner.selectedItemPosition == 2) {
+                                                ScheduleBatchOperations.overrideDates(
+                                                    slot, input.startDate, input.endDate, input.windowStart, input.windowEnd
+                                                )
+                                            } else {
+                                                matching[slot.id].orEmpty()
+                                            }
+                                            if (dates.isEmpty()) return@slotLoop
+                                            val updated = when (actionSpinner.selectedItemPosition) {
+                                                0 -> ScheduleBatchOperations.shiftDates(slot, dates, input.offsetMinutes)
+                                                1 -> ScheduleBatchOperations.cancelDates(slot, dates)
+                                                else -> ScheduleBatchOperations.clearDates(slot, dates)
+                                            }
+                                            if (updated != slot) {
+                                                repository.upsertTimeSlot(updated, course.id)
+                                                changed++
+                                            }
+                                        }
+                                    }
+                                changed
+                            }
+                        }.onSuccess { changed ->
+                            dialog.dismiss()
+                            toast("已更新 $changed 个课时规则")
+                        }.onFailure { toast(it.message ?: "批量调整失败") }
+                    }
+                }.onFailure { toast(it.message ?: "参数错误") }
+            }
+        }
+        dialog.show()
+    }
+
+    private data class BatchScheduleInput(
+        val startDate: LocalDate,
+        val endDate: LocalDate,
+        val windowStart: LocalTime?,
+        val windowEnd: LocalTime?,
+        val offsetMinutes: Int,
+    )
 
     private fun showAcademicEventManagerDialog(timetable: Timetable) {
         val ordered = timetable.events.sortedWith(

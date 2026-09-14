@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -24,11 +25,13 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.TimeSlotUi
+import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.edit.EditTimeSlotCard
 
 @Composable
 fun TimeSlotListPager(
     timeSlots: List<TimeSlotUi>,
+    onMultiDateSlot: () -> Unit,
     onAddTimeSlot: () -> Unit,
     onTimeSlotClick: (timeSlotId: Long) -> Unit,
 ) {
@@ -61,6 +64,19 @@ fun TimeSlotListPager(
                 ) {
                     Text(stringResource(R.string.edit_timeslot_title))
                 }
+            }
+            item {
+                OneUiCapsuleSurface(
+                    title = "多日期创建课时",
+                    subtitle = "一次勾选多个日期，共用一组开始/结束时间",
+                    icon = Icons.Rounded.DateRange,
+                    emphasize = true,
+                    onClick = onMultiDateSlot,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
             }
             if (timeSlots.isEmpty()) {
                 item {

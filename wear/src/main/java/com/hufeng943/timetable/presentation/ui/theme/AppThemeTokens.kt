@@ -12,6 +12,8 @@ enum class ThemePreset(val title: String) {
     ROYAL_PURPLE("星云紫"),
     SUNSET_ORANGE("活力橙"),
     SAKURA_PINK("珊瑚粉"),
+    GRAPHITE("钛金灰"),
+    AURORA("极光"),
     SYSTEM_DYNAMIC("系统动态色")
 }
 

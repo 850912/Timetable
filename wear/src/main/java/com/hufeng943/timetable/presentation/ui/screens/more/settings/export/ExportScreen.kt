@@ -106,7 +106,7 @@ fun ExportScreen(
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) {
-                    Text("导出课表")
+                    Text("导出到手机")
                 }
             }
 
@@ -120,14 +120,14 @@ fun ExportScreen(
                 ) {
                     Column {
                         Text(
-                            text = "当前学期数据透视",
+                            text = "直接发送到手机 Timetable",
                             color = AppTheme.colors.primary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(3.dp))
                         Text(
-                            text = previewStats?.semesterName ?: "正在读取...",
+                            text = (previewStats?.semesterName ?: "正在读取...") + " · 先选格式，再发送",
                             color = AppTheme.colors.textPrimary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.ExtraBold
@@ -189,7 +189,7 @@ fun ExportScreen(
 
             item {
                 OneUiCapsuleSurface(
-                    title = "一键备份 (.json)",
+                    title = "完整备份 (.json)",
                     subtitle = "完整课表数据备份 · 推荐迁移时使用",
                     selected = selectedFormat == ExportFormat.JSON_BACKUP,
                     onClick = { selectedFormat = ExportFormat.JSON_BACKUP },
@@ -219,8 +219,8 @@ fun ExportScreen(
 
             item {
                 OneUiCapsuleSurface(
-                    title = if (exportState is ExportState.Exporting) "正在发送到手机…" else "发送到 Galaxy 手机",
-                    subtitle = if (exportState is ExportState.Exporting) "请保持 Watch7 与手机连接" else "通过 Wear Data Layer 安全传输",
+                    title = if (exportState is ExportState.Exporting) "正在发送到手机…" else "导出到手机 App",
+                    subtitle = if (exportState is ExportState.Exporting) "保持手表与手机连接即可" else "手机端自动接收；所选格式仍保留。兼容旧 Wear 通信链路",
                     icon = Icons.Rounded.FileDownload,
                     emphasize = true,
                     onClick = if (exportState is ExportState.Exporting) null else ({

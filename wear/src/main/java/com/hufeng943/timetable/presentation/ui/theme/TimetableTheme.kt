@@ -78,6 +78,34 @@ val SunsetOrangeColorScheme = ColorScheme(
     onSurfaceVariant = Color(0xFFFFE0B2)
 )
 
+
+val GraphiteColorScheme = ColorScheme(
+    primary = Color(0xFFD5D9E0),
+    primaryContainer = Color(0xFF34373D),
+    secondary = Color(0xFFAEB5BF),
+    secondaryContainer = Color(0xFF292C31),
+    background = Color.Black,
+    surfaceContainer = Color(0xFF191A1D),
+    onPrimary = Color(0xFF111216),
+    onSecondary = Color(0xFF111216),
+    onBackground = Color(0xFFF4F5F7),
+    onSurface = Color(0xFFF4F5F7),
+    onSurfaceVariant = Color(0xFFB7BBC2)
+)
+
+val AuroraColorScheme = ColorScheme(
+    primary = Color(0xFF8BE8D3),
+    primaryContainer = Color(0xFF17463F),
+    secondary = Color(0xFFB8A7FF),
+    secondaryContainer = Color(0xFF39305E),
+    background = Color.Black,
+    surfaceContainer = Color(0xFF171A1D),
+    onPrimary = Color(0xFF071F1A),
+    onSecondary = Color(0xFF17102E),
+    onBackground = Color(0xFFF4FFFC),
+    onSurface = Color(0xFFF4FFFC),
+    onSurfaceVariant = Color(0xFFB8C9C5)
+)
 val SakuraPinkColorScheme = ColorScheme(
     primary = Color(0xFFFF80AB),
     primaryContainer = Color(0xFFC2185B),
@@ -100,13 +128,10 @@ private fun TimetableColors.fromColorScheme(scheme: ColorScheme): TimetableColor
     background = scheme.background,
     surface = scheme.surfaceContainer,
     surfaceContainer = scheme.surfaceContainer,
-    courseCurrent = scheme.primaryContainer,
-    courseNext = scheme.secondaryContainer,
-    courseFinished = scheme.surfaceContainer,
+    // Keep schedule semantic/accent colors owned by the base preset. Theme selection
+    // only changes the shell colors; saved timetable/course seed colors remain authoritative.
     textPrimary = scheme.onBackground,
-    textSecondary = scheme.onSurfaceVariant,
-    badgeActive = scheme.secondary,
-    weekend = scheme.secondary
+    textSecondary = scheme.onSurfaceVariant
 )
 
 private fun ThemePreset.baseColors(scheme: ColorScheme): TimetableColors = when (this) {
@@ -116,6 +141,8 @@ private fun ThemePreset.baseColors(scheme: ColorScheme): TimetableColors = when 
     ThemePreset.ROYAL_PURPLE -> RoyalPurpleColors
     ThemePreset.SUNSET_ORANGE -> SunsetOrangeColors
     ThemePreset.SAKURA_PINK -> SakuraPinkColors
+    ThemePreset.GRAPHITE -> AmoledBlackColors.fromColorScheme(scheme)
+    ThemePreset.AURORA -> AmoledBlackColors.fromColorScheme(scheme)
     ThemePreset.SYSTEM_DYNAMIC -> AmoledBlackColors.fromColorScheme(scheme)
 }
 
@@ -135,6 +162,8 @@ fun TimetableTheme(
         ThemePreset.ROYAL_PURPLE -> RoyalPurpleColorScheme
         ThemePreset.SUNSET_ORANGE -> SunsetOrangeColorScheme
         ThemePreset.SAKURA_PINK -> SakuraPinkColorScheme
+        ThemePreset.GRAPHITE -> GraphiteColorScheme
+        ThemePreset.AURORA -> AuroraColorScheme
         else -> AmoledBlackColorScheme
     }
 
