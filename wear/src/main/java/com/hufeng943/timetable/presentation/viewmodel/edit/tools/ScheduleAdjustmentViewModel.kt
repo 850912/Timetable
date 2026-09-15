@@ -26,7 +26,11 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import java.util.concurrent.atomic.AtomicLong
 
 enum class CourseAdjustmentMode { SWAP, OCCUPY }
 
@@ -46,6 +50,7 @@ class ScheduleAdjustmentViewModel @Inject constructor(
 
     private val _completed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val completed = _completed.asSharedFlow()
+    private val historySequence = AtomicLong(System.currentTimeMillis())
 
     init {
         viewModelScope.launch {
@@ -93,11 +98,47 @@ class ScheduleAdjustmentViewModel @Inject constructor(
                         )
                         updates[occurrence.timeSlot.id] = occurrence.course.id to extra
                     }
-                    updates.values.forEach { (courseId, slot) -> repository.upsertTimeSlot(slot, courseId) }
+                    updates.values.forEach { (courseId, slot) ->
+                        val original = table.allCourses.firstOrNull { it.id == courseId }?.timeSlots?.firstOrNull { it.id == slot.id }
+                        if (original != null) rememberSnapshot(original, courseId)
+                        repository.upsertTimeSlot(slot, courseId)
+                    }
                 }
                 WearSurfaceRefresher.refresh(appContext)
                 _completed.tryEmit(Unit)
             }.onFailure { _state.value = ScheduleAdjustmentState.Error(it.message ?: "调休失败") }
+        }
+    }
+
+    fun restoreAdjustments(timetableId: Long) {
+        viewModelScope.launch {
+            runCatching {
+                val table = (_state.value as? ScheduleAdjustmentState.Ready)?.timetables
+                    ?.firstOrNull { it.timetableId == timetableId } ?: error("课表不存在")
+                val prefs = appContext.getSharedPreferences("schedule_adjustment_history", Context.MODE_PRIVATE)
+                val courseIds = table.allCourses.map { it.id }.toSet()
+                // Replay newest -> oldest so multiple edits of the same slot unwind deterministically.
+                // Legacy slot_/created_ keys are still accepted for backward compatibility.
+                prefs.all.toList().sortedByDescending { it.first }.forEach { (key, raw) ->
+                    val value = raw as? String ?: return@forEach
+                    if (value.startsWith("DELETE|")) {
+                        val parts = value.split('|')
+                        val courseId = parts.getOrNull(1)?.toLongOrNull() ?: return@forEach
+                        val slotId = parts.getOrNull(2)?.toLongOrNull() ?: return@forEach
+                        if (courseId in courseIds) { repository.deleteTimeSlot(slotId); prefs.edit().remove(key).apply() }
+                        return@forEach
+                    }
+                    val split = value.indexOf('|')
+                    if (split <= 0) return@forEach
+                    val courseId = value.substring(0, split).toLongOrNull() ?: return@forEach
+                    if (courseId !in courseIds) return@forEach
+                    val slot = Json.decodeFromString<TimeSlot>(value.substring(split + 1))
+                    repository.upsertTimeSlot(slot, courseId)
+                    prefs.edit().remove(key).apply()
+                }
+                WearSurfaceRefresher.refresh(appContext)
+                _completed.tryEmit(Unit)
+            }.onFailure { _state.value = ScheduleAdjustmentState.Error(it.message ?: "恢复失败") }
         }
     }
 
@@ -139,9 +180,11 @@ class ScheduleAdjustmentViewModel @Inject constructor(
     ) {
         when (mode) {
             CourseAdjustmentMode.OCCUPY -> {
+                rememberSnapshot(a.timeSlot, a.course.id)
                 repository.upsertTimeSlot(ScheduleBatchOperations.cancelDates(a.timeSlot, listOf(date)), a.course.id)
                 val bSlot = bOccurrence?.timeSlot ?: bCourse.timeSlots.firstOrNull()
                 if (bSlot != null) {
+                    rememberSnapshot(bSlot, bCourse.id)
                     repository.upsertTimeSlot(
                         bSlot.withExactOverride(
                             ScheduleOverride(
@@ -156,7 +199,7 @@ class ScheduleAdjustmentViewModel @Inject constructor(
                         bCourse.id,
                     )
                 } else {
-                    repository.upsertTimeSlot(
+                    val createdId = repository.upsertTimeSlot(
                         TimeSlot(
                             startTime = a.startTime,
                             endTime = a.endTime,
@@ -168,10 +211,13 @@ class ScheduleAdjustmentViewModel @Inject constructor(
                         ),
                         bCourse.id,
                     )
+                    rememberCreated(createdId, bCourse.id)
                 }
             }
             CourseAdjustmentMode.SWAP -> {
                 val b = requireNotNull(bOccurrence) { "换课要求 B 课当天也有课时" }
+                rememberSnapshot(a.timeSlot, a.course.id)
+                rememberSnapshot(b.timeSlot, b.course.id)
                 repository.upsertTimeSlot(
                     a.timeSlot.withExactOverride(
                         ScheduleOverride(date, ScheduleOverrideType.EXTRA, b.startTime, b.endTime, a.location, a.timeSlot.remark)
@@ -196,17 +242,86 @@ class ScheduleAdjustmentViewModel @Inject constructor(
     ) {
         when (mode) {
             CourseAdjustmentMode.OCCUPY -> {
-                // Re-parent A's recurring slot to B. This keeps the same time definition,
-                // so the edit page, home page and sync payload all stay aligned.
+                requireNoPermanentConflict(
+                    incoming = a.timeSlot,
+                    targetCourse = bCourse,
+                    excludingSlotIds = emptySet(),
+                    actionName = "永久占课",
+                )
+                // Re-parent A's recurring slot to B only after conflict validation.
+                rememberSnapshot(a.timeSlot, a.course.id)
                 repository.upsertTimeSlot(a.timeSlot, bCourse.id)
             }
             CourseAdjustmentMode.SWAP -> {
                 val b = requireNotNull(bOccurrence) { "永久换课要求 B 课当天也有课时" }
+                requireNoPermanentConflict(a.timeSlot, bCourse, setOf(b.timeSlot.id), "永久换课")
+                requireNoPermanentConflict(b.timeSlot, a.course, setOf(a.timeSlot.id), "永久换课")
+                rememberSnapshot(a.timeSlot, a.course.id)
+                rememberSnapshot(b.timeSlot, b.course.id)
                 repository.upsertTimeSlot(a.timeSlot, b.course.id)
                 repository.upsertTimeSlot(b.timeSlot, a.course.id)
             }
         }
     }
+    private fun rememberCreated(slotId: Long, courseId: Long) {
+        val key = nextHistoryKey()
+        appContext.getSharedPreferences("schedule_adjustment_history", Context.MODE_PRIVATE)
+            .edit().putString(key, "DELETE|$courseId|$slotId").apply()
+    }
+
+    private fun rememberSnapshot(slot: TimeSlot, courseId: Long) {
+        // Keep every pre-operation state. A unique ordered key forms a persistent undo stack;
+        // repeated edits of the same slot no longer collapse to the very first snapshot.
+        appContext.getSharedPreferences("schedule_adjustment_history", Context.MODE_PRIVATE)
+            .edit().putString(nextHistoryKey(), "$courseId|${Json.encodeToString(slot)}").apply()
+    }
+
+    private fun nextHistoryKey(): String = "history_${historySequence.incrementAndGet().toString().padStart(20, '0')}"
+
+    private fun requireNoPermanentConflict(
+        incoming: TimeSlot,
+        targetCourse: Course,
+        excludingSlotIds: Set<Long>,
+        actionName: String,
+    ) {
+        val conflict = targetCourse.timeSlots.firstOrNull { existing ->
+            existing.id !in excludingSlotIds && slotsConflict(incoming, existing)
+        }
+        require(conflict == null) {
+            "$actionName失败：目标课程已有重叠课时，请先处理时间冲突"
+        }
+    }
+
+    private fun slotsConflict(a: TimeSlot, b: TimeSlot): Boolean {
+        val aDay = a.dayOfWeek ?: return false
+        val bDay = b.dayOfWeek ?: return false
+        if (aDay != bDay) return false
+        val aStart = a.startTime ?: return false
+        val aEnd = a.endTime ?: return false
+        val bStart = b.startTime ?: return false
+        val bEnd = b.endTime ?: return false
+        if (!(aStart < bEnd && bStart < aEnd)) return false
+        return recurrenceOverlaps(a, b)
+    }
+
+    private fun recurrenceOverlaps(a: TimeSlot, b: TimeSlot): Boolean {
+        if (a.recurrence == WeekPattern.DATE_ONLY || b.recurrence == WeekPattern.DATE_ONLY) {
+            val aDates = a.overrides.filter { it.type != ScheduleOverrideType.CANCELLED }.map { it.date }.toSet()
+            val bDates = b.overrides.filter { it.type != ScheduleOverrideType.CANCELLED }.map { it.date }.toSet()
+            return when {
+                a.recurrence == WeekPattern.DATE_ONLY && b.recurrence == WeekPattern.DATE_ONLY -> aDates.intersect(bDates).isNotEmpty()
+                // A recurring slot can occur on any matching weekday during the semester; if the
+                // date-only slot has at least one date on that weekday, treat it as a real conflict.
+                a.recurrence == WeekPattern.DATE_ONLY -> aDates.isNotEmpty()
+                else -> bDates.isNotEmpty()
+            }
+        }
+        return a.recurrence == WeekPattern.EVERY_WEEK ||
+            b.recurrence == WeekPattern.EVERY_WEEK ||
+            a.recurrence == b.recurrence
+    }
+
+
 }
 
 private fun TimeSlot.withExactOverride(override: ScheduleOverride): TimeSlot =

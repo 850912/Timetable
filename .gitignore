@@ -1,9 +1,19 @@
+# Android / Gradle local files
 .gradle/
 **/build/
 local.properties
-.idea/
 *.iml
-signing/
+.idea/
+
+# Release signing material: NEVER commit private keys or local signing properties
 *.jks
 *.keystore
-build-logs/
+*.p12
+*.pfx
+signing/
+keystore.properties
+signing.properties
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

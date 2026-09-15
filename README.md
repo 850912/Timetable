@@ -41,7 +41,7 @@ GitHub Actions 工作流位于 `.github/workflows/android-release.yml`，推送�
 
 ### Release 签名
 
-源码包不再包含 keystore 或硬编码密码。生产更新包请按 `SIGNING.md` 配置原来的 release key。未配置时会回退到 debug 签名，适合 CI / 测试安装，但不能覆盖已安装的正式签名版本。
+源码包不包含 keystore 或硬编码密码。生产更新包继续使用原来的 release key，并按 `SIGNING.md` 从本地环境变量或 GitHub Actions Secrets 注入。Release 缺少签名参数时会直接失败，不再回退到 debug 签名，避免误产出无法覆盖正式版本的 APK。
 
 ## 主要模块
 

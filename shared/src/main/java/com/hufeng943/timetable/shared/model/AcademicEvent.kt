@@ -26,4 +26,5 @@ data class AcademicEvent(
     /** null disables the reminder; otherwise minutes before [date]/[time]. */
     val reminderMinutesBefore: Int? = null,
     val completed: Boolean = false,
+    val syncId: String? = null,
 )

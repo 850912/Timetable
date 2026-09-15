@@ -26,12 +26,13 @@ fun TimetableWithCourses.toTimetable(): Timetable {
         allCourses = this.courses.filter { it.course.deletedAt == null }.map { it.toCourse() },
         events = this.events.filter { it.deletedAt == null }.map { it.toAcademicEvent() },
         color = tableEntity.color,
+        syncId = tableEntity.syncId,
     )
 }
 
 fun Timetable.toTimetableEntity(): TimetableEntity = TimetableEntity(
     id = this.timetableId,
-    syncId = UUID.randomUUID().toString(),
+    syncId = this.syncId?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString(),
     semesterName = this.semesterName,
     createdAtMillis = this.createdAt.toEpochMilliseconds(),
     semesterStartEpochDay = this.semesterStart.toEpochDays(),

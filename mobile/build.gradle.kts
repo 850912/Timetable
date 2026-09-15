@@ -6,10 +6,33 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val releaseStoreFile = rootProject.file("signing/timetable-release.jks")
-val releaseStorePassword = "Timetable2026!"
-val releaseKeyAlias = "timetable-release"
-val releaseKeyPassword = "Timetable2026!"
+fun releaseSecret(name: String): String? =
+    providers.gradleProperty(name)
+        .orElse(providers.environmentVariable(name))
+        .orNull
+        ?.takeIf { it.isNotBlank() }
+
+val releaseStoreFilePath = releaseSecret("TIMETABLE_RELEASE_STORE_FILE")
+val releaseStorePassword = releaseSecret("TIMETABLE_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = releaseSecret("TIMETABLE_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = releaseSecret("TIMETABLE_RELEASE_KEY_PASSWORD")
+val releaseSigningConfigured = listOf(
+    releaseStoreFilePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { !it.isNullOrBlank() }
+val releaseTaskRequested = gradle.startParameter.taskNames.any {
+    it.contains("Release", ignoreCase = true)
+}
+
+if (releaseTaskRequested && !releaseSigningConfigured) {
+    throw GradleException(
+        "Release signing is not configured. Set TIMETABLE_RELEASE_STORE_FILE, " +
+            "TIMETABLE_RELEASE_STORE_PASSWORD, TIMETABLE_RELEASE_KEY_ALIAS and " +
+            "TIMETABLE_RELEASE_KEY_PASSWORD via Gradle properties or environment variables."
+    )
+}
 
 configure<ApplicationExtension> {
     namespace = "com.hufeng943.timetable"
@@ -27,23 +50,27 @@ configure<ApplicationExtension> {
 
     signingConfigs {
         create("release") {
-            storeFile = releaseStoreFile
-            storePassword = releaseStorePassword
-            keyAlias = releaseKeyAlias
-            keyPassword = releaseKeyPassword
+            if (releaseSigningConfigured) {
+                storeFile = rootProject.file(requireNotNull(releaseStoreFilePath))
+                storePassword = requireNotNull(releaseStorePassword)
+                keyAlias = requireNotNull(releaseKeyAlias)
+                keyPassword = requireNotNull(releaseKeyPassword)
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
             // Keep the phone and watch release APKs signed with the same certificate.
             // This is required for reliable Wear Data Layer app pairing.
-            // Release builds use the bundled original production keystore so upgrades keep the same signing identity.
+            // Production release signing is injected at build time; no keystore or password lives in source control.
         }
     }
     compileOptions {

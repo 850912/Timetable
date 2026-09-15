@@ -18,11 +18,12 @@ fun AcademicEventEntity.toAcademicEvent(): AcademicEvent = AcademicEvent(
     note = note,
     reminderMinutesBefore = reminderMinutesBefore,
     completed = completed,
+    syncId = syncId,
 )
 
 fun AcademicEvent.toAcademicEventEntity(timetableId: Long): AcademicEventEntity = AcademicEventEntity(
     id = id,
-    syncId = UUID.randomUUID().toString(),
+    syncId = syncId?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString(),
     timetableId = timetableId,
     title = title,
     type = type.ordinal,

@@ -23,7 +23,9 @@ data class Timetable(
     val semesterEnd: LocalDate? = null, // 课表结束日期,有可能永不结束
     val allCourses: List<Course> = emptyList(),
     val events: List<AcademicEvent> = emptyList(),
-    val color: Long = -1L
+    val color: Long = -1L,
+    /** Stable cross-device identity. Null only for legacy/imported data without an identity. */
+    val syncId: String? = null
 ) {
     init {
         require(

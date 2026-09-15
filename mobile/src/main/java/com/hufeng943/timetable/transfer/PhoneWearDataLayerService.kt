@@ -18,6 +18,7 @@ import com.hufeng943.timetable.sync.LegacyWearIo
 import com.hufeng943.timetable.sync.AutoSyncJobService
 import com.hufeng943.timetable.sync.WearConnectionState
 import com.hufeng943.timetable.sync.WearOsTransport
+import com.hufeng943.timetable.sync.SyncAckTracker
 import com.hufeng943.timetable.reminder.CourseReminderScheduler
 import com.hufeng943.timetable.widget.TodayWidgetProvider
 import com.hufeng943.timetable.shared.sync.SyncAck
@@ -98,13 +99,14 @@ class PhoneWearDataLayerService : WearableListenerService() {
         val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET) ?: error("缺少同步 ACK")
         val bytes = readAsset(asset).use { it.readBytes() }
         val ack = json.decodeFromString<SyncAck>(bytes.toString(Charsets.UTF_8))
+        SyncAckTracker.complete(ack)
         val db = TimetableDatabaseProvider.database(this)
         if (ack.appliedRecordIds.isNotEmpty()) {
             kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { db.syncRecordDao().markSynced(ack.appliedRecordIds) }
         }
         if (ack.records.isNotEmpty()) {
             val target = dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID) ?: return false
-            val applied = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { SyncApplier(db).apply(ack.records) }
+            val applied = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { SyncApplier(db).applyOnce(ack.requestId, ack.sourceDeviceId, ack.records) }
             if (applied.isNotEmpty()) refreshLocalSurfaces()
             sendSyncAck(target, ack.requestId, applied)
             return applied.size == ack.records.size
@@ -156,7 +158,11 @@ class PhoneWearDataLayerService : WearableListenerService() {
         val timetables = TimetableFileParser.parse(appImportBytes)
         runBlocking(Dispatchers.IO) {
             TimetableDatabaseProvider.importService(this@PhoneWearDataLayerService)
-                .importReplacingMatchesAtomic(timetables)
+                .importReplacingMatchesAtomic(
+                    timetables,
+                    dataMap.getString(WearFileTransferProtocol.KEY_REQUEST_ID),
+                    dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID),
+                )
         }
         refreshLocalSurfaces()
 

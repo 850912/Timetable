@@ -2,7 +2,7 @@
 # 构建工具与编译器
 agp = "9.2.1"
 kotlin = "2.4.0"
-ksp = "2.3.7"
+ksp = "2.3.12"
 
 # AndroidX 核心与基础 UI
 coreKtx = "1.19.0"
@@ -91,6 +91,7 @@ horologist-tiles = { group = "com.google.android.horologist", name = "horologist
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
 
 ## 依赖注入 (Hilt)
@@ -111,6 +112,8 @@ aboutlibraries-compose-m3 = { module = "com.mikepenz:aboutlibraries-compose-wear
 ## 测试依赖
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-test-core = { group = "androidx.test", name = "core", version = "1.7.0" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version = "1.7.0" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 

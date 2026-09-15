@@ -34,7 +34,7 @@ fun TimeSlot.toTimeSlotEntity(courseId: Long): TimeSlotEntity {
 
     return TimeSlotEntity(
         id = id,
-        syncId = UUID.randomUUID().toString(),
+        syncId = syncId?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString(),
         courseId = courseId,
         dayOfWeek = dayOfWeek.isoDayNumber,
         startMinute = startMinute,
@@ -58,6 +58,7 @@ fun TimeSlotEntity.toTimeSlot(): TimeSlot {
         recurrence = WeekPattern.entries.getOrElse(recurrence) { WeekPattern.EVERY_WEEK },
         remark = remark,
         overrides = overrides,
-        batchGroupId = batchGroupId
+        batchGroupId = batchGroupId,
+        syncId = syncId
     )
 }

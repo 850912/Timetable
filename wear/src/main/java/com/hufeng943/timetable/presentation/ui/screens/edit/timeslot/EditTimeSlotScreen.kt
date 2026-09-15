@@ -63,12 +63,10 @@ fun EditTimeSlotScreen(
                     } else {
                         EditTimeSlotMainPager(
                             timeSlot = timeSlot,
-                            is24HourFormat = config.is24HourFormat,
                             onSave = { viewModel.onAction(EditTimeSlotAction.RequestSave) },
                             onStartTimeClick = { internalNavController.navigateSingle(InternalNavRoutes.START_TIME) },
                             onEndTimeClick = { internalNavController.navigateSingle(InternalNavRoutes.END_TIME) },
-                            onDatesClick = { internalNavController.navigateSingle(InternalNavRoutes.DATES) },
-                            onDayOfWeekClick = { internalNavController.navigateSingle(InternalNavRoutes.WEEK_DAY) },
+                            onDayOfWeekClick = { internalNavController.navigateSingle(InternalNavRoutes.DATES) },
                             onRecurrenceClick = { internalNavController.navigateSingle(InternalNavRoutes.RECURRENCE) },
                             onRemarkClick = { internalNavController.navigateSingle(InternalNavRoutes.NAME) },
                             onRemarkLongClick = { viewModel.onAction(EditTimeSlotAction.UpdateRemark(null)) },
@@ -121,9 +119,9 @@ fun EditTimeSlotScreen(
             HandleEditUiState(uiState) { timeSlot ->
                 DynamicSubTheme(seedColor = timeSlot.color) {
                     MultiDateSelectionScreen(
-                        initialDates = timeSlot.selectedDates,
-                        onConfirm = { dates ->
-                            viewModel.onAction(EditTimeSlotAction.UpdateDates(dates))
+                        initialDays = timeSlot.selectedDays,
+                        onConfirm = { days ->
+                            viewModel.onAction(EditTimeSlotAction.UpdateDays(days))
                             internalNavController.popSafe()
                         },
                     )

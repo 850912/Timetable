@@ -6,6 +6,7 @@ import com.hufeng943.timetable.shared.data.entities.AcademicEventEntity
 import com.hufeng943.timetable.shared.data.entities.CourseEntity
 import com.hufeng943.timetable.shared.data.entities.SyncTombstoneEntity
 import com.hufeng943.timetable.shared.data.entities.TimeSlotEntity
+import com.hufeng943.timetable.shared.data.entities.ProcessedSyncEntity
 import com.hufeng943.timetable.shared.data.entities.TimetableEntity
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -17,11 +18,32 @@ class SyncApplier(private val db: AppDatabase) {
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun apply(records: List<SyncRecordPayload>): List<Long> = db.withTransaction {
+        applyRecords(records)
+    }
+
+    /**
+     * Applies one transport envelope exactly once. The request-id check, all entity writes,
+     * and the processed marker live in the same Room transaction, closing the retry/ACK
+     * idempotency gap after process death or Data Layer redelivery.
+     */
+    suspend fun applyOnce(requestId: String, sourceDeviceId: String, records: List<SyncRecordPayload>): List<Long> = db.withTransaction {
+        require(requestId.isNotBlank()) { "同步 requestId 不能为空" }
+        val processedDao = db.processedSyncDao()
+        if (processedDao.exists(requestId)) return@withTransaction records.map { it.sourceRecordId }
+        val applied = applyRecords(records)
+        if (applied.size == records.size) {
+            processedDao.insert(ProcessedSyncEntity(requestId, sourceDeviceId, System.currentTimeMillis()))
+            processedDao.cleanup(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000)
+        }
+        applied
+    }
+
+    private suspend fun applyRecords(records: List<SyncRecordPayload>): List<Long> {
         val applied = mutableListOf<Long>()
         records.sortedWith(compareBy<SyncRecordPayload> { entityOrder(it.entityType) }.thenBy { it.updatedAt }.thenBy { it.sourceRecordId }).forEach { record ->
             if (applyOne(record)) applied += record.sourceRecordId
         }
-        applied
+        return applied
     }
 
     private suspend fun applyOne(record: SyncRecordPayload): Boolean {
@@ -46,18 +68,23 @@ class SyncApplier(private val db: AppDatabase) {
         val semanticMatches = if (direct == null && r.operation != SyncOperation.DELETE) {
             dao.findTimetablesByIdentity(o.str("semesterName"), o.long("semesterStartEpochDay"))
         } else emptyList()
-        val semanticExisting = semanticMatches.firstOrNull()
-        if (semanticMatches.size > 1) {
-            semanticMatches.drop(1).forEach { duplicate ->
-                // Collapse stale full-sync copies without generating new local sync records.
+        val semanticExisting = semanticMatches.maxWithOrNull(
+            compareBy<TimetableEntity> { it.revision }
+                .thenBy { it.updatedAt }
+                .thenBy { it.modifiedBy }
+        )
+        val existing = direct ?: semanticExisting
+        // Semantic matching only resolves identity. Conflict arbitration is always performed
+        // before any local mutation, so an older remote record cannot delete or replace newer data.
+        if (existing != null && !wins(r, existing.revision, existing.updatedAt, existing.modifiedBy)) return true
+        if (semanticMatches.size > 1 && existing != null) {
+            semanticMatches.filter { it.id != existing.id }.forEach { duplicate ->
                 dao.softDeleteTimeSlotsForImport(duplicate.id, r.updatedAt)
                 dao.softDeleteAcademicEventsForImport(duplicate.id, r.updatedAt)
                 dao.softDeleteCoursesForImport(duplicate.id, r.updatedAt)
                 dao.softDeleteTimetableForImport(duplicate.id, r.updatedAt)
             }
         }
-        val existing = direct ?: semanticExisting
-        if (existing != null && !wins(r, existing.revision, existing.updatedAt, existing.modifiedBy) && direct != null) return true
         if (r.operation == SyncOperation.DELETE) {
             if (existing != null) dao.markTimetableDeleted(existing.id, r.updatedAt, r.revision, r.deviceId, r.updatedAt)
             else db.syncTombstoneDao().upsert(SyncTombstoneEntity(syncId, r.entityType, r.revision, r.updatedAt, r.deviceId))
@@ -82,6 +109,7 @@ class SyncApplier(private val db: AppDatabase) {
             dao.findCoursesByIdentity(parent.id, o.str("name"), o.strOrNull("location"), o.strOrNull("teacher")).singleOrNull()
         } else null
         val resolvedExisting = existing ?: semanticExisting
+        if (resolvedExisting != null && !wins(r, resolvedExisting.revision, resolvedExisting.updatedAt, resolvedExisting.modifiedBy)) return true
         val entity = CourseEntity(0, syncId, parent.id, o.str("name"), o.strOrNull("location"), o.long("color"), o.strOrNull("teacher"), r.updatedAt, r.revision, r.deviceId, null)
         if (resolvedExisting == null) dao.insertCourse(entity) else dao.upsertCourse(entity.copy(id = resolvedExisting.id))
         db.syncTombstoneDao().delete(syncId, r.entityType); return true
@@ -106,6 +134,7 @@ class SyncApplier(private val db: AppDatabase) {
             ).singleOrNull()
         } else null
         val resolvedExisting = existing ?: semanticExisting
+        if (resolvedExisting != null && !wins(r, resolvedExisting.revision, resolvedExisting.updatedAt, resolvedExisting.modifiedBy)) return true
         val entity = TimeSlotEntity(
             id = 0,
             syncId = syncId,
@@ -153,6 +182,7 @@ class SyncApplier(private val db: AppDatabase) {
             ).singleOrNull()
         } else null
         val resolvedExisting = existing ?: semanticExisting
+        if (resolvedExisting != null && !wins(r, resolvedExisting.revision, resolvedExisting.updatedAt, resolvedExisting.modifiedBy)) return true
         val entity = AcademicEventEntity(
             id = 0,
             syncId = syncId,

@@ -21,6 +21,7 @@ import kotlin.time.Clock
 
 @Serializable
 data class TimeSlotBackupDto(
+    val syncId: String? = null,
     val dayOfWeek: Int,
     val startHour: Int,
     val startMinute: Int,
@@ -29,10 +30,12 @@ data class TimeSlotBackupDto(
     val recurrence: Int,
     val remark: String? = null,
     val overrides: List<ScheduleOverride> = emptyList(),
+    val batchGroupId: String? = null,
 )
 
 @Serializable
 data class CourseBackupDto(
+    val syncId: String? = null,
     val name: String,
     val teacher: String? = null,
     val location: String? = null, val color: Long = -1L,
@@ -42,6 +45,7 @@ data class CourseBackupDto(
 
 @Serializable
 data class AcademicEventBackupDto(
+    val syncId: String? = null,
     val title: String,
     val type: Int,
     val dateEpochDays: Long,
@@ -55,6 +59,7 @@ data class AcademicEventBackupDto(
 
 @Serializable
 data class TimetableBackupDto(
+    val syncId: String? = null,
     val semesterName: String,
     val startEpochDays: Long,
     val endEpochDays: Long?,
@@ -65,7 +70,7 @@ data class TimetableBackupDto(
 
 @Serializable
 data class TimetableBackupContainer(
-    val schemaVersion: Int = 3,
+    val schemaVersion: Int = 4,
     val appVersion: String = "3.4.0",
     val backupEpochMillis: Long,
     val timetables: List<TimetableBackupDto>
@@ -82,12 +87,14 @@ object BackupManager {
     fun backup(outputStream: OutputStream, timetables: List<Timetable>) {
         val dtos = timetables.map { tt ->
             TimetableBackupDto(
+                syncId = tt.syncId,
                 semesterName = tt.semesterName,
                 startEpochDays = tt.semesterStart.toEpochDays(),
                 endEpochDays = tt.semesterEnd?.toEpochDays(),
                 color = tt.color,
                 courses = tt.allCourses.map { course ->
                     CourseBackupDto(
+                        syncId = course.syncId,
                         name = course.name,
                         teacher = course.teacher,
                         location = course.location, color = course.color,
@@ -102,6 +109,7 @@ object BackupManager {
                                 WeekPattern.DATE_ONLY -> 3
                             }
                             TimeSlotBackupDto(
+                                syncId = slot.syncId,
                                 dayOfWeek = dow.ordinal + 1,
                                 startHour = st.hour,
                                 startMinute = st.minute,
@@ -110,12 +118,14 @@ object BackupManager {
                                 recurrence = rec,
                                 remark = slot.remark,
                                 overrides = slot.overrides,
+                                batchGroupId = slot.batchGroupId,
                             )
                         }
                     )
                 },
                 events = tt.events.map { event ->
                     AcademicEventBackupDto(
+                        syncId = event.syncId,
                         title = event.title,
                         type = event.type.ordinal,
                         dateEpochDays = event.date.toEpochDays(),
@@ -131,7 +141,7 @@ object BackupManager {
         }
 
         val container = TimetableBackupContainer(
-            schemaVersion = 3,
+            schemaVersion = 4,
             backupEpochMillis = Clock.System.now().toEpochMilliseconds(),
             timetables = dtos
         )
@@ -164,6 +174,8 @@ object BackupManager {
                         recurrence = rec,
                         remark = sDto.remark,
                         overrides = sDto.overrides,
+                        batchGroupId = sDto.batchGroupId,
+                        syncId = sDto.syncId,
                     )
                 }
 
@@ -172,7 +184,8 @@ object BackupManager {
                     name = cDto.name,
                     teacher = cDto.teacher,
                     location = cDto.location, color = cDto.color,
-                    timeSlots = slots
+                    timeSlots = slots,
+                    syncId = cDto.syncId
                 )
             }
 
@@ -188,6 +201,7 @@ object BackupManager {
                     note = event.note,
                     reminderMinutesBefore = event.reminderMinutesBefore,
                     completed = event.completed,
+                    syncId = event.syncId,
                 )
             }
 
@@ -199,7 +213,8 @@ object BackupManager {
                 semesterEnd = end,
                 allCourses = courses,
                 events = events,
-                color = dto.color
+                color = dto.color,
+                syncId = dto.syncId
             )
         }
     }

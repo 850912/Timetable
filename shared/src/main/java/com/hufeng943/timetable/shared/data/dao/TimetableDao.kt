@@ -44,6 +44,11 @@ interface TimetableDao {
     @Query("UPDATE time_tables SET deletedAt = :deletedAt WHERE id = :id AND deletedAt IS NULL")
     suspend fun softDeleteTimetableForImport(id: Long, deletedAt: Long)
 
+    /** Full-snapshot replacement is not a user deletion; remove the old graph so retries/new snapshots
+     * do not accumulate tombstoned duplicates and stable syncIds can be reinserted safely. */
+    @Query("DELETE FROM time_tables WHERE id = :id")
+    suspend fun hardDeleteTimetableForImport(id: Long)
+
     @Query("UPDATE courses SET deletedAt = :deletedAt WHERE timetableId = :timetableId AND deletedAt IS NULL")
     suspend fun softDeleteCoursesForImport(timetableId: Long, deletedAt: Long)
 

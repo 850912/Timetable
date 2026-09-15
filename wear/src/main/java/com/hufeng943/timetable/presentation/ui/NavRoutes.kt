@@ -18,7 +18,7 @@ object NavRoutes {
 
     // Nested graph
     const val EDIT_TIMETABLE = "edit_timetable/{${NavArgs.TABLE_ID}}"
-    fun editTimetable(timetableId: Long? = null) = "edit_timetable/$timetableId"
+    fun editTimetable(timetableId: Long? = null) = "edit_timetable/${timetableId ?: -1L}"
 
     const val EDIT_TIMETABLE_MAIN = "edit_timetable/main"
     const val EDIT_TIMETABLE_NAME = "edit_timetable/name"
@@ -64,7 +64,7 @@ object NavRoutes {
 
     const val EDIT_TIMESLOT = "edit_timeslot/{${NavArgs.COURSE_ID}}/{${NavArgs.TIME_SLOT_ID}}"
     fun editTimeSlot(courseId: Long, timeSlotId: Long? = null) =
-        "edit_timeslot/$courseId/$timeSlotId"
+        "edit_timeslot/$courseId/${timeSlotId ?: -1L}"
 
     //----------------------------------
     const val MORE_ABOUT = "more/about"

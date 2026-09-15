@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -101,7 +102,7 @@ fun ImportScreen(
 
     ScreenScaffold(
         scrollState = scrollState,
-        timeText = { if (config.isShowTopTime) TimeText() },
+        timeText = { if (config.isShowTopTime) TimeText(backgroundColor = Color.Transparent) },
         edgeButton = {
             EdgeButton(onClick = { scope.launch { scrollState.animateScrollToItem(0) } }) {
                 Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = null)

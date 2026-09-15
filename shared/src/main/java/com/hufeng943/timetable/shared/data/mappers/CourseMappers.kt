@@ -12,14 +12,15 @@ fun CourseWithSlots.toCourse(): Course {
         location = this.course.location,
         color = this.course.color,
         teacher = this.course.teacher,
-        timeSlots = this.timeSlots.filter { it.deletedAt == null }.map { it.toTimeSlot() }
+        timeSlots = this.timeSlots.filter { it.deletedAt == null }.map { it.toTimeSlot() },
+        syncId = this.course.syncId
     )
 }
 
 fun Course.toCourseEntity(timetableId: Long): CourseEntity {
     return CourseEntity(
         id = this.id,
-        syncId = UUID.randomUUID().toString(),
+        syncId = this.syncId?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString(),
         timetableId = timetableId, // 关联到父课表
         name = this.name,
         location = this.location,

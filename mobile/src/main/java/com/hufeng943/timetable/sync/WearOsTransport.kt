@@ -16,6 +16,7 @@ import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.withTimeout
 
 /**
  * Wear OS transport using the legacy GoogleApiClient Wearable API.
@@ -36,6 +37,7 @@ class WearOsTransport(
 
     private companion object {
         const val OPERATION_TIMEOUT_SECONDS = 10L
+        const val ACK_TIMEOUT_MILLIS = 20_000L
     }
 
     override suspend fun isAvailable(): Boolean = runCatching { LegacyWearIo.withClient(context) { client ->
@@ -48,6 +50,8 @@ class WearOsTransport(
     override suspend fun sendRecords(records: List<SyncRecordPayload>): SyncResult {
         if (records.isEmpty()) return SyncResult.Success
 
+        val requestId = UUID.randomUUID().toString()
+        val ackDeferred = SyncAckTracker.register(requestId)
         return try {
             LegacyWearIo.withClient(context) { client ->
                 val nodesResult = Wearable.NodeApi.getConnectedNodes(client)
@@ -56,9 +60,7 @@ class WearOsTransport(
                     throw IllegalStateException("Wear OS 节点发现失败(${nodesResult.status.statusCode})")
                 }
 
-                val node = nodesResult.nodes
-                    .sortedByDescending { it.isNearby }
-                    .firstOrNull()
+                val node = nodesResult.nodes.sortedByDescending { it.isNearby }.firstOrNull()
                     ?: throw IllegalStateException("未检测到已连接的 Wear OS 设备")
 
                 val sourceNode = Wearable.NodeApi.getLocalNode(client)
@@ -67,16 +69,13 @@ class WearOsTransport(
                     throw IllegalStateException("无法获取本机 Wear OS 节点(${sourceNode.status.statusCode})")
                 }
 
-                val requestId = UUID.randomUUID().toString()
                 val envelope = SyncEnvelope(
                     requestId = requestId,
                     sourceDeviceId = sourceNode.node.id,
                     records = records,
                 )
                 val bytes = json.encodeToString(envelope).toByteArray(Charsets.UTF_8)
-                val request = PutDataMapRequest.create(
-                    WearFileTransferProtocol.path(requestId)
-                ).apply {
+                val request = PutDataMapRequest.create(WearFileTransferProtocol.path(requestId)).apply {
                     dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_SYNC_BATCH)
                     dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)
                     dataMap.putString(WearFileTransferProtocol.KEY_TARGET_NODE_ID, node.id)
@@ -91,9 +90,21 @@ class WearOsTransport(
                     throw IllegalStateException("Wear OS 数据发送失败(${result.status.statusCode})")
                 }
             }
+
+            // DataApi success only means the transport accepted the item. Product-level Success
+            // is returned only after the peer confirms database application with SyncAck.
+            val ack = withTimeout(ACK_TIMEOUT_MILLIS) { ackDeferred.await() }
+            val expectedIds = records.map { it.sourceRecordId }.toSet()
+            if (!ack.appliedRecordIds.toSet().containsAll(expectedIds)) {
+                throw IllegalStateException("Wear OS ACK 未确认全部记录写入")
+            }
             SyncResult.Success
         } catch (e: Exception) {
-            SyncResult.Failed(e.message ?: "Wear OS 增量同步失败", e)
+            SyncAckTracker.cancel(requestId, e)
+            val message = if (e is kotlinx.coroutines.TimeoutCancellationException) {
+                "Wear OS 已接收传输，但未在时限内确认写库 ACK"
+            } else e.message ?: "Wear OS 增量同步失败"
+            SyncResult.Failed(message, e)
         }
     }
 
@@ -107,6 +118,8 @@ class WearOsTransport(
     suspend fun sendTimetablesSnapshot(timetables: List<Timetable>): SyncResult {
         if (timetables.isEmpty()) return SyncResult.Success
 
+        val requestId = UUID.randomUUID().toString()
+        val ackDeferred = SyncAckTracker.register(requestId)
         return try {
             val bytes = ByteArrayOutputStream().use { output ->
                 BackupManager.backup(output, timetables)
@@ -119,22 +132,15 @@ class WearOsTransport(
                 if (!nodesResult.status.isSuccess) {
                     throw IllegalStateException("Wear OS 节点发现失败(${nodesResult.status.statusCode})")
                 }
-
-                val node = nodesResult.nodes
-                    .sortedByDescending { it.isNearby }
-                    .firstOrNull()
+                val node = nodesResult.nodes.sortedByDescending { it.isNearby }.firstOrNull()
                     ?: throw IllegalStateException("未检测到已连接的 Wear OS 设备")
-
                 val sourceNode = Wearable.NodeApi.getLocalNode(client)
                     .await(OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 if (!sourceNode.status.isSuccess) {
                     throw IllegalStateException("无法获取本机 Wear OS 节点(${sourceNode.status.statusCode})")
                 }
 
-                val requestId = UUID.randomUUID().toString()
-                val request = PutDataMapRequest.create(
-                    WearFileTransferProtocol.path(requestId)
-                ).apply {
+                val request = PutDataMapRequest.create(WearFileTransferProtocol.path(requestId)).apply {
                     dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_PHONE_PUSH_TIMETABLES)
                     dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)
                     dataMap.putString(WearFileTransferProtocol.KEY_TARGET_NODE_ID, node.id)
@@ -149,10 +155,16 @@ class WearOsTransport(
                     throw IllegalStateException("Wear OS 完整课表发送失败(${result.status.statusCode})")
                 }
             }
+            withTimeout(ACK_TIMEOUT_MILLIS) { ackDeferred.await() }
             SyncResult.Success
         } catch (e: Exception) {
-            SyncResult.Failed(e.message ?: "Wear OS 完整课表同步失败", e)
+            SyncAckTracker.cancel(requestId, e)
+            val message = if (e is kotlinx.coroutines.TimeoutCancellationException) {
+                "Wear OS 已接收完整课表，但未在时限内确认导入 ACK"
+            } else e.message ?: "Wear OS 完整课表同步失败"
+            SyncResult.Failed(message, e)
         }
     }
+
 
 }

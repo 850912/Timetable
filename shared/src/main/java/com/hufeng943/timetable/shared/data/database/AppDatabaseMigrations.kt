@@ -69,8 +69,8 @@ object AppDatabaseMigrations {
                     "entityId INTEGER NOT NULL, " +
                     "entityType TEXT NOT NULL, " +
                     "operation TEXT NOT NULL, " +
-                    "revision INTEGER NOT NULL, " +
-                    "updatedAt INTEGER NOT NULL, " +
+                    "revision INTEGER NOT NULL DEFAULT 0, " +
+                    "updatedAt INTEGER NOT NULL DEFAULT 0, " +
                     "deviceId TEXT NOT NULL, " +
                     "synced INTEGER NOT NULL DEFAULT 0)"
             )
@@ -153,7 +153,7 @@ object AppDatabaseMigrations {
     val MIGRATION_9_10 = object : Migration(9, 10) {
         override fun migrate(db: SupportSQLiteDatabase) {
             // Multi-date creation now stores each date as an independent TimeSlot.
-            // batchGroupId links siblings only for optional synchronized edits.
+            // batchGroupId links multi-weekday sibling slots for optional synchronized edits.
             db.execSQL("ALTER TABLE time_slots ADD COLUMN batchGroupId TEXT")
         }
     }

@@ -13,5 +13,6 @@ data class Course(
     val timeSlots: List<TimeSlot> = emptyList(),
     val location: String? = null,
     val color: Long = -1L,
-    val teacher: String? = null
+    val teacher: String? = null,
+    val syncId: String? = null
 )

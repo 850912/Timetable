@@ -22,7 +22,7 @@ fun TimetableListScreen(
 
     HandleEditUiState(uiState, emptyList()) { data ->
         TimetableListPager(timetables = data, onAddTimetable = {
-            navController.navigateSingle(NavRoutes.EDIT_TIMETABLE)
+            navController.navigateSingle(editTimetable())
         }, onQuickModify = {
             navController.navigateSingle(NavRoutes.SCHEDULE_TOOLS)
         }, onTimetableClick = { id ->

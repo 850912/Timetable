@@ -54,6 +54,7 @@ import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
 import com.hufeng943.timetable.presentation.ui.components.CourseCard
+import com.hufeng943.timetable.presentation.ui.components.DayFinishedCard
 import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
 import com.hufeng943.timetable.presentation.ui.components.PullToDatePicker
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
@@ -329,7 +330,7 @@ private fun CourseListPager(
             ) {
                 if (isToday && statusSummary.dayFinished) {
                     item {
-                        OneUiCapsuleSurface(
+                        DayFinishedCard(
                             title = stringResource(R.string.home_day_finished_free_title),
                             subtitle = stringResource(R.string.home_day_finished_title),
                             modifier = Modifier
@@ -337,6 +338,7 @@ private fun CourseListPager(
                                 .padding(top = if (showTopTime) 30.dp else 10.dp)
                                 .transformedHeight(this, transformationSpec)
                                 .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
+                            transformation = SurfaceTransformation(transformationSpec),
                         )
                     }
                     item {
