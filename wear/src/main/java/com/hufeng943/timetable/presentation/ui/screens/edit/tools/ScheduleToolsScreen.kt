@@ -300,29 +300,24 @@ private fun PickerChoiceScreen(
         initiallySelectedIndex = initialIndex,
         shouldRepeatOptions = false,
     )
-    val scroll = androidx.compose.foundation.rememberScrollState()
-    ScreenScaffold(
-        scrollState = scroll,
-        timeText = {},
-        edgeButton = {
-            EdgeButton(onClick = { onConfirm(values[pickerState.selectedOptionIndex]) }) {
-                Icon(Icons.Rounded.Check, contentDescription = "确认")
-            }
-        },
-    ) { padding ->
-        Box(
-            modifier = Modifier.fillMaxSize()
-                .scrollable(state = pickerState, orientation = Orientation.Vertical, reverseDirection = true),
-            contentAlignment = Alignment.Center,
+    Box(
+        modifier = Modifier.fillMaxSize()
+            .scrollable(state = pickerState, orientation = Orientation.Vertical, reverseDirection = true),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(title, modifier = Modifier.align(Alignment.TopCenter))
+        Picker(
+            state = pickerState,
+            modifier = Modifier.size(150.dp, 120.dp),
+            contentDescription = { label(values[pickerState.selectedOptionIndex]) },
+        ) { index ->
+            Text(label(values[index]))
+        }
+        EdgeButton(
+            onClick = { onConfirm(values[pickerState.selectedOptionIndex]) },
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            Text(title, modifier = Modifier.align(Alignment.TopCenter))
-            Picker(
-                state = pickerState,
-                modifier = Modifier.size(150.dp, 120.dp),
-                contentDescription = { label(values[pickerState.selectedOptionIndex]) },
-            ) { index ->
-                Text(label(values[index]))
-            }
+            Icon(Icons.Rounded.Check, contentDescription = "确认")
         }
     }
 }

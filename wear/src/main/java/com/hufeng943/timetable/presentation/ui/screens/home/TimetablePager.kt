@@ -337,7 +337,6 @@ private fun CourseListPager(
                                 .padding(top = if (showTopTime) 30.dp else 10.dp)
                                 .transformedHeight(this, transformationSpec)
                                 .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
-                            transformation = SurfaceTransformation(transformationSpec),
                         )
                     }
                     item {
