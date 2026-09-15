@@ -16,6 +16,12 @@ object SyncAckTracker {
     }
 
     fun cancel(requestId: String, cause: Throwable? = null) {
-        pending.remove(requestId)?.cancel(cause)
+        pending.remove(requestId)?.let { deferred ->
+            if (cause == null) {
+                deferred.cancel()
+            } else {
+                deferred.completeExceptionally(cause)
+            }
+        }
     }
 }
