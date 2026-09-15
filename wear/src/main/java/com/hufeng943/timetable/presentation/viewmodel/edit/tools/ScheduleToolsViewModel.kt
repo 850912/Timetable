@@ -62,7 +62,7 @@ class ScheduleToolsViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 val all = repository.getAllTimetables().first()
-                val targets = all.filter { timetableId == null || it.id == timetableId }
+                val targets = all.filter { timetableId == null || it.timetableId == timetableId }
                 targets.forEach { timetable ->
                     applyToTimetable(
                         timetable = timetable,

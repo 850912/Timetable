@@ -128,7 +128,7 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
                             startDate = startDate,
                             endDate = holidayEnd,
                             offsetMinutes = 0,
-                            timetableId = selectedTimetable?.id,
+                            timetableId = selectedTimetable?.timetableId,
                             courseId = null,
                             timeWindowStart = null,
                             timeWindowEnd = null,
@@ -147,7 +147,7 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
                             startDate = startDate,
                             endDate = endDate,
                             offsetMinutes = value,
-                            timetableId = selectedTimetable?.id,
+                            timetableId = selectedTimetable?.timetableId,
                             courseId = selectedCourse?.id,
                             timeWindowStart = if (useWindow) windowStart else null,
                             timeWindowEnd = if (useWindow) windowEnd else null,
@@ -210,7 +210,7 @@ fun ScheduleToolsScreen(viewModel: ScheduleToolsViewModel = hiltViewModel()) {
                                                 startDate,
                                                 endDate,
                                                 0,
-                                                selectedTimetable?.id,
+                                                selectedTimetable?.timetableId,
                                                 selectedCourse?.id,
                                                 if (useWindow) windowStart else null,
                                                 if (useWindow) windowEnd else null,
@@ -300,7 +300,9 @@ private fun PickerChoiceScreen(
         initiallySelectedIndex = initialIndex,
         shouldRepeatOptions = false,
     )
+    val scroll = androidx.compose.foundation.rememberScrollState()
     ScreenScaffold(
+        scrollState = scroll,
         timeText = {},
         edgeButton = {
             EdgeButton(onClick = { onConfirm(values[pickerState.selectedOptionIndex]) }) {

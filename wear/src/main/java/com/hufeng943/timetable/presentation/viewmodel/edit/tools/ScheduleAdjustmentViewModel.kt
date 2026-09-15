@@ -60,7 +60,7 @@ class ScheduleAdjustmentViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 val tables = (_state.value as? ScheduleAdjustmentState.Ready)?.timetables.orEmpty()
-                    .filter { it.id == timetableId }
+                    .filter { it.timetableId == timetableId }
                 require(tables.isNotEmpty()) { "课表不存在" }
                 val dayDelta = sourceDay.isoNumber() - targetDate.dayOfWeek.isoNumber()
                 val sourceDate = targetDate.plus(dayDelta, DateTimeUnit.DAY)
@@ -112,7 +112,7 @@ class ScheduleAdjustmentViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 val table = (_state.value as? ScheduleAdjustmentState.Ready)?.timetables
-                    ?.firstOrNull { it.id == timetableId } ?: error("课表不存在")
+                    ?.firstOrNull { it.timetableId == timetableId } ?: error("课表不存在")
                 val occurrences = table.resolveDate(targetDate)
                 val a = occurrences.firstOrNull { it.timeSlot.id == sourceSlotId } ?: error("A 课在当天不存在")
                 val bCourse = table.allCourses.firstOrNull { it.id == targetCourseId } ?: error("B 课不存在")

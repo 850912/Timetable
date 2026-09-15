@@ -106,7 +106,7 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
                             val target = bCourse
                             if (source != null && target != null) {
                                 viewModel.applyCourseAdjustment(
-                                    timetableId = table.id,
+                                    timetableId = table.timetableId,
                                     targetDate = date,
                                     sourceSlotId = source.timeSlot.id,
                                     targetCourseId = target.id,

@@ -88,7 +88,7 @@ fun DayArrangementScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewModel(
                 edgeButton = {
                     EdgeButton(
                         enabled = sourceDay != targetDate.dayOfWeek,
-                        onClick = { viewModel.applyDayArrangement(table.id, targetDate, sourceDay) },
+                        onClick = { viewModel.applyDayArrangement(table.timetableId, targetDate, sourceDay) },
                     ) { Icon(Icons.Rounded.Check, contentDescription = "应用调休") }
                 },
             ) { padding ->
