@@ -67,8 +67,8 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
                     }
                 },
                 label = "CourseAdjustmentPageTransition",
-            ) { page ->
-                when (page) {
+            ) { visiblePage ->
+                when (visiblePage) {
                 CourseAdjustmentPage.TABLE -> TimetablePickerPage(current.timetables, tableId) { tableId = it; sourceSlotId = -1; targetCourseId = -1; page = CourseAdjustmentPage.MAIN }
                 CourseAdjustmentPage.DATE -> ScreenScaffold(timeText = {}) { DatePicker(initialDate = date.toJavaLocalDate(), onDatePicked = { date = it.toKotlinLocalDate(); sourceSlotId = -1; targetCourseId = -1; page = CourseAdjustmentPage.MAIN }) }
                 CourseAdjustmentPage.A -> OccurrencePicker("选择 A 课", occurrences, sourceSlotId) { sourceSlotId = it; targetCourseId = -1; page = CourseAdjustmentPage.MAIN }

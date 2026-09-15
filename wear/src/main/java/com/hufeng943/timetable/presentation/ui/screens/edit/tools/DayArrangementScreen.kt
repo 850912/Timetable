@@ -59,8 +59,8 @@ fun DayArrangementScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewModel(
                     }
                 },
                 label = "DayArrangementPageTransition",
-            ) { page ->
-                when (page) {
+            ) { visiblePage ->
+                when (visiblePage) {
                 DayArrangementPage.TABLE -> TimetablePickerPage(current.timetables, tableId) { tableId = it; page = DayArrangementPage.MAIN }
                 DayArrangementPage.DATE -> ScreenScaffold(timeText = {}) {
                     DatePicker(initialDate = date.toJavaLocalDate(), onDatePicked = {
