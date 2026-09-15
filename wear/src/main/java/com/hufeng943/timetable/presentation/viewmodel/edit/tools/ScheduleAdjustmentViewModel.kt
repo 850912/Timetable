@@ -288,7 +288,7 @@ class ScheduleAdjustmentViewModel @Inject constructor(
             existing.id !in excludingSlotIds && slotsConflict(incoming, existing)
         }
         require(conflict == null) {
-            "$actionName失败：目标课程已有重叠课时，请先处理时间冲突"
+            "${actionName}失败：目标课程已有重叠课时，请先处理时间冲突"
         }
     }
 
