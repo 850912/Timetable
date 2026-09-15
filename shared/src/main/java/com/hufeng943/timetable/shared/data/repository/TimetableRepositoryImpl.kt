@@ -353,6 +353,7 @@ class TimetableRepositoryImpl(
         put("recurrence", recurrence)
         remark?.let { put("remark", it) }
         put("overridesJson", overridesJson)
+        batchGroupId?.let { put("batchGroupId", it) }
         put("updatedAt", updatedAt)
         put("revision", revision)
         put("modifiedBy", modifiedBy)

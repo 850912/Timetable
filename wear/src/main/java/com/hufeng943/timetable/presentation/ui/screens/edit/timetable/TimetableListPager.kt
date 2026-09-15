@@ -4,11 +4,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnDefaults
+import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.ButtonDefaults
@@ -24,12 +27,14 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.TimetableUi
+import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.edit.EditTimetableCard
 
 @Composable
 fun TimetableListPager(
     timetables: List<TimetableUi>,
     onAddTimetable: () -> Unit,
+    onQuickModify: () -> Unit,
     onTimetableClick: (Long) -> Unit,
     onTimetableLongClick: (Long) -> Unit
 ) {
@@ -39,9 +44,7 @@ fun TimetableListPager(
     ScreenScaffold(
         scrollState = scrollState,
         edgeButton = {
-            EdgeButton(
-                onClick = onAddTimetable
-            ) {
+            EdgeButton(onClick = onAddTimetable) {
                 Icon(
                     imageVector = Icons.Rounded.Add,
                     contentDescription = stringResource(R.string.edit_timetable_add)
@@ -51,6 +54,8 @@ fun TimetableListPager(
     ) { contentPadding ->
         TransformingLazyColumn(
             state = scrollState,
+            flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding
         ) {
@@ -89,6 +94,19 @@ fun TimetableListPager(
                             .transformedHeight(this, transformationSpec)
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
+                    )
+                }
+                item {
+                    OneUiCapsuleSurface(
+                        title = "快捷修改",
+                        subtitle = "批量日程工具 · 临时放假 · 统一提前/延时",
+                        icon = Icons.Rounded.Tune,
+                        emphasize = true,
+                        onClick = onQuickModify,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .transformedHeight(this, transformationSpec)
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     )
                 }
             }

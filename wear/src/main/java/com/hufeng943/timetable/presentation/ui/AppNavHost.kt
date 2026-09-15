@@ -29,11 +29,12 @@ import com.hufeng943.timetable.presentation.ui.screens.edit.timeslot.TimeSlotLis
 import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.TimetableListScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.tools.ScheduleToolsScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.tools.DayArrangementScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.tools.CourseAdjustmentScreen
 import com.hufeng943.timetable.presentation.ui.screens.home.HomeScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.about.AboutLibrariesScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.about.AboutScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.about.DeveloperOptionsScreen
-import com.hufeng943.timetable.presentation.ui.screens.more.about.probe.WearProbeScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.settings.SettingScreen
 import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
@@ -175,12 +176,17 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     DeveloperOptionsScreen()
                 }
 
-                composable(NavRoutes.MORE_ABOUT_DEVELOPER_PROBE) {
-                    WearProbeScreen()
-                }
 
                 composable(NavRoutes.MORE_SETTINGS) {
                     SettingScreen()
+                }
+
+                composable(NavRoutes.MORE_DAY_ARRANGEMENT) {
+                    DayArrangementScreen()
+                }
+
+                composable(NavRoutes.MORE_COURSE_ADJUSTMENT) {
+                    CourseAdjustmentScreen()
                 }
 
                 composable(NavRoutes.EDIT_TIMETABLE) {

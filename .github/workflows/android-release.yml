@@ -34,6 +34,20 @@ jobs:
       - name: Create build log directory
         run: mkdir -p build-logs
 
+      - name: Verify bundled production keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_KEYSTORE_SHA256="cd6f6307601cee8dc3c77491ae21bddd37e93cac2e111bf7d3ca0d371c26e233"
+          ACTUAL_KEYSTORE_SHA256="$(sha256sum signing/timetable-release.jks | awk '{print $1}')"
+          if [ "$ACTUAL_KEYSTORE_SHA256" != "$EXPECTED_KEYSTORE_SHA256" ]; then
+            echo "Production keystore SHA-256 mismatch." >&2
+            echo "Expected: $EXPECTED_KEYSTORE_SHA256" >&2
+            echo "Actual:   $ACTUAL_KEYSTORE_SHA256" >&2
+            exit 1
+          fi
+          echo "Bundled production keystore verified."
+
       - name: Run shared tests
         shell: bash
         run: |
@@ -52,12 +66,6 @@ jobs:
           set -o pipefail
           ./gradlew :wear:assembleRelease --no-daemon --stacktrace --warning-mode all 2>&1 | tee build-logs/wear-release.log
 
-      - name: Build China Legacy Probe APKs
-        shell: bash
-        run: |
-          set -o pipefail
-          ./gradlew :legacyprobe-mobile:assembleRelease :legacyprobe-wear:assembleRelease --no-daemon --stacktrace --warning-mode all 2>&1 | tee build-logs/china-legacy-probe.log
-
       - name: Verify APK signatures
         shell: bash
         run: |
@@ -65,17 +73,17 @@ jobs:
           BUILD_TOOLS_VERSION="$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)"
           APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
 
+          EXPECTED_CERT_SHA256="1b855e6e47f399c7c331c84e7991a6831fd29c9bce9edb1a799232f558fc2060"
+
           mapfile -t MOBILE_APKS < <(find mobile/build/outputs/apk/release -type f -name '*.apk' | sort)
           mapfile -t WEAR_APKS < <(find wear/build/outputs/apk/release -type f -name '*.apk' | sort)
-          mapfile -t LEGACY_PHONE_APKS < <(find legacyprobe-mobile/build/outputs/apk/release -type f -name '*.apk' | sort)
-          mapfile -t LEGACY_WEAR_APKS < <(find legacyprobe-wear/build/outputs/apk/release -type f -name '*.apk' | sort)
 
-          if [ "${#MOBILE_APKS[@]}" -eq 0 ] || [ "${#WEAR_APKS[@]}" -eq 0 ] || [ "${#LEGACY_PHONE_APKS[@]}" -eq 0 ] || [ "${#LEGACY_WEAR_APKS[@]}" -eq 0 ]; then
+          if [ "${#MOBILE_APKS[@]}" -eq 0 ] || [ "${#WEAR_APKS[@]}" -eq 0 ]; then
             echo "One or more release APK sets were not found." >&2
             exit 1
           fi
 
-          for apk in "${MOBILE_APKS[@]}" "${WEAR_APKS[@]}" "${LEGACY_PHONE_APKS[@]}" "${LEGACY_WEAR_APKS[@]}"; do
+          for apk in "${MOBILE_APKS[@]}" "${WEAR_APKS[@]}"; do
             echo "Verifying $apk"
             "$APKSIGNER" verify --verbose --print-certs "$apk"
           done
@@ -87,13 +95,21 @@ jobs:
           }
 
           MOBILE_CERT="$(cert_digest "${MOBILE_APKS[0]}")"
+          MOBILE_CERT_NORMALIZED="$(printf '%s' "$MOBILE_CERT" | tr '[:upper:]' '[:lower:]' | tr -d ':')"
 
           if [ -z "$MOBILE_CERT" ]; then
             echo "Unable to read mobile APK signing certificate digest." >&2
             exit 1
           fi
 
-          for apk in "${WEAR_APKS[@]}" "${LEGACY_PHONE_APKS[@]}" "${LEGACY_WEAR_APKS[@]}"; do
+          if [ "$MOBILE_CERT_NORMALIZED" != "$EXPECTED_CERT_SHA256" ]; then
+            echo "Mobile APK is NOT signed with the original production certificate." >&2
+            echo "Expected: $EXPECTED_CERT_SHA256" >&2
+            echo "Actual:   $MOBILE_CERT_NORMALIZED" >&2
+            exit 1
+          fi
+
+          for apk in "${WEAR_APKS[@]}"; do
             OTHER_CERT="$(cert_digest "$apk")"
 
             if [ -z "$OTHER_CERT" ]; then
@@ -101,10 +117,19 @@ jobs:
               exit 1
             fi
 
-            if [ "$MOBILE_CERT" != "$OTHER_CERT" ]; then
+            OTHER_CERT_NORMALIZED="$(printf '%s' "$OTHER_CERT" | tr '[:upper:]' '[:lower:]' | tr -d ':')"
+
+            if [ "$OTHER_CERT_NORMALIZED" != "$EXPECTED_CERT_SHA256" ]; then
+              echo "APK is NOT signed with the original production certificate: $apk" >&2
+              echo "Expected: $EXPECTED_CERT_SHA256" >&2
+              echo "Actual:   $OTHER_CERT_NORMALIZED" >&2
+              exit 1
+            fi
+
+            if [ "$MOBILE_CERT_NORMALIZED" != "$OTHER_CERT_NORMALIZED" ]; then
               echo "APK signing certificates do not match." >&2
-              echo "Reference mobile: $MOBILE_CERT" >&2
-              echo "Other ($apk): $OTHER_CERT" >&2
+              echo "Reference mobile: $MOBILE_CERT_NORMALIZED" >&2
+              echo "Other ($apk): $OTHER_CERT_NORMALIZED" >&2
               exit 1
             fi
           done
@@ -132,13 +157,4 @@ jobs:
         with:
           name: wear-release
           path: wear/build/outputs/apk/release/*.apk
-          if-no-files-found: error
-
-      - name: Upload China Legacy Probe APKs
-        uses: actions/upload-artifact@v4
-        with:
-          name: china-legacy-probe-release
-          path: |
-            legacyprobe-mobile/build/outputs/apk/release/*.apk
-            legacyprobe-wear/build/outputs/apk/release/*.apk
           if-no-files-found: error

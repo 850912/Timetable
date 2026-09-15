@@ -1,6 +1,6 @@
 import com.android.build.api.dsl.ApplicationExtension
 
-val versionPrefix = "3.3.3"
+val versionPrefix = "3.4.0"
 
 val commitCountProvider = providers.exec {
     commandLine("git", "rev-list", "--count", "HEAD")
@@ -68,7 +68,7 @@ configure<ApplicationExtension> {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
-            // Release signing is injected from TIMETABLE_RELEASE_* properties.
+            // Release builds use the bundled original production keystore so upgrades keep the same signing identity.
         }
     }
 

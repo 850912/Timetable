@@ -40,6 +40,7 @@ data class TimeSlotEntity(
     val remark: String?,
     @ColumnInfo(defaultValue = "'[]'")
     val overridesJson: String = "[]",
+    val batchGroupId: String? = null,
     @ColumnInfo(defaultValue = "0")
     val updatedAt: Long = System.currentTimeMillis(),
     @ColumnInfo(defaultValue = "0")

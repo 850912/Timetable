@@ -19,8 +19,8 @@ configure<ApplicationExtension> {
         applicationId = "com.hufeng943.timetable"
         minSdk = 30
         targetSdk = 36
-        versionCode = 4
-        versionName = "3.3.3"
+        versionCode = 3040000
+        versionName = "3.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -43,7 +43,7 @@ configure<ApplicationExtension> {
             )
             // Keep the phone and watch release APKs signed with the same certificate.
             // This is required for reliable Wear Data Layer app pairing.
-            // Release signing is injected from TIMETABLE_RELEASE_* properties.
+            // Release builds use the bundled original production keystore so upgrades keep the same signing identity.
         }
     }
     compileOptions {

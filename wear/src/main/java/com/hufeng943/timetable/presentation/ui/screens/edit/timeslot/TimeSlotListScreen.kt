@@ -27,6 +27,12 @@ fun TimeSlotListScreen(
         val sortedTimeSlots = remember(data.timeSlots, firstDay) {
             data.timeSlots.sortedWith(
                 compareBy<TimeSlotUi> { slot ->
+                    // One-off multi-date lessons are independent rows. Keep those in real
+                    // calendar order so a batch created for several dates is easy to scan.
+                    if (slot.selectedDates.isNotEmpty()) 0 else 1
+                }.thenBy { slot ->
+                    slot.selectedDates.minOfOrNull { it.toEpochDays() } ?: Long.MAX_VALUE
+                }.thenBy { slot ->
                     slot.dayOfWeek?.let { (it.ordinal - firstDay.ordinal + 7) % 7 }
                         ?: Int.MAX_VALUE
                 }.thenBy { slot ->

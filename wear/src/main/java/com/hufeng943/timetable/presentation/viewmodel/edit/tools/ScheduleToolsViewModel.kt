@@ -1,13 +1,11 @@
 package com.hufeng943.timetable.presentation.viewmodel.edit.tools
 
 import android.content.Context
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hufeng943.timetable.presentation.ui.NavArgs
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
-import com.hufeng943.timetable.shared.model.ScheduleBatchOperations
 import com.hufeng943.timetable.shared.model.OpenEndedBatchAction
+import com.hufeng943.timetable.shared.model.ScheduleBatchOperations
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.surface.WearSurfaceRefresher
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +25,7 @@ enum class BatchAction { SHIFT, CANCEL, RESTORE }
 
 sealed interface ScheduleToolsState {
     data object Loading : ScheduleToolsState
-    data class Ready(val timetable: Timetable) : ScheduleToolsState
+    data class Ready(val timetables: List<Timetable>) : ScheduleToolsState
     data class Error(val message: String) : ScheduleToolsState
 }
 
@@ -35,9 +33,7 @@ sealed interface ScheduleToolsState {
 class ScheduleToolsViewModel @Inject constructor(
     private val repository: TimetableRepository,
     @ApplicationContext private val appContext: Context,
-    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-    private val timetableId = savedStateHandle.longArg(NavArgs.TABLE_ID)
     private val _state = MutableStateFlow<ScheduleToolsState>(ScheduleToolsState.Loading)
     val state: StateFlow<ScheduleToolsState> = _state.asStateFlow()
 
@@ -46,14 +42,9 @@ class ScheduleToolsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val id = timetableId
-            if (id == null) {
-                _state.value = ScheduleToolsState.Error("缺少课表参数")
-                return@launch
-            }
-            repository.getTimetableById(id).collect { timetable ->
-                _state.value = timetable?.let { ScheduleToolsState.Ready(it) }
-                    ?: ScheduleToolsState.Error("课表不存在")
+            repository.getAllTimetables().collect { tables ->
+                _state.value = if (tables.isEmpty()) ScheduleToolsState.Error("暂无课表")
+                else ScheduleToolsState.Ready(tables)
             }
         }
     }
@@ -63,66 +54,89 @@ class ScheduleToolsViewModel @Inject constructor(
         startDate: LocalDate,
         endDate: LocalDate?,
         offsetMinutes: Int,
+        timetableId: Long?,
         courseId: Long?,
         timeWindowStart: LocalTime?,
         timeWindowEnd: LocalTime?,
     ) {
-        val id = timetableId ?: return
         viewModelScope.launch {
             runCatching {
-                val timetable = requireNotNull(repository.getTimetableById(id).first())
-                if (endDate == null) {
-                    timetable.allCourses
-                        .asSequence()
-                        .filter { courseId == null || it.id == courseId }
-                        .forEach { course ->
-                            course.timeSlots.forEach slotLoop@ { slot ->
-                                if (!ScheduleBatchOperations.overlapsWindow(slot, timeWindowStart, timeWindowEnd)) return@slotLoop
-                                val updated = ScheduleBatchOperations.applyOpenEnded(
-                                    slot = slot,
-                                    startDate = startDate,
-                                    action = when (action) {
-                                        BatchAction.SHIFT -> OpenEndedBatchAction.SHIFT
-                                        BatchAction.CANCEL -> OpenEndedBatchAction.CANCEL
-                                        BatchAction.RESTORE -> OpenEndedBatchAction.RESTORE
-                                    },
-                                    offsetMinutes = offsetMinutes,
-                                )
-                                if (updated != slot) repository.upsertTimeSlot(updated, course.id)
-                            }
-                        }
-                } else {
-                    timetable.allCourses
-                        .asSequence()
-                        .filter { courseId == null || it.id == courseId }
-                        .forEach { course ->
-                            course.timeSlots.forEach slotLoop@ { slot ->
-                                if (!ScheduleBatchOperations.overlapsWindow(slot, timeWindowStart, timeWindowEnd)) return@slotLoop
-                                val updated = ScheduleBatchOperations.applyRange(
-                                    slot = slot,
-                                    startDate = startDate,
-                                    endDate = endDate,
-                                    action = when (action) {
-                                        BatchAction.SHIFT -> OpenEndedBatchAction.SHIFT
-                                        BatchAction.CANCEL -> OpenEndedBatchAction.CANCEL
-                                        BatchAction.RESTORE -> OpenEndedBatchAction.RESTORE
-                                    },
-                                    offsetMinutes = offsetMinutes,
-                                )
-                                if (updated != slot) repository.upsertTimeSlot(updated, course.id)
-                            }
-                        }
+                val all = repository.getAllTimetables().first()
+                val targets = all.filter { timetableId == null || it.id == timetableId }
+                targets.forEach { timetable ->
+                    applyToTimetable(
+                        timetable = timetable,
+                        action = action,
+                        startDate = startDate,
+                        endDate = endDate,
+                        offsetMinutes = offsetMinutes,
+                        courseId = courseId,
+                        timeWindowStart = timeWindowStart,
+                        timeWindowEnd = timeWindowEnd,
+                    )
                 }
                 WearSurfaceRefresher.refresh(appContext)
                 _completed.tryEmit(Unit)
             }.onFailure { _state.value = ScheduleToolsState.Error(it.message ?: "批量处理失败") }
         }
     }
-}
 
-private fun SavedStateHandle.longArg(key: String): Long? = when (val value = get<Any?>(key)) {
-    is Long -> value
-    is Int -> value.toLong()
-    is String -> value.toLongOrNull()
-    else -> null
+    private suspend fun applyToTimetable(
+        timetable: Timetable,
+        action: BatchAction,
+        startDate: LocalDate,
+        endDate: LocalDate?,
+        offsetMinutes: Int,
+        courseId: Long?,
+        timeWindowStart: LocalTime?,
+        timeWindowEnd: LocalTime?,
+    ) {
+        if (endDate == null) {
+            timetable.allCourses
+                .asSequence()
+                .filter { courseId == null || it.id == courseId }
+                .forEach { course ->
+                    course.timeSlots.forEach slotLoop@ { slot ->
+                        if (!ScheduleBatchOperations.overlapsWindow(slot, timeWindowStart, timeWindowEnd)) return@slotLoop
+                        val updated = ScheduleBatchOperations.applyOpenEnded(
+                            slot = slot,
+                            startDate = startDate,
+                            action = when (action) {
+                                BatchAction.SHIFT -> OpenEndedBatchAction.SHIFT
+                                BatchAction.CANCEL -> OpenEndedBatchAction.CANCEL
+                                BatchAction.RESTORE -> OpenEndedBatchAction.RESTORE
+                            },
+                            offsetMinutes = offsetMinutes,
+                        )
+                        if (updated != slot) repository.upsertTimeSlot(updated, course.id)
+                    }
+                }
+            return
+        }
+
+        val matching = if (action == BatchAction.RESTORE) emptyMap() else {
+            ScheduleBatchOperations.matchingDates(
+                timetable, startDate, endDate, timeWindowStart, timeWindowEnd,
+            )
+        }
+        timetable.allCourses
+            .asSequence()
+            .filter { courseId == null || it.id == courseId }
+            .forEach { course ->
+                course.timeSlots.forEach slotLoop@ { slot ->
+                    val updated = if (action == BatchAction.RESTORE) {
+                        ScheduleBatchOperations.clearRange(slot, startDate, endDate, timeWindowStart, timeWindowEnd)
+                    } else {
+                        val dates = matching[slot.id].orEmpty()
+                        if (dates.isEmpty()) return@slotLoop
+                        when (action) {
+                            BatchAction.SHIFT -> ScheduleBatchOperations.shiftDates(slot, dates, offsetMinutes)
+                            BatchAction.CANCEL -> ScheduleBatchOperations.cancelDates(slot, dates)
+                            BatchAction.RESTORE -> slot
+                        }
+                    }
+                    if (updated != slot) repository.upsertTimeSlot(updated, course.id)
+                }
+            }
+    }
 }

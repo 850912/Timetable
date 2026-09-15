@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnDefaults
+import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.EdgeButton
@@ -28,25 +30,52 @@ import com.hufeng943.timetable.presentation.ui.common.ui.TimeSlotUi
 import com.hufeng943.timetable.presentation.ui.components.DeleteButton
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
+import com.hufeng943.timetable.shared.model.ScheduleOverrideType
+import com.hufeng943.timetable.shared.model.WeekPattern
 import java.time.format.TextStyle
 
 @Composable
 fun EditTimeSlotMainPager(
     timeSlot: TimeSlotUi,
+    is24HourFormat: Boolean,
     onSave: () -> Unit,
     onStartTimeClick: () -> Unit,
     onEndTimeClick: () -> Unit,
+    onDatesClick: () -> Unit,
     onDayOfWeekClick: () -> Unit,
     onRecurrenceClick: () -> Unit,
-    onDateSelectionClick: () -> Unit,
     onRemarkClick: () -> Unit,
     onRemarkLongClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val scrollState = rememberTransformingLazyColumnState()
     val transformationSpec = rememberTransformationSpec()
-    val selectedDates = timeSlot.selectedDates
-    val canSave = timeSlot.startTime != null && timeSlot.endTime != null && (selectedDates.isNotEmpty() || timeSlot.dayOfWeek != null)
+    val hasDate = timeSlot.selectedDates.isNotEmpty() || timeSlot.dayOfWeek != null
+    val canSave = timeSlot.startTime != null && timeSlot.endTime != null && hasDate
+    val temporaryTimeOverrides = timeSlot.overrides.filter { override ->
+        override.type != ScheduleOverrideType.CANCELLED &&
+            override.startTime != null && override.endTime != null &&
+            (override.startTime != timeSlot.startTime || override.endTime != timeSlot.endTime)
+    }
+    val temporaryTimePairs = temporaryTimeOverrides
+        .mapNotNull { override ->
+            val start = override.startTime ?: return@mapNotNull null
+            val end = override.endTime ?: return@mapNotNull null
+            start to end
+        }
+        .distinct()
+    val hasTemporaryTime = temporaryTimePairs.isNotEmpty()
+
+    val dateSubtitle = if (timeSlot.selectedDates.isNotEmpty()) {
+        val ordered = timeSlot.selectedDates.sorted()
+        when {
+            ordered.size == 1 -> ordered.first().toDisplayString()
+            ordered.size == 2 -> "${ordered[0].toDisplayString()} · ${ordered[1].toDisplayString()}"
+            else -> "${ordered[0].toDisplayString()} · ${ordered[1].toDisplayString()} · 共 ${ordered.size} 天"
+        }
+    } else {
+        timeSlot.dayOfWeek?.toDisplayString(TextStyle.FULL_STANDALONE) ?: stringResource(R.string.not_set)
+    }
 
     ScreenScaffold(
         scrollState = scrollState,
@@ -56,7 +85,9 @@ fun EditTimeSlotMainPager(
             }
         }
     ) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
+        TransformingLazyColumn(state = scrollState,
+            flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState), contentPadding = contentPadding) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
@@ -69,10 +100,38 @@ fun EditTimeSlotMainPager(
                 }
             }
 
+            if (hasTemporaryTime) {
+                item {
+                    val first = temporaryTimePairs.first()
+                    val timeSummary = if (temporaryTimePairs.size == 1) {
+                        "${first.first.toDisplayString(is24HourFormat)}–${first.second.toDisplayString(is24HourFormat)}"
+                    } else {
+                        "${temporaryTimePairs.size} 组临时时间"
+                    }
+                    val firstRule = temporaryTimeOverrides.first()
+                    val rangeSummary = firstRule.endDate?.let { end ->
+                        if (end.year >= 9999) "${firstRule.date.toDisplayString()} 起"
+                        else "${firstRule.date.toDisplayString()}–${end.toDisplayString()}"
+                    } ?: if (temporaryTimeOverrides.size == 1) {
+                        firstRule.date.toDisplayString()
+                    } else {
+                        "${temporaryTimeOverrides.size} 个日期规则"
+                    }
+                    OneUiCapsuleSurface(
+                        title = "临时调时：$timeSummary",
+                        subtitle = "$rangeSummary · 由快捷修改/日期例外生效",
+                        icon = Icons.Rounded.AccessTime,
+                        selected = true,
+                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                    )
+                }
+            }
+
             item {
                 OneUiCapsuleSurface(
-                    title = stringResource(R.string.edit_timeslot_start),
-                    subtitle = timeSlot.startTime?.toString() ?: stringResource(R.string.not_set),
+                    title = if (hasTemporaryTime) "基础开始时间" else stringResource(R.string.edit_timeslot_start),
+                    subtitle = timeSlot.startTime?.toDisplayString(is24HourFormat) ?: stringResource(R.string.not_set),
                     icon = Icons.Rounded.AccessTime,
                     emphasize = timeSlot.startTime == null,
                     onClick = onStartTimeClick,
@@ -83,8 +142,8 @@ fun EditTimeSlotMainPager(
 
             item {
                 OneUiCapsuleSurface(
-                    title = stringResource(R.string.edit_timeslot_end),
-                    subtitle = timeSlot.endTime?.toString() ?: stringResource(R.string.not_set),
+                    title = if (hasTemporaryTime) "基础结束时间" else stringResource(R.string.edit_timeslot_end),
+                    subtitle = timeSlot.endTime?.toDisplayString(is24HourFormat) ?: stringResource(R.string.not_set),
                     icon = Icons.Rounded.AccessTime,
                     emphasize = timeSlot.endTime == null,
                     onClick = onEndTimeClick,
@@ -93,44 +152,32 @@ fun EditTimeSlotMainPager(
                 )
             }
 
-            if (timeSlot.id == 0L) {
-                item {
-                    OneUiCapsuleSurface(
-                        title = "日期",
-                        subtitle = if (selectedDates.isEmpty()) "未指定 · 点按选择，可多选" else "已选 ${selectedDates.size} 天 · 指定日期课时",
-                        icon = Icons.Rounded.DateRange,
-                        emphasize = selectedDates.isEmpty() && timeSlot.dayOfWeek == null,
-                        selected = selectedDates.isNotEmpty(),
-                        onClick = onDateSelectionClick,
-                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
-                    )
-                }
+            item {
+                OneUiCapsuleSurface(
+                    title = "日期",
+                    subtitle = if (timeSlot.selectedDates.isNotEmpty()) {
+                        "$dateSubtitle · 点按多选"
+                    } else {
+                        "$dateSubtitle · 点按具体日期（可多选） · 长按按星期"
+                    },
+                    icon = Icons.Rounded.DateRange,
+                    emphasize = !hasDate,
+                    onClick = onDatesClick,
+                    onLongClick = onDayOfWeekClick,
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                )
             }
 
-            if (selectedDates.isEmpty()) {
-                item {
-                    OneUiCapsuleSurface(
-                        title = stringResource(R.string.edit_timeslot_week),
-                        subtitle = timeSlot.dayOfWeek?.toDisplayString(TextStyle.FULL_STANDALONE) ?: stringResource(R.string.not_set),
-                        icon = Icons.Rounded.DateRange,
-                        emphasize = timeSlot.dayOfWeek == null,
-                        onClick = onDayOfWeekClick,
-                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
-                    )
-                }
-
-                item {
-                    OneUiCapsuleSurface(
-                        title = stringResource(R.string.edit_timeslot_repeat),
-                        subtitle = timeSlot.recurrence.toDisplayString(),
-                        icon = Icons.Rounded.Refresh,
-                        onClick = onRecurrenceClick,
-                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
-                    )
-                }
+            item {
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.edit_timeslot_repeat),
+                    subtitle = if (timeSlot.recurrence == WeekPattern.DATE_ONLY) "仅所选日期" else timeSlot.recurrence.toDisplayString(),
+                    icon = Icons.Rounded.Refresh,
+                    onClick = if (timeSlot.recurrence == WeekPattern.DATE_ONLY) ({}) else onRecurrenceClick,
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                )
             }
 
             item {

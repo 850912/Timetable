@@ -116,6 +116,7 @@ class SyncApplier(private val db: AppDatabase) {
             recurrence = o.int("recurrence"),
             remark = o.strOrNull("remark"),
             overridesJson = o.strOrNull("overridesJson") ?: "[]",
+            batchGroupId = o.strOrNull("batchGroupId"),
             updatedAt = r.updatedAt,
             revision = r.revision,
             modifiedBy = r.deviceId,

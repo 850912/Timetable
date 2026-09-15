@@ -1,18 +1,24 @@
 package com.hufeng943.timetable.presentation.ui.screens.edit.timeslot
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DateRange
-import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnDefaults
+import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.DatePicker
 import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.ListHeader
@@ -26,74 +32,84 @@ import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.minus
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
+import kotlinx.datetime.toJavaLocalDate
+import kotlinx.datetime.toKotlinLocalDate
+import kotlinx.datetime.todayIn
 import java.time.format.TextStyle
+import kotlin.time.Clock
 
-/**
- * Multi-select date picker embedded into normal time-slot creation.
- * The anchor only controls the visible 84-day window; selected dates are retained
- * when moving the window.
- */
+enum class DateSelectionPage { LIST, ANCHOR }
+
 @Composable
 fun MultiDateSelectionScreen(
-    anchorDate: LocalDate,
-    selectedDates: Set<LocalDate>,
-    onAnchorClick: () -> Unit,
-    onToggleDate: (LocalDate) -> Unit,
-    onClear: () -> Unit,
-    onDone: () -> Unit,
+    initialDates: Set<LocalDate>,
+    semesterStart: LocalDate? = null,
+    semesterEnd: LocalDate? = null,
+    onConfirm: (Set<LocalDate>) -> Unit,
 ) {
-    val scrollState = rememberTransformingLazyColumnState()
-    val transformationSpec = rememberTransformationSpec()
-    val candidates = remember(anchorDate) {
-        val start = anchorDate.minus(14, DateTimeUnit.DAY)
-        (0 until 84).map { start.plus(it, DateTimeUnit.DAY) }
+    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    var selectedDates by remember(initialDates) { mutableStateOf(initialDates) }
+    var anchorDate by remember(initialDates, semesterStart) {
+        mutableStateOf(initialDates.minOrNull() ?: maxOf(today, semesterStart ?: today))
     }
+    var page by remember { mutableStateOf(DateSelectionPage.LIST) }
+
+    BackHandler(enabled = page != DateSelectionPage.LIST) { page = DateSelectionPage.LIST }
+
+    if (page == DateSelectionPage.ANCHOR) {
+        ScreenScaffold(timeText = {}) {
+            DatePicker(
+                initialDate = anchorDate.toJavaLocalDate(),
+                onDatePicked = {
+                    anchorDate = it.toKotlinLocalDate()
+                    page = DateSelectionPage.LIST
+                },
+            )
+        }
+        return
+    }
+
+    val candidates = remember(anchorDate, semesterStart, semesterEnd) {
+        (0 until 31).map { anchorDate.plus(it, DateTimeUnit.DAY) }
+            .filter { date -> (semesterStart == null || date >= semesterStart) && (semesterEnd == null || date <= semesterEnd) }
+    }
+    val scrollState = rememberTransformingLazyColumnState()
+    val transform = rememberTransformationSpec()
 
     ScreenScaffold(
         scrollState = scrollState,
         edgeButton = {
-            EdgeButton(onClick = onDone) {
-                Icon(Icons.Rounded.Check, contentDescription = "完成")
-            }
+            EdgeButton(
+                onClick = { onConfirm(selectedDates) },
+                enabled = selectedDates.isNotEmpty(),
+            ) { Icon(Icons.Rounded.Check, contentDescription = "确认日期") }
         },
-    ) { contentPadding ->
+    ) { padding ->
         TransformingLazyColumn(
             state = scrollState,
-            contentPadding = contentPadding,
+            flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
             modifier = Modifier.fillMaxSize(),
+            contentPadding = padding,
         ) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec),
-                ) { Text("选择日期 · 可多选") }
+                    transformation = SurfaceTransformation(transform),
+                ) { Text("日期 · 可多选") }
             }
             item {
                 OneUiCapsuleSurface(
                     title = "日期窗口：${anchorDate.toDisplayString()}",
-                    subtitle = "点按跳转到其他日期，已选日期不会丢失",
+                    subtitle = "点按跳到其他日期 · 下方可连续勾选 31 天",
                     icon = Icons.Rounded.DateRange,
-                    onClick = onAnchorClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    onClick = { page = DateSelectionPage.ANCHOR },
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
-            }
-            if (selectedDates.isNotEmpty()) {
-                item {
-                    OneUiCapsuleSurface(
-                        title = "已选 ${selectedDates.size} 天",
-                        subtitle = "长按清空全部已选日期",
-                        icon = Icons.Rounded.DeleteSweep,
-                        selected = true,
-                        onClick = {},
-                        onLongClick = onClear,
-                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    )
-                }
             }
             items(candidates, key = { it.toEpochDays() }) { date ->
                 val selected = date in selectedDates
@@ -101,8 +117,10 @@ fun MultiDateSelectionScreen(
                     title = date.toDisplayString(),
                     subtitle = date.dayOfWeek.toDisplayString(TextStyle.FULL),
                     selected = selected,
-                    onClick = { onToggleDate(date) },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    onClick = {
+                        selectedDates = if (selected) selectedDates - date else selectedDates + date
+                    },
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }

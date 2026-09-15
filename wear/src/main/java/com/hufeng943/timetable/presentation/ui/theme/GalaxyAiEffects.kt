@@ -27,8 +27,19 @@ fun GalaxyAiAmbientLayer(
     val secondary = AppTheme.colors.secondary
     val preset = LocalThemePreset.current
     val effectAlpha = strength.coerceIn(0f, 1f)
-    val midGlow = if (preset == ThemePreset.AMOLED_BLACK) Color(0xFF8FA9C7) else Color(0xFF8B5CF6)
-    val endGlow = if (preset == ThemePreset.AMOLED_BLACK) Color(0xFF6E879F) else Color(0xFF35D7FF)
+    // System dynamic theme must remain visually dynamic all the way through custom
+    // One UI surfaces. Older code mixed in fixed purple/cyan glows, making changes
+    // to the watch-face palette barely visible on Samsung watches.
+    val midGlow = if (preset == ThemePreset.AMOLED_BLACK) {
+        Color(0xFF8FA9C7)
+    } else {
+        primary.copy(alpha = 1f)
+    }
+    val endGlow = if (preset == ThemePreset.AMOLED_BLACK) {
+        Color(0xFF6E879F)
+    } else {
+        secondary.copy(alpha = 1f)
+    }
 
     Box(
         modifier = modifier

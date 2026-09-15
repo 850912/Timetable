@@ -17,15 +17,10 @@ data class TimeSlotUi(
     val recurrence: WeekPattern,
     val remark: String?,
     val overrides: List<ScheduleOverride> = emptyList(),
+    val batchGroupId: String? = null,
+    val selectedDates: Set<LocalDate> = emptySet(),
     val color: androidx.compose.ui.graphics.Color
 ) {
-
-    val selectedDates: Set<LocalDate>
-        get() = overrides.asSequence()
-            .filter { it.endDate == null && it.type != com.hufeng943.timetable.shared.model.ScheduleOverrideType.CANCELLED }
-            .map { it.date }
-            .toSet()
-
     val displayRemark: String
         @Composable
         get() = remark ?: stringResource(R.string.not_set)

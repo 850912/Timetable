@@ -60,8 +60,7 @@ object NavRoutes {
     const val LIST_TIMESLOT = "list_timeslot/{${NavArgs.COURSE_ID}}"
     fun listTimeSlot(courseId: Long) = "list_timeslot/$courseId"
 
-    const val SCHEDULE_TOOLS = "schedule_tools/{${NavArgs.TABLE_ID}}"
-    fun scheduleTools(timetableId: Long) = "schedule_tools/$timetableId"
+    const val SCHEDULE_TOOLS = "schedule_tools"
 
     const val EDIT_TIMESLOT = "edit_timeslot/{${NavArgs.COURSE_ID}}/{${NavArgs.TIME_SLOT_ID}}"
     fun editTimeSlot(courseId: Long, timeSlotId: Long? = null) =
@@ -71,6 +70,7 @@ object NavRoutes {
     const val MORE_ABOUT = "more/about"
     const val MORE_ABOUT_LIBRARIES = "more/about/libraries"
     const val MORE_ABOUT_DEVELOPER = "more/about/developer"
-    const val MORE_ABOUT_DEVELOPER_PROBE = "more/about/developer/probe"
     const val MORE_SETTINGS = "more/settings"
+    const val MORE_DAY_ARRANGEMENT = "more/day_arrangement"
+    const val MORE_COURSE_ADJUSTMENT = "more/course_adjustment"
 }

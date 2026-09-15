@@ -12,7 +12,9 @@ data class TimeSlot(
     val dayOfWeek: DayOfWeek? = null,
     val recurrence: WeekPattern = WeekPattern.EVERY_WEEK, // 默认每周重复
     val remark: String? = null,
-    val overrides: List<ScheduleOverride> = emptyList()
+    val overrides: List<ScheduleOverride> = emptyList(),
+    /** Shared id for one-off lessons created together from a multi-date selection. */
+    val batchGroupId: String? = null
 )
 
 /**

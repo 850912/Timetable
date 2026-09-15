@@ -139,14 +139,6 @@
                 android:text="课程提醒" />
         </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonWearProbe"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="中国区 Wear 通信诊断" />
-
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

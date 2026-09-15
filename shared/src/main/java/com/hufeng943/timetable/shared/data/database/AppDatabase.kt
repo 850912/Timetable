@@ -23,7 +23,7 @@ import com.hufeng943.timetable.shared.data.entities.TimetableEntity
         SyncTombstoneEntity::class,
         ProcessedSyncEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {

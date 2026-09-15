@@ -1,22 +1,18 @@
 package com.hufeng943.timetable.presentation.ui.screens.edit.timeslot
 
-import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material3.ScreenScaffold
-import androidx.wear.compose.material3.DatePicker
 import androidx.wear.compose.material3.TimePicker
 import androidx.wear.compose.material3.TimePickerType
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hufeng943.timetable.R
-import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.common.DynamicSubTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
@@ -30,30 +26,23 @@ import com.hufeng943.timetable.presentation.ui.screens.common.TextEditScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.InternalNavRoutes
 import com.hufeng943.timetable.presentation.viewmodel.edit.timeslot.EditTimeSlotAction
 import com.hufeng943.timetable.presentation.viewmodel.edit.timeslot.EditTimeSlotViewModel
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
-import kotlinx.datetime.todayIn
-import kotlinx.datetime.toJavaLocalDate
-import kotlinx.datetime.toKotlinLocalDate
 import kotlinx.datetime.toJavaLocalTime
 import kotlinx.datetime.toKotlinLocalTime
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun EditTimeSlotScreen(
     viewModel: EditTimeSlotViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val groupSyncPrompt by viewModel.groupSyncPrompt.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val internalNavController = rememberSwipeDismissableNavController()
     val config = LocalAppConfig.current
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    var dateAnchor by remember { mutableStateOf(today) }
-    androidx.compose.runtime.LaunchedEffect(viewModel) {
+
+    LaunchedEffect(viewModel) {
         viewModel.completed.collect { navController.popSafe() }
     }
 
@@ -64,38 +53,28 @@ fun EditTimeSlotScreen(
         composable(InternalNavRoutes.MAIN) {
             HandleEditUiState(uiState) { timeSlot ->
                 DynamicSubTheme(seedColor = timeSlot.color) {
-                    Log.d("timeSlot", "timeSlot: $timeSlot")
-                    EditTimeSlotMainPager(
-                        timeSlot = timeSlot,
-                        onSave = {
-                            viewModel.onAction(EditTimeSlotAction.Upsert)
-                        },
-                        onStartTimeClick = {
-                            internalNavController.navigateSingle(InternalNavRoutes.START_TIME)
-                        },
-                        onEndTimeClick = {
-                            internalNavController.navigateSingle(InternalNavRoutes.END_TIME)
-                        },
-                        onDayOfWeekClick = {
-                            internalNavController.navigateSingle(InternalNavRoutes.WEEK_DAY)
-                        },
-                        onRecurrenceClick = {
-                            internalNavController.navigateSingle(InternalNavRoutes.RECURRENCE)
-                        },
-                        onDateSelectionClick = {
-                            dateAnchor = timeSlot.selectedDates.minOrNull() ?: today
-                            internalNavController.navigateSingle(InternalNavRoutes.DATE_SELECTION)
-                        },
-                        onRemarkClick = {
-                            internalNavController.navigateSingle(InternalNavRoutes.NAME)
-                        },
-                        onRemarkLongClick = {
-                            viewModel.onAction(EditTimeSlotAction.UpdateRemark(null))
-                        },
-                        onDelete = {
-                            internalNavController.navigateSingle(InternalNavRoutes.DELETE_CONFIRM)
-                        }
-                    )
+                    val siblingCount = groupSyncPrompt
+                    if (siblingCount != null) {
+                        GroupSyncConfirmScreen(
+                            siblingCount = siblingCount,
+                            onSync = { viewModel.onAction(EditTimeSlotAction.ConfirmGroupSync(true)) },
+                            onCurrentOnly = { viewModel.onAction(EditTimeSlotAction.ConfirmGroupSync(false)) },
+                        )
+                    } else {
+                        EditTimeSlotMainPager(
+                            timeSlot = timeSlot,
+                            is24HourFormat = config.is24HourFormat,
+                            onSave = { viewModel.onAction(EditTimeSlotAction.RequestSave) },
+                            onStartTimeClick = { internalNavController.navigateSingle(InternalNavRoutes.START_TIME) },
+                            onEndTimeClick = { internalNavController.navigateSingle(InternalNavRoutes.END_TIME) },
+                            onDatesClick = { internalNavController.navigateSingle(InternalNavRoutes.DATES) },
+                            onDayOfWeekClick = { internalNavController.navigateSingle(InternalNavRoutes.WEEK_DAY) },
+                            onRecurrenceClick = { internalNavController.navigateSingle(InternalNavRoutes.RECURRENCE) },
+                            onRemarkClick = { internalNavController.navigateSingle(InternalNavRoutes.NAME) },
+                            onRemarkLongClick = { viewModel.onAction(EditTimeSlotAction.UpdateRemark(null)) },
+                            onDelete = { internalNavController.navigateSingle(InternalNavRoutes.DELETE_CONFIRM) }
+                        )
+                    }
                 }
             }
         }
@@ -112,11 +91,7 @@ fun EditTimeSlotScreen(
                                 viewModel.onAction(EditTimeSlotAction.UpdateStartTime(newTime.toKotlinLocalTime()))
                                 internalNavController.popSafe()
                             },
-                            timePickerType = if (config.is24HourFormat) {
-                                TimePickerType.HoursMinutes24H
-                            } else {
-                                TimePickerType.HoursMinutesAmPm12H
-                            }
+                            timePickerType = if (config.is24HourFormat) TimePickerType.HoursMinutes24H else TimePickerType.HoursMinutesAmPm12H
                         )
                     }
                 }
@@ -135,13 +110,23 @@ fun EditTimeSlotScreen(
                                 viewModel.onAction(EditTimeSlotAction.UpdateEndTime(newTime.toKotlinLocalTime()))
                                 internalNavController.popSafe()
                             },
-                            timePickerType = if (config.is24HourFormat) {
-                                TimePickerType.HoursMinutes24H
-                            } else {
-                                TimePickerType.HoursMinutesAmPm12H
-                            }
+                            timePickerType = if (config.is24HourFormat) TimePickerType.HoursMinutes24H else TimePickerType.HoursMinutesAmPm12H
                         )
                     }
+                }
+            }
+        }
+
+        composable(InternalNavRoutes.DATES) {
+            HandleEditUiState(uiState) { timeSlot ->
+                DynamicSubTheme(seedColor = timeSlot.color) {
+                    MultiDateSelectionScreen(
+                        initialDates = timeSlot.selectedDates,
+                        onConfirm = { dates ->
+                            viewModel.onAction(EditTimeSlotAction.UpdateDates(dates))
+                            internalNavController.popSafe()
+                        },
+                    )
                 }
             }
         }
@@ -154,6 +139,7 @@ fun EditTimeSlotScreen(
                             .toLocalDateTime(TimeZone.currentSystemDefault()).date.dayOfWeek,
                         onDaySelected = { day ->
                             viewModel.onAction(EditTimeSlotAction.UpdateDayOfWeek(day))
+                            internalNavController.popSafe()
                         }
                     )
                 }
@@ -167,46 +153,9 @@ fun EditTimeSlotScreen(
                         initialPattern = timeSlot.recurrence,
                         onPatternSelected = { pattern ->
                             viewModel.onAction(EditTimeSlotAction.UpdateRecurrence(pattern))
+                            internalNavController.popSafe()
                         }
                     )
-                }
-            }
-        }
-
-        composable(InternalNavRoutes.DATE_SELECTION) {
-            HandleEditUiState(uiState) { timeSlot ->
-                DynamicSubTheme(seedColor = timeSlot.color) {
-                    MultiDateSelectionScreen(
-                        anchorDate = dateAnchor,
-                        selectedDates = timeSlot.selectedDates,
-                        onAnchorClick = { internalNavController.navigateSingle(InternalNavRoutes.DATE_ANCHOR) },
-                        onToggleDate = { date ->
-                            val next = if (date in timeSlot.selectedDates) {
-                                timeSlot.selectedDates - date
-                            } else {
-                                timeSlot.selectedDates + date
-                            }
-                            viewModel.onAction(EditTimeSlotAction.UpdateSelectedDates(next))
-                        },
-                        onClear = { viewModel.onAction(EditTimeSlotAction.UpdateSelectedDates(emptySet())) },
-                        onDone = { internalNavController.popSafe() },
-                    )
-                }
-            }
-        }
-
-        composable(InternalNavRoutes.DATE_ANCHOR) {
-            HandleEditUiState(uiState) { timeSlot ->
-                DynamicSubTheme(seedColor = timeSlot.color) {
-                    ScreenScaffold(timeText = {}) {
-                        DatePicker(
-                            initialDate = dateAnchor.toJavaLocalDate(),
-                            onDatePicked = { picked ->
-                                dateAnchor = picked.toKotlinLocalDate()
-                                internalNavController.popSafe()
-                            },
-                        )
-                    }
                 }
             }
         }
@@ -234,14 +183,8 @@ fun EditTimeSlotScreen(
                             timeSlot.startTime ?: stringResource(R.string.unknown),
                             timeSlot.endTime ?: stringResource(R.string.unknown)
                         ),
-                        onConfirm = {
-                            viewModel.onAction(EditTimeSlotAction.Delete)
-                            // 删除后返回到 TimeSlotListScreen，与保存行为一致
-                            navController.popSafe()
-                        },
-                        onCancel = {
-                            internalNavController.popSafe()
-                        }
+                        onConfirm = { viewModel.onAction(EditTimeSlotAction.Delete) },
+                        onCancel = { internalNavController.popSafe() }
                     )
                 }
             }

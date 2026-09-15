@@ -41,7 +41,8 @@ fun TimeSlot.toTimeSlotEntity(courseId: Long): TimeSlotEntity {
         endMinute = endMinute,
         recurrence = recurrence.ordinal,
         remark = remark,
-        overridesJson = overrideJson.encodeToString(overrides)
+        overridesJson = overrideJson.encodeToString(overrides),
+        batchGroupId = batchGroupId
     )
 }
 
@@ -56,6 +57,7 @@ fun TimeSlotEntity.toTimeSlot(): TimeSlot {
         dayOfWeek = DayOfWeek(dayOfWeek),
         recurrence = WeekPattern.entries.getOrElse(recurrence) { WeekPattern.EVERY_WEEK },
         remark = remark,
-        overrides = overrides
+        overrides = overrides,
+        batchGroupId = batchGroupId
     )
 }

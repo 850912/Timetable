@@ -5,11 +5,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.EventRepeat
+import androidx.compose.material.icons.rounded.SwapCalls
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnDefaults
+import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.ListHeader
@@ -34,6 +38,8 @@ fun MorePager() {
     ScreenScaffold(scrollState = scrollState) { contentPadding ->
         TransformingLazyColumn(
             state = scrollState,
+            flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
@@ -65,6 +71,32 @@ fun MorePager() {
 
             item {
                 OneUiCapsuleButton(
+                    icon = Icons.Rounded.EventRepeat,
+                    label = "调休",
+                    secondaryLabel = "某天改上另一星期的课程",
+                    onClick = { navController.navigateSingle(NavRoutes.MORE_DAY_ARRANGEMENT) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleButton(
+                    icon = Icons.Rounded.SwapCalls,
+                    label = "课程调节",
+                    secondaryLabel = "换课 / 占课 · 仅今天 / 永久",
+                    onClick = { navController.navigateSingle(NavRoutes.MORE_COURSE_ADJUSTMENT) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleButton(
                     icon = Icons.Rounded.Settings,
                     label = stringResource(R.string.more_menu_settings),
                     secondaryLabel = "传输、主题与显示",
@@ -80,7 +112,7 @@ fun MorePager() {
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.Info,
                     label = stringResource(R.string.more_menu_about),
-                    secondaryLabel = "Timetable 3.3.0",
+                    secondaryLabel = "Timetable 3.4.0",
                     onClick = { navController.navigateSingle(NavRoutes.MORE_ABOUT) },
                     modifier = Modifier
                         .fillMaxWidth()

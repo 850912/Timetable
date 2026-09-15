@@ -9,9 +9,10 @@ sealed class EditTimeSlotAction {
     data class UpdateStartTime(val startTime: LocalTime) : EditTimeSlotAction()
     data class UpdateEndTime(val endTime: LocalTime) : EditTimeSlotAction()
     data class UpdateDayOfWeek(val dayOfWeek: DayOfWeek) : EditTimeSlotAction()
+    data class UpdateDates(val dates: Set<LocalDate>) : EditTimeSlotAction()
     data class UpdateRecurrence(val recurrence: WeekPattern) : EditTimeSlotAction()
-    data class UpdateSelectedDates(val dates: Set<LocalDate>) : EditTimeSlotAction()
     data class UpdateRemark(val remark: String?) : EditTimeSlotAction()
-    object Upsert : EditTimeSlotAction()
+    object RequestSave : EditTimeSlotAction()
+    data class ConfirmGroupSync(val sync: Boolean) : EditTimeSlotAction()
     object Delete : EditTimeSlotAction()
 }

@@ -38,23 +38,6 @@
             android:exported="false" />
 
         <activity
-            android:name=".probe.WearProbeActivity"
-            android:exported="false" />
-
-        <service
-            android:name=".probe.PhoneWearProbeListenerService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" tools:ignore="WearableBindListener" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
-                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
-                <data android:scheme="wear" android:host="*" android:pathPrefix="/timetable/probe/v1" />
-            </intent-filter>
-        </service>
-
-        <activity
             android:name=".transfer.PhoneFileTransferActivity"
             android:exported="true">
             <intent-filter>
