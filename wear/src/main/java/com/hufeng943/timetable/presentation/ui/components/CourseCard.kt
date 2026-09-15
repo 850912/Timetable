@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -16,16 +16,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,20 +34,15 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 import com.hufeng943.timetable.presentation.ui.theme.galaxyAiAccentBrush
 
-private val CourseCapsuleShape = RoundedCornerShape(30.dp)
-private val DetailPillShape = RoundedCornerShape(50)
+private val CourseCapsuleShape = RoundedCornerShape(28.dp)
 
-/**
- * Round-screen course card inspired by Samsung's media cards: the information layer stays
- * inside the circular safe area while a soft "artwork" block lives on the right. Keeping the
- * card content height deterministic also avoids the old clipped-card issue on Galaxy Watch.
- */
 @Composable
 fun CourseCard(
     course: CourseUi,
@@ -66,25 +60,16 @@ fun CourseCard(
     val courseColor = course.displayColor
     val slot = course.timeSlot
     val order = course.dailyOrder?.toString() ?: "•"
+    val classProgress = if (isCurrent && minutesLeft != null && slot.startTime != null && slot.endTime != null) {
+        val startMinutes = slot.startTime.hour * 60 + slot.startTime.minute
+        val endMinutes = slot.endTime.hour * 60 + slot.endTime.minute
+        val total = (endMinutes - startMinutes).coerceAtLeast(1)
+        ((total - minutesLeft).toFloat() / total.toFloat()).coerceIn(0f, 1f)
+    } else null
     val cardModifier = when {
-        isCurrent -> modifier.border(1.6.dp, courseColor.copy(alpha = 0.95f), CourseCapsuleShape)
-        isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.48f), CourseCapsuleShape)
+        isCurrent -> modifier.border(2.dp, courseColor.copy(alpha = 0.98f), CourseCapsuleShape)
+        isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.46f), CourseCapsuleShape)
         else -> modifier.border(0.6.dp, Color.White.copy(alpha = 0.07f), CourseCapsuleShape)
-    }
-
-    val timeText = buildString {
-        slot.startTime?.let { append(it.toDisplayString(is24HourFormat)) }
-        if (slot.startTime != null && slot.endTime != null) append(" – ")
-        slot.endTime?.let { append(it.toDisplayString(is24HourFormat)) }
-    }
-    val detail = listOfNotNull(
-        course.location?.takeIf { it.isNotBlank() },
-        course.teacher?.takeIf { it.isNotBlank() },
-    ).joinToString(" · ")
-    val status = when {
-        isCurrent && minutesLeft != null -> stringResource(R.string.course_in_progress, minutesLeft)
-        isNext -> stringResource(R.string.course_next)
-        else -> null
     }
 
     Card(
@@ -93,8 +78,7 @@ fun CourseCard(
         transformation = transformation,
         shape = CourseCapsuleShape,
         colors = CardDefaults.cardColors(
-            containerColor = courseColor.copy(alpha = if (isCurrent) 0.22f else if (isNext) 0.13f else 0.08f)
-                .compositeOver(colors.surfaceContainer),
+            containerColor = courseColor.copy(alpha = if (isCurrent) 0.30f else if (isNext) 0.15f else 0.09f).compositeOver(colors.surfaceContainer),
             contentColor = colors.textPrimary,
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -102,110 +86,154 @@ fun CourseCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 104.dp)
+                .heightIn(min = 72.dp)
                 .clip(CourseCapsuleShape)
         ) {
             GalaxyAiAmbientLayer(
                 shape = CourseCapsuleShape,
-                strength = if (isCurrent) 0.52f else if (isNext) 0.32f else 0.18f,
+                strength = if (isCurrent) 0.72f else if (isNext) 0.44f else 0.28f,
             )
-
-            // Samsung media-card-like artwork field. It is decorative and intentionally static
-            // (no shader/animation) to keep GPU and battery cost low.
             Box(
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 8.dp)
-                    .size(86.dp)
-                    .clip(RoundedCornerShape(24.dp))
+                    .fillMaxWidth()
+                    .height(1.dp)
                     .background(
-                        Brush.linearGradient(
+                        Brush.horizontalGradient(
                             listOf(
-                                courseColor.copy(alpha = 0.42f),
-                                colors.primary.copy(alpha = 0.12f),
+                                Color.Transparent,
+                                courseColor.copy(alpha = if (isCurrent) 0.90f else 0.45f),
+                                Color.White.copy(alpha = 0.24f),
                                 Color.Transparent,
                             )
                         )
                     )
             )
 
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 13.dp, end = 12.dp, top = 11.dp, bottom = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier
+                        .width(5.dp)
+                        .fillMaxHeight()
+                        .heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(galaxyAiAccentBrush(courseColor, colors.primary, colors.secondary))
+                )
+
+                Spacer(Modifier.width(9.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = course.displayName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Clip,
+                    )
+
+                    Text(
+                        text = buildString {
+                            slot.startTime?.let { append(it.toDisplayString(is24HourFormat)) }
+                            if (slot.startTime != null && slot.endTime != null) append(" – ")
+                            slot.endTime?.let { append(it.toDisplayString(is24HourFormat)) }
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.textSecondary,
+                        maxLines = 2,
+                    )
+
+                    if (isCurrent && minutesLeft != null) {
                         Text(
-                            text = course.displayName,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.SemiBold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
+                            text = stringResource(R.string.course_in_progress, minutesLeft),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = courseColor,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
                         )
-                        if (timeText.isNotBlank()) {
+                        classProgress?.let { progress ->
+                            Spacer(Modifier.height(5.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(3.dp)
+                                    .clip(RoundedCornerShape(99.dp))
+                                    .background(Color.White.copy(alpha = 0.10f))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(progress)
+                                        .fillMaxHeight()
+                                        .clip(RoundedCornerShape(99.dp))
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(courseColor.copy(alpha = 0.72f), courseColor)
+                                            )
+                                        )
+                                )
+                            }
+                        }
+                        if (!nextCourseName.isNullOrBlank() && minutesUntilNext != null) {
+                            Spacer(Modifier.height(5.dp))
                             Text(
-                                text = timeText,
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = stringResource(R.string.course_class_mode_next, nextCourseName, minutesUntilNext),
+                                style = MaterialTheme.typography.labelSmall,
                                 color = colors.textSecondary,
-                                maxLines = 1,
+                                maxLines = 2,
                                 overflow = TextOverflow.Clip,
                             )
                         }
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (isCurrent || isNext) courseColor.copy(alpha = 0.88f)
-                                else Color.White.copy(alpha = 0.11f)
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
+                    } else if (isNext) {
                         Text(
-                            text = order,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (isCurrent || isNext) Color.Black else colors.textPrimary,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-
-                if (!status.isNullOrBlank() || detail.isNotBlank()) {
-                    Row(
-                        modifier = Modifier
-                            .clip(DetailPillShape)
-                            .background(Color.Black.copy(alpha = 0.34f))
-                            .padding(horizontal = 11.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = status ?: detail,
+                            text = stringResource(R.string.course_next),
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (status != null) courseColor else colors.textPrimary,
-                            fontWeight = if (status != null) FontWeight.Bold else FontWeight.Medium,
+                            color = courseColor,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+
+                    val detail = listOfNotNull(
+                        course.location?.takeIf { it.isNotBlank() },
+                        course.teacher?.takeIf { it.isNotBlank() },
+                    ).joinToString(" · ")
+                    if (detail.isNotEmpty()) {
+                        Text(
+                            text = detail,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.textSecondary.copy(alpha = 0.82f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Clip,
                         )
                     }
                 }
 
-                if (isCurrent && !nextCourseName.isNullOrBlank() && minutesUntilNext != null) {
+                Spacer(Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(courseColor.copy(alpha = if (isCurrent) 0.26f else 0.16f))
+                        .border(0.8.dp, courseColor.copy(alpha = 0.42f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Text(
-                        text = stringResource(R.string.course_class_mode_next, nextCourseName, minutesUntilNext),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        text = order,
+                        color = if (isCurrent) Color.White else colors.textPrimary,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun DayFinishedCard(

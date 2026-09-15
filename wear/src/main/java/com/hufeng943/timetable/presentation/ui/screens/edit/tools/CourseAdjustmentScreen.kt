@@ -1,6 +1,10 @@
 package com.hufeng943.timetable.presentation.ui.screens.edit.tools
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -53,7 +57,18 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
             val bOccurs = b?.let { bc -> occurrences.any { it.course.id == bc.id } } == true
             val valid = a != null && b != null && (mode != CourseAdjustmentMode.SWAP || bOccurs)
 
-            when (page) {
+            AnimatedContent(
+                targetState = page,
+                transitionSpec = {
+                    if (targetState == CourseAdjustmentPage.MAIN) {
+                        slideInHorizontally { -it / 3 } togetherWith slideOutHorizontally { it }
+                    } else {
+                        slideInHorizontally { it } togetherWith slideOutHorizontally { -it / 3 }
+                    }
+                },
+                label = "CourseAdjustmentPageTransition",
+            ) { page ->
+                when (page) {
                 CourseAdjustmentPage.TABLE -> TimetablePickerPage(current.timetables, tableId) { tableId = it; sourceSlotId = -1; targetCourseId = -1; page = CourseAdjustmentPage.MAIN }
                 CourseAdjustmentPage.DATE -> ScreenScaffold(timeText = {}) { DatePicker(initialDate = date.toJavaLocalDate(), onDatePicked = { date = it.toKotlinLocalDate(); sourceSlotId = -1; targetCourseId = -1; page = CourseAdjustmentPage.MAIN }) }
                 CourseAdjustmentPage.A -> OccurrencePicker("选择 A 课", occurrences, sourceSlotId) { sourceSlotId = it; targetCourseId = -1; page = CourseAdjustmentPage.MAIN }
@@ -74,6 +89,7 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
                             item { OneUiCapsuleSurface(title = "恢复课程调节", subtitle = "恢复此课表由调休、课程调节产生的修改", icon = Icons.Rounded.Restore, onClick = { viewModel.restoreAdjustments(tableId) }, modifier = Modifier.fillMaxWidth().transformedHeight(this, transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
                         }
                     }
+                }
                 }
             }
         }
