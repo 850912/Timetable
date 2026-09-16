@@ -8,6 +8,7 @@ import com.hufeng943.timetable.shared.data.entities.CourseEntity
 import com.hufeng943.timetable.shared.data.entities.SyncRecordEntity
 import com.hufeng943.timetable.shared.data.entities.TimeSlotEntity
 import com.hufeng943.timetable.shared.data.entities.TimetableEntity
+import com.hufeng943.timetable.shared.data.entities.ScheduleAdjustmentHistoryEntity
 import com.hufeng943.timetable.shared.data.mappers.toAcademicEventEntity
 import com.hufeng943.timetable.shared.data.mappers.toCourse
 import com.hufeng943.timetable.shared.data.mappers.toCourseEntity
@@ -23,6 +24,9 @@ import com.hufeng943.timetable.shared.sync.SyncEntityType
 import com.hufeng943.timetable.shared.sync.SyncOperation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.util.UUID
@@ -128,50 +132,85 @@ class TimetableRepositoryImpl(
     }
 
     override suspend fun upsertTimeSlot(timeSlot: TimeSlot, courseId: Long): Long = db.withTransaction {
-        val now = System.currentTimeMillis()
-        val existing = timeSlot.id.takeIf { it != 0L }?.let { dao.getTimeSlotEntityById(it) }
-        val entity = timeSlot.toTimeSlotEntity(courseId).let { candidate ->
-            if (existing == null) {
-                candidate.copy(
-                    id = 0,
-                    syncId = UUID.randomUUID().toString(),
-                    updatedAt = now,
-                    revision = 1,
-                    modifiedBy = deviceId,
-                    deletedAt = null,
+        upsertTimeSlotInternal(timeSlot, courseId)
+    }
+
+    override suspend fun applyAdjustmentMutations(timetableId: Long, mutations: List<TimeSlotMutation>) = db.withTransaction {
+        if (mutations.isEmpty()) return@withTransaction
+        val historyDao = db.scheduleAdjustmentHistoryDao()
+        var sequence = historyDao.maxSequence(timetableId) + 1L
+        for (mutation in mutations) {
+            val existing = mutation.slot.id.takeIf { it != 0L }?.let { dao.getTimeSlotEntityById(it) }
+            if (existing != null) {
+                historyDao.insert(
+                    ScheduleAdjustmentHistoryEntity(
+                        timetableId = timetableId,
+                        sequence = sequence++,
+                        courseId = existing.courseId,
+                        slotId = existing.id,
+                        action = "RESTORE",
+                        snapshotJson = Json.encodeToString(existing.toTimeSlot()),
+                    )
                 )
+                upsertTimeSlotInternal(mutation.slot, mutation.courseId)
             } else {
-                candidate.copy(
-                    id = existing.id,
-                    syncId = existing.syncId.ifBlank { UUID.randomUUID().toString() },
-                    updatedAt = now,
-                    revision = existing.revision + 1,
-                    modifiedBy = deviceId,
-                    deletedAt = null,
+                val createdId = upsertTimeSlotInternal(mutation.slot, mutation.courseId)
+                historyDao.insert(
+                    ScheduleAdjustmentHistoryEntity(
+                        timetableId = timetableId,
+                        sequence = sequence++,
+                        courseId = mutation.courseId,
+                        slotId = createdId,
+                        action = "DELETE",
+                    )
                 )
             }
         }
+    }
 
-        val id = if (entity.id == 0L) {
-            dao.insertTimeSlot(entity)
-        } else {
-            dao.upsertTimeSlot(entity)
-            entity.id
+    override suspend fun restoreAdjustmentMutations(timetableId: Long) = db.withTransaction {
+        val historyDao = db.scheduleAdjustmentHistoryDao()
+        val history = historyDao.getForTimetable(timetableId)
+        for (entry in history) {
+            when (entry.action) {
+                "RESTORE" -> {
+                    val slot = entry.snapshotJson?.let { Json.decodeFromString<TimeSlot>(it) } ?: continue
+                    upsertTimeSlotInternal(slot, entry.courseId)
+                }
+                "DELETE" -> deleteTimeSlotInternal(entry.slotId)
+            }
         }
-        val storedEntity = if (entity.id == 0L) entity.copy(id = id) else entity
+        historyDao.clearForTimetable(timetableId)
+    }
 
+    private suspend fun upsertTimeSlotInternal(timeSlot: TimeSlot, courseId: Long): Long {
+        val now = System.currentTimeMillis()
+        val existing = timeSlot.id.takeIf { it != 0L }?.let { dao.getTimeSlotEntityById(it) }
+        val entity = timeSlot.toTimeSlotEntity(courseId).let { candidate ->
+            if (existing == null) candidate.copy(
+                id = 0, syncId = UUID.randomUUID().toString(), updatedAt = now, revision = 1, modifiedBy = deviceId, deletedAt = null,
+            ) else candidate.copy(
+                id = existing.id, syncId = existing.syncId.ifBlank { UUID.randomUUID().toString() }, updatedAt = now,
+                revision = existing.revision + 1, modifiedBy = deviceId, deletedAt = null,
+            )
+        }
+        val id = if (entity.id == 0L) dao.insertTimeSlot(entity) else { dao.upsertTimeSlot(entity); entity.id }
+        val stored = if (entity.id == 0L) entity.copy(id = id) else entity
         db.syncRecordDao().replacePending(
             SyncRecordEntity(
-                entityId = id,
-                entityType = SyncEntityType.TIME_SLOT,
-                operation = SyncOperation.UPSERT,
-                revision = entity.revision,
-                updatedAt = entity.updatedAt,
-                deviceId = deviceId,
-                payloadJson = storedEntity.toSyncPayloadJson(),
+                entityId = id, entityType = SyncEntityType.TIME_SLOT, operation = SyncOperation.UPSERT,
+                revision = stored.revision, updatedAt = stored.updatedAt, deviceId = deviceId, payloadJson = stored.toSyncPayloadJson(),
             )
         )
-        id
+        return id
+    }
+
+    private suspend fun deleteTimeSlotInternal(timeSlotId: Long) {
+        val existing = dao.getTimeSlotEntityById(timeSlotId) ?: return
+        val now = System.currentTimeMillis()
+        val revision = existing.revision + 1
+        dao.markTimeSlotDeleted(timeSlotId, now, revision, deviceId, now)
+        db.syncRecordDao().replacePending(existing.toDeleteRecord(SyncEntityType.TIME_SLOT, now, revision))
     }
 
     override suspend fun upsertAcademicEvent(event: AcademicEvent, timetableId: Long): Long = db.withTransaction {
@@ -276,13 +315,7 @@ class TimetableRepositoryImpl(
     }
 
     override suspend fun deleteTimeSlot(timeSlotId: Long) = db.withTransaction {
-        val existing = dao.getTimeSlotEntityById(timeSlotId) ?: return@withTransaction
-        val now = System.currentTimeMillis()
-        val revision = existing.revision + 1
-        dao.markTimeSlotDeleted(timeSlotId, now, revision, deviceId, now)
-        db.syncRecordDao().replacePending(
-            existing.toDeleteRecord(SyncEntityType.TIME_SLOT, now, revision)
-        )
+        deleteTimeSlotInternal(timeSlotId)
     }
 
     override suspend fun deleteAcademicEvent(eventId: Long) = db.withTransaction {

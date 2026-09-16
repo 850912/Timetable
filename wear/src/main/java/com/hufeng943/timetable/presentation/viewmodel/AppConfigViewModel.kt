@@ -52,4 +52,8 @@ class AppConfigViewModel @Inject constructor(
     fun updateShowTopTime(enabled: Boolean) {
         viewModelScope.launch { preferenceStorage.setShowTopTime(enabled) }
     }
+
+    fun updateLiquidGlassEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferenceStorage.setLiquidGlassEnabled(enabled) }
+    }
 }

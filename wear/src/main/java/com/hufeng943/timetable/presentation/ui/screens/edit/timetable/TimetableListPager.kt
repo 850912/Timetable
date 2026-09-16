@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -27,14 +26,12 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.TimetableUi
-import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.edit.EditTimetableCard
 
 @Composable
 fun TimetableListPager(
     timetables: List<TimetableUi>,
     onAddTimetable: () -> Unit,
-    onQuickModify: () -> Unit,
     onTimetableClick: (Long) -> Unit,
     onTimetableLongClick: (Long) -> Unit
 ) {
@@ -94,19 +91,6 @@ fun TimetableListPager(
                             .transformedHeight(this, transformationSpec)
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
-                    )
-                }
-                item {
-                    OneUiCapsuleSurface(
-                        title = "快捷修改",
-                        subtitle = "批量日程工具 · 临时放假 · 统一提前/延时",
-                        icon = Icons.Rounded.Tune,
-                        emphasize = true,
-                        onClick = onQuickModify,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     )
                 }
             }

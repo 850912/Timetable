@@ -39,6 +39,7 @@ class PreferenceStorage @Inject constructor(
         val FIRST_DAY_OF_THE_WEEK = stringPreferencesKey("first_day_of_the_week")
         val DYNAMIC_COLOR_ENABLED = booleanPreferencesKey("dynamic_color_enabled")
         val SHOW_TOP_TIME = booleanPreferencesKey("show_top_time")
+        val LIQUID_GLASS_ENABLED = booleanPreferencesKey("liquid_glass_enabled")
     }
 
     val appConfigFlow: Flow<AppConfig> = context.dataStore.data.map { prefs ->
@@ -77,7 +78,8 @@ class PreferenceStorage @Inject constructor(
             firstDayOfTheWeekSetting = firstDaySetting,
             effectiveFirstDayOfTheWeek = effectiveFirstDay,
             isDynamicColorEnabled = prefs[Keys.DYNAMIC_COLOR_ENABLED] ?: true,
-            isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false
+            isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false,
+            isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: false
         )
     }
 
@@ -104,6 +106,10 @@ class PreferenceStorage @Inject constructor(
 
     suspend fun setShowTopTime(enabled: Boolean) {
         context.dataStore.edit { it[Keys.SHOW_TOP_TIME] = enabled }
+    }
+
+    suspend fun setLiquidGlassEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.LIQUID_GLASS_ENABLED] = enabled }
     }
 }
 

@@ -235,4 +235,7 @@
     <string name="tile_tap_to_open">Tap to open Timetable</string>
     <string name="tile_unnamed_course">Unnamed course</string>
     <string name="date_only">Selected dates only</string>
+    <string name="settings_liquid_glass">Liquid Glass</string>
+    <string name="settings_liquid_glass_summary">Real-time refraction, blur and highlights for course cards. Off uses the lower-power glass style.</string>
+    <string name="settings_liquid_glass_unsupported">Requires Android 13 / Wear OS with RuntimeShader support. The standard glass style is used on this watch.</string>
 </resources>

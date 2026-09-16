@@ -28,7 +28,6 @@ import com.hufeng943.timetable.presentation.ui.screens.edit.timeslot.EditTimeSlo
 import com.hufeng943.timetable.presentation.ui.screens.edit.timeslot.TimeSlotListScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.TimetableListScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableScreen
-import com.hufeng943.timetable.presentation.ui.screens.edit.tools.ScheduleToolsScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.tools.DayArrangementScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.tools.CourseAdjustmentScreen
 import com.hufeng943.timetable.presentation.ui.screens.home.HomeScreen
@@ -160,9 +159,6 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 }
 
 
-                composable(NavRoutes.SCHEDULE_TOOLS) {
-                    ScheduleToolsScreen()
-                }
 
                 composable(NavRoutes.MORE_ABOUT) {
                     AboutScreen()

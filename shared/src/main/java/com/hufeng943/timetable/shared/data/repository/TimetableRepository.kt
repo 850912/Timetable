@@ -6,11 +6,17 @@ import com.hufeng943.timetable.shared.model.TimeSlot
 import com.hufeng943.timetable.shared.model.Timetable
 import kotlinx.coroutines.flow.Flow
 
+data class TimeSlotMutation(val slot: TimeSlot, val courseId: Long)
+
 interface TimetableRepository {
     // 更新
     suspend fun upsertTimetable(timetable: Timetable): Long
     suspend fun upsertCourse(course: Course, timetableId: Long): Long
     suspend fun upsertTimeSlot(timeSlot: TimeSlot, courseId: Long): Long
+    /** Atomically applies schedule-adjustment slot changes and records their undo journal. */
+    suspend fun applyAdjustmentMutations(timetableId: Long, mutations: List<TimeSlotMutation>)
+    /** Atomically restores all adjustment mutations for one timetable and clears their journal. */
+    suspend fun restoreAdjustmentMutations(timetableId: Long)
     suspend fun upsertAcademicEvent(event: AcademicEvent, timetableId: Long): Long
 
     // 删除课表

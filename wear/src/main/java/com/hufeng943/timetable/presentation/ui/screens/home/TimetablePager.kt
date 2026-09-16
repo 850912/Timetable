@@ -2,6 +2,7 @@ package com.hufeng943.timetable.presentation.ui.screens.home
 
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +18,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RectangleShape
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
+import android.os.Build
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -63,6 +68,8 @@ import com.hufeng943.timetable.presentation.ui.components.pullToDatePickerDrag
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToDatePickerState
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToRefreshConnection
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
+import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.home.TimetableViewModel
 import com.hufeng943.timetable.shared.model.AcademicEvent
@@ -87,6 +94,10 @@ fun TimetablePager(
     val selectedDateEvents by viewModel.selectedDateEvents.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
+    val liquidGlassBackdrop = rememberLayerBackdrop()
+    // Backdrop's AGSL path needs RuntimeShader (Android 13 / API 33+). Galaxy Watch7
+    // ships above this level, while older watches fall back to the shader-free glass card.
+    val useLiquidGlass = config.isLiquidGlassEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
     LaunchedEffect(uiState) {
         if (uiState !is UiState.Success) {
@@ -94,7 +105,23 @@ fun TimetablePager(
         }
     }
 
-    HandleEditUiState(
+    Box(Modifier.fillMaxSize()) {
+        if (useLiquidGlass) {
+            // A static, theme-derived source for refraction. Unlike the previous hard-coded
+            // blue/purple layer, this follows the active app/dynamic-color palette and does not
+            // animate, so enabling glass does not introduce a continuous redraw loop.
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .layerBackdrop(liquidGlassBackdrop)
+                    .background(AppTheme.colors.background)
+            ) {
+                GalaxyAiAmbientLayer(RectangleShape, strength = 0.42f)
+            }
+        }
+
+        Box(Modifier.fillMaxSize()) {
+        HandleEditUiState(
         uiState = uiState,
         emptyContent = {
             EmptyPager(
@@ -109,8 +136,9 @@ fun TimetablePager(
             { date -> viewModel.updateSelectedDate(date) }
         }
 
-        LaunchedEffect(pullToDatePickerState.dragOffset) {
-            onOpenStateChanged(pullToDatePickerState.dragOffset > 0)
+        val isDatePickerOpen = pullToDatePickerState.dragOffset > 0f
+        LaunchedEffect(isDatePickerOpen) {
+            onOpenStateChanged(isDatePickerOpen)
         }
 
         if (coursesUi.isEmpty()) {
@@ -163,6 +191,7 @@ fun TimetablePager(
                     } else null,
                     minutesUntilNext = if (statusSummary.currentId == courseId) statusSummary.minutesUntilNext else null,
                     is24HourFormat = config.is24HourFormat,
+                    liquidGlassBackdrop = liquidGlassBackdrop.takeIf { useLiquidGlass },
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -173,6 +202,8 @@ fun TimetablePager(
                 }
             }
         }
+    }
+        } // captured timetable surface
     }
 }
 
@@ -190,10 +221,9 @@ private fun EmptyCoursePager(
 ) {
     val focusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(state.dragOffset) {
-        if (state.dragOffset == 0f) {
-            focusRequester.requestFocus()
-        }
+    val isDatePickerOpen = state.dragOffset > 0f
+    LaunchedEffect(isDatePickerOpen) {
+        if (!isDatePickerOpen) focusRequester.requestFocus()
     }
 
     ScreenScaffold {
@@ -287,8 +317,9 @@ private fun CourseListPager(
         }
     }
 
-    LaunchedEffect(state.dragOffset) {
-        if (state.dragOffset > 0) {
+    val isDatePickerOpen = state.dragOffset > 0f
+    LaunchedEffect(isDatePickerOpen) {
+        if (isDatePickerOpen) {
             scrollState.scrollToItem(0)
         } else {
             focusRequester.requestFocus()

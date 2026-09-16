@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.ui.Alignment
@@ -28,6 +29,14 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
 import androidx.wear.compose.material3.Card
 import androidx.wear.compose.material3.CardDefaults
 import androidx.wear.compose.material3.Icon
@@ -54,6 +63,7 @@ fun CourseCard(
     nextCourseName: String? = null,
     minutesUntilNext: Int? = null,
     is24HourFormat: Boolean = true,
+    liquidGlassBackdrop: Backdrop? = null,
     onClick: () -> Unit
 ) {
     val colors = AppTheme.colors
@@ -66,11 +76,51 @@ fun CourseCard(
         val total = (endMinutes - startMinutes).coerceAtLeast(1)
         ((total - minutesLeft).toFloat() / total.toFloat()).coerceIn(0f, 1f)
     } else null
-    val cardModifier = when {
+    val topHighlightBrush = remember(courseColor, isCurrent) {
+        Brush.horizontalGradient(
+            listOf(
+                Color.Transparent,
+                courseColor.copy(alpha = if (isCurrent) 0.90f else 0.45f),
+                Color.White.copy(alpha = 0.24f),
+                Color.Transparent,
+            )
+        )
+    }
+    val accentBrush = remember(courseColor, colors.primary, colors.secondary) {
+        galaxyAiAccentBrush(courseColor, colors.primary, colors.secondary)
+    }
+    val progressBrush = remember(courseColor) {
+        Brush.horizontalGradient(listOf(courseColor.copy(alpha = 0.72f), courseColor))
+    }
+    val baseCardModifier = when {
         isCurrent -> modifier.border(2.dp, courseColor.copy(alpha = 0.98f), CourseCapsuleShape)
         isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.46f), CourseCapsuleShape)
-        else -> modifier.border(0.6.dp, Color.White.copy(alpha = 0.07f), CourseCapsuleShape)
+        else -> modifier.border(0.8.dp, Color.White.copy(alpha = 0.16f), CourseCapsuleShape)
     }
+    val cardModifier = if (liquidGlassBackdrop != null) {
+        baseCardModifier.drawBackdrop(
+            backdrop = liquidGlassBackdrop,
+            shape = { CourseCapsuleShape },
+            effects = {
+                vibrancy()
+                // Watch-class tuned profile: keep real refraction while avoiding an unnecessarily
+                // large blur kernel on every visible list item.
+                blur(if (isCurrent) 3.dp.toPx() else 2.dp.toPx())
+                lens(
+                    if (isCurrent) 12.dp.toPx() else 9.dp.toPx(),
+                    if (isCurrent) 18.dp.toPx() else 14.dp.toPx(),
+                    chromaticAberration = isCurrent || isNext,
+                )
+            },
+            highlight = { Highlight.Ambient.copy(alpha = if (isCurrent) 0.80f else 0.58f) },
+            shadow = { Shadow(radius = 3.dp, color = Color.Black.copy(alpha = 0.18f)) },
+            innerShadow = { InnerShadow(radius = 4.dp, alpha = 0.18f) },
+            onDrawSurface = {
+                drawRect(courseColor.copy(alpha = if (isCurrent) 0.16f else 0.075f))
+                drawRect(Color.White.copy(alpha = 0.025f))
+            }
+        )
+    } else baseCardModifier
 
     Card(
         onClick = onClick,
@@ -78,7 +128,13 @@ fun CourseCard(
         transformation = transformation,
         shape = CourseCapsuleShape,
         colors = CardDefaults.cardColors(
-            containerColor = courseColor.copy(alpha = if (isCurrent) 0.30f else if (isNext) 0.15f else 0.09f).compositeOver(colors.surfaceContainer),
+            containerColor = if (liquidGlassBackdrop != null) {
+                Color.Transparent
+            } else {
+                // Keep the normal mode genuinely translucent instead of pre-compositing it
+                // into an opaque surface. This preserves the glass look without a shader.
+                courseColor.copy(alpha = if (isCurrent) 0.20f else if (isNext) 0.115f else 0.07f)
+            },
             contentColor = colors.textPrimary,
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -91,22 +147,13 @@ fun CourseCard(
         ) {
             GalaxyAiAmbientLayer(
                 shape = CourseCapsuleShape,
-                strength = if (isCurrent) 0.72f else if (isNext) 0.44f else 0.28f,
+                strength = if (liquidGlassBackdrop != null) 0.16f else if (isCurrent) 0.58f else if (isNext) 0.36f else 0.22f,
             )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(
-                                Color.Transparent,
-                                courseColor.copy(alpha = if (isCurrent) 0.90f else 0.45f),
-                                Color.White.copy(alpha = 0.24f),
-                                Color.Transparent,
-                            )
-                        )
-                    )
+                    .background(topHighlightBrush)
             )
 
             Row(
@@ -121,7 +168,7 @@ fun CourseCard(
                         .fillMaxHeight()
                         .heightIn(min = 48.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(galaxyAiAccentBrush(courseColor, colors.primary, colors.secondary))
+                        .background(accentBrush)
                 )
 
                 Spacer(Modifier.width(9.dp))
@@ -171,11 +218,7 @@ fun CourseCard(
                                         .fillMaxWidth(progress)
                                         .fillMaxHeight()
                                         .clip(RoundedCornerShape(99.dp))
-                                        .background(
-                                            Brush.horizontalGradient(
-                                                listOf(courseColor.copy(alpha = 0.72f), courseColor)
-                                            )
-                                        )
+                                        .background(progressBrush)
                                 )
                             }
                         }

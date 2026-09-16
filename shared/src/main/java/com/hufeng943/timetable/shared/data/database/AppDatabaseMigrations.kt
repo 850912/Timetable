@@ -5,7 +5,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Keeps all pre-sync database versions upgradeable without destructive migration.
- * Room schema history in this project is 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10.
+ * Room schema history in this project is 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11.
  */
 object AppDatabaseMigrations {
     val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -155,6 +155,14 @@ object AppDatabaseMigrations {
             // Multi-date creation now stores each date as an independent TimeSlot.
             // batchGroupId links multi-weekday sibling slots for optional synchronized edits.
             db.execSQL("ALTER TABLE time_slots ADD COLUMN batchGroupId TEXT")
+        }
+    }
+
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS schedule_adjustment_history (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, timetableId INTEGER NOT NULL, sequence INTEGER NOT NULL, courseId INTEGER NOT NULL, slotId INTEGER NOT NULL, action TEXT NOT NULL, snapshotJson TEXT)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_schedule_adjustment_history_timetableId ON schedule_adjustment_history(timetableId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_schedule_adjustment_history_timetableId_sequence ON schedule_adjustment_history(timetableId, sequence)")
         }
     }
 

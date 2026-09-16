@@ -163,4 +163,7 @@ dependencies {
     implementation(libs.aboutlibraries.compose.m3)
 
     implementation(libs.materialKolor)
+
+    // Apache-2.0: Kyant0/AndroidLiquidGlass (Backdrop). Used only when the user enables Liquid Glass.
+    implementation("io.github.kyant0:backdrop:2.0.1")
 }

@@ -45,6 +45,9 @@ fun SettingScreen(
                 onImportClick = { internalNavController.navigateSingle(InternalNavRoutes.IMPORT) },
                 onShowTopTimeToggle = { enabled ->
                     appConfigViewModel.updateShowTopTime(enabled)
+                },
+                onLiquidGlassToggle = { enabled ->
+                    appConfigViewModel.updateLiquidGlassEnabled(enabled)
                 }
             )
         }

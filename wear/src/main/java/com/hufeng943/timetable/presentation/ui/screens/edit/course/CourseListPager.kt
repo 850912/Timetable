@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -25,13 +24,11 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
-import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.edit.EditCourseCard
 
 @Composable
 fun CourseListPager(
     courses: List<CourseUi>,
-    onScheduleTools: () -> Unit,
     onAddCourse: () -> Unit,
     onCourseClick: (courseId: Long) -> Unit,
     onCourseLongClick: (courseId: Long) -> Unit
@@ -65,19 +62,6 @@ fun CourseListPager(
                 ) {
                     Text(stringResource(R.string.edit_course_title))
                 }
-            }
-            item {
-                OneUiCapsuleSurface(
-                    title = "批量日程工具",
-                    subtitle = "停课 · 批量前移/后移 · 自由选择生效日期",
-                    icon = Icons.Rounded.Tune,
-                    emphasize = true,
-                    onClick = onScheduleTools,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
             }
             if (courses.isEmpty()) {
                 item {

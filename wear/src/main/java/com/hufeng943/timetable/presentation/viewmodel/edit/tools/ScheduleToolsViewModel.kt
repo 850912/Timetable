@@ -61,6 +61,7 @@ class ScheduleToolsViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             runCatching {
+                if (action == BatchAction.SHIFT) require(offsetMinutes in -30..30 && offsetMinutes != 0) { "提前/延时必须为 1–30 分钟" }
                 val all = repository.getAllTimetables().first()
                 val targets = all.filter { timetableId == null || it.timetableId == timetableId }
                 targets.forEach { timetable ->

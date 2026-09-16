@@ -19,6 +19,7 @@ import com.hufeng943.timetable.presentation.ui.screens.common.ColorSelectionScre
 import com.hufeng943.timetable.presentation.ui.screens.common.DeleteConfirmScreen
 import com.hufeng943.timetable.presentation.ui.screens.common.TextEditScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.InternalNavRoutes
+import com.hufeng943.timetable.presentation.ui.screens.edit.tools.ScheduleToolsScreen
 import com.hufeng943.timetable.presentation.viewmodel.edit.timetable.EditTimetableAction
 import com.hufeng943.timetable.presentation.viewmodel.edit.timetable.EditTimetableViewModel
 import kotlinx.datetime.toJavaLocalDate
@@ -53,6 +54,7 @@ fun EditTimetableScreen(
                         onColorClick = { internalNavController.navigateSingle(InternalNavRoutes.COLOR) },
                         onColorLongClick = { viewModel.onAction(EditTimetableAction.UpdateColor()) },
                         onDelete = { internalNavController.navigateSingle(InternalNavRoutes.DELETE_CONFIRM) },
+                        onQuickModify = { internalNavController.navigateSingle(InternalNavRoutes.QUICK_MODIFY) },
                         startDateIsToday = viewModel.toDay == timetable.semesterStart
                     )
                 }
@@ -119,6 +121,17 @@ fun EditTimetableScreen(
             ColorSelectionScreen { color ->
                 viewModel.onAction(EditTimetableAction.UpdateColor(color))
                 internalNavController.popSafe()
+            }
+        }
+
+        composable(InternalNavRoutes.QUICK_MODIFY) {
+            HandleEditUiState(uiState) { timetable ->
+                DynamicSubTheme(seedColor = timetable.color) {
+                    ScheduleToolsScreen(
+                        fixedTimetableId = timetable.timetableId,
+                        onCompleted = { internalNavController.popSafe() },
+                    )
+                }
             }
         }
 

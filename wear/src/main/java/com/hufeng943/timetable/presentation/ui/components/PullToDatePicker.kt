@@ -1,6 +1,5 @@
 package com.hufeng943.timetable.presentation.ui.components
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -48,11 +47,10 @@ fun rememberPullToDatePickerState(
     val density = LocalDensity.current
     val maxDragDistance = remember(density) { with(density) { maxDragDistanceDp.toPx() } }
     val refreshThreshold = remember(density) { with(density) { refreshThresholdDp.toPx() } }
-    val dragAnimatable = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
 
     return remember(maxDragDistance, refreshThreshold, scope) {
-        PullToDatePickerState(dragAnimatable, maxDragDistance, refreshThreshold, scope)
+        PullToDatePickerState(maxDragDistance, refreshThreshold, scope)
     }
 }
 

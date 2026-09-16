@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CollectionsBookmark
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,6 +43,7 @@ fun EditTimetableMainPager(
     onColorClick: () -> Unit,
     onColorLongClick: () -> Unit,
     onDelete: () -> Unit,
+    onQuickModify: () -> Unit,
     startDateIsToday: Boolean
 ) {
     val scrollState = rememberTransformingLazyColumnState()
@@ -118,6 +120,17 @@ fun EditTimetableMainPager(
             }
 
             if (timetable.timetableId != 0L) {
+                item {
+                    OneUiCapsuleSurface(
+                        title = "快捷修改",
+                        subtitle = "临时放假 · 提前/延时 · 停课/恢复",
+                        icon = Icons.Rounded.Tune,
+                        emphasize = true,
+                        onClick = onQuickModify,
+                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                    )
+                }
                 item {
                     DeleteButton(
                         label = stringResource(R.string.edit_timetable_delete),

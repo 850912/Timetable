@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -41,22 +42,24 @@ fun GalaxyAiAmbientLayer(
         secondary.copy(alpha = 1f)
     }
 
+    val ambientBrush = remember(primary, secondary, midGlow, endGlow, effectAlpha) {
+        Brush.linearGradient(
+            colorStops = arrayOf(
+                0.00f to primary.copy(alpha = 0.18f * effectAlpha),
+                0.30f to midGlow.copy(alpha = 0.11f * effectAlpha),
+                0.72f to endGlow.copy(alpha = 0.07f * effectAlpha),
+                1.00f to secondary.copy(alpha = 0.03f * effectAlpha),
+            ),
+            start = Offset.Zero,
+            end = Offset(520f, 180f),
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .clip(shape)
-            .background(
-                Brush.linearGradient(
-                    colorStops = arrayOf(
-                        0.00f to primary.copy(alpha = 0.18f * effectAlpha),
-                        0.30f to midGlow.copy(alpha = 0.11f * effectAlpha),
-                        0.72f to endGlow.copy(alpha = 0.07f * effectAlpha),
-                        1.00f to secondary.copy(alpha = 0.03f * effectAlpha),
-                    ),
-                    start = Offset.Zero,
-                    end = Offset(520f, 180f),
-                )
-            )
+            .background(ambientBrush)
     )
 }
 

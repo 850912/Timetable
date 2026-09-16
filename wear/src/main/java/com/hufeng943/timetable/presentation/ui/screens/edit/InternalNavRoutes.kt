@@ -14,4 +14,5 @@ object InternalNavRoutes {
     const val WEEK_DAY = "week_day"
     const val DATES = "dates"
     const val RECURRENCE = "recurrence"
+    const val QUICK_MODIFY = "quick_modify"
 }

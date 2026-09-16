@@ -1,5 +1,7 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.settings
 
+import android.os.Build
+
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -8,6 +10,7 @@ import androidx.compose.material.icons.rounded.ColorLens
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Share
@@ -53,12 +56,14 @@ fun SettingPager(
     onThemeSelectClick: () -> Unit,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
-    onShowTopTimeToggle: (Boolean) -> Unit
+    onShowTopTimeToggle: (Boolean) -> Unit,
+    onLiquidGlassToggle: (Boolean) -> Unit
 ) {
     val scrollState = rememberTransformingLazyColumnState()
     val transformationSpec = rememberTransformationSpec()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val liquidGlassSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
     val currentLanguageLabel = remember(config.languageTag) {
         val languageValues = context.resources.getStringArray(R.array.language_values).toList()
@@ -144,6 +149,32 @@ fun SettingPager(
 
             item {
                 SwitchButton(
+                    checked = config.isLiquidGlassEnabled && liquidGlassSupported,
+                    onCheckedChange = { enabled ->
+                        if (liquidGlassSupported) onLiquidGlassToggle(enabled)
+                    },
+                    enabled = liquidGlassSupported,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .transformedHeight(this, transformationSpec)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                    transformation = SurfaceTransformation(transformationSpec),
+                    icon = { Icon(Icons.Rounded.BlurOn, contentDescription = null) },
+                    label = { Text(stringResource(R.string.settings_liquid_glass)) },
+                    secondaryLabel = {
+                        Text(
+                            stringResource(
+                                if (liquidGlassSupported) R.string.settings_liquid_glass_summary
+                                else R.string.settings_liquid_glass_unsupported
+                            ),
+                            maxLines = 3
+                        )
+                    }
+                )
+            }
+
+            item {
+                SwitchButton(
                     checked = config.isShowTopTime,
                     onCheckedChange = onShowTopTimeToggle,
                     modifier = Modifier
@@ -158,10 +189,7 @@ fun SettingPager(
                         Text("顶部时间显示")
                     },
                     secondaryLabel = {
-                        Text(
-                            "显示课程页面中的当前时间辅助信息，不影响系统时间",
-                            modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
-                        )
+                        Text("显示课程页面中的当前时间辅助信息，不影响系统时间")
                     }
                 )
             }
