@@ -529,7 +529,7 @@ private fun nextCourseStatusWakeMillis(courses: List<CourseUi>, selectedDate: Lo
             val nowMillis = System.currentTimeMillis()
             return (60_000L - (nowMillis % 60_000L)).coerceAtLeast(1_000L)
         }
-        if (start > nowSec && (nextStartSec == null || start < nextStartSec!!)) nextStartSec = start
+        if (start > nowSec && (nextStartSec?.let { start < it } ?: true)) nextStartSec = start
     }
     return nextStartSec?.let {
         val untilStart = ((it - nowSec) * 1000L).coerceAtLeast(1_000L)

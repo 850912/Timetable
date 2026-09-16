@@ -15,8 +15,9 @@ import com.hufeng943.timetable.MainActivity
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.TimetableDatabaseProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 
 class CourseReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -142,16 +143,14 @@ class CourseReminderReceiver : BroadcastReceiver() {
 
     private fun refreshScheduleAsync(context: Context) {
         val pending = goAsync()
-        Thread {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
-                val tables = runBlocking(Dispatchers.IO) {
-                    TimetableDatabaseProvider.repository(context).getAllTimetables().first()
-                }
+                val tables = TimetableDatabaseProvider.repository(context).getAllTimetables().first()
                 CourseReminderScheduler.schedule(context, tables)
             } finally {
                 pending.finish()
             }
-        }.start()
+        }
     }
 
     companion object {
@@ -188,15 +187,13 @@ class CourseReminderReceiver : BroadcastReceiver() {
 class ReminderRescheduleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val pending = goAsync()
-        Thread {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
-                val tables = runBlocking(Dispatchers.IO) {
-                    TimetableDatabaseProvider.repository(context).getAllTimetables().first()
-                }
+                val tables = TimetableDatabaseProvider.repository(context).getAllTimetables().first()
                 CourseReminderScheduler.schedule(context, tables)
             } finally {
                 pending.finish()
             }
-        }.start()
+        }
     }
 }

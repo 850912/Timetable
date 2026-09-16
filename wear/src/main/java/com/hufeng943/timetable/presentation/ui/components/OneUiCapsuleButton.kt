@@ -25,6 +25,7 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 
 private val CapsuleShape = RoundedCornerShape(26.dp)
@@ -44,7 +45,8 @@ fun OneUiCapsuleButton(
         modifier = modifier
             .fillMaxWidth()
             .clip(CapsuleShape)
-            .background(colors.surfaceContainer.copy(alpha = if (glassConfig.isLiquidGlassEnabled) glassConfig.glassOpacity else 1f))
+            .globalLiquidGlass(CapsuleShape, colors.surfaceContainer)
+            .background(colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && glassConfig.isLiquidGlassEnabled) 0f else 1f))
             .clickable(onClick = onClick)
     ) {
         if (emphasize) {

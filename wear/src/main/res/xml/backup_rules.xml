@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!-- API 30 and lower counterpart of data_extraction_rules.xml. -->
     <exclude domain="sharedpref" path="wear_bridge_state.xml" />
 </full-backup-content>

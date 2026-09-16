@@ -21,8 +21,11 @@ import com.hufeng943.timetable.surface.WearSurfaceRefresher
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -33,6 +36,8 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class WearOsSyncReceiverService : WearableListenerService() {
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Inject
     lateinit var importService: ImportService
@@ -58,38 +63,27 @@ class WearOsSyncReceiverService : WearableListenerService() {
             ) return@forEach
 
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
-            if (!isForThisNode(dataMap)) return@forEach
-
-            val kind = dataMap.getString(WearFileTransferProtocol.KEY_KIND)
-            when (kind) {
-                WearFileTransferProtocol.KIND_SYNC_ACK -> {
-                    val success = processSyncAck(dataMap)
-                    if (success) deleteDataItem(event)
+            val dataUri = event.dataItem.uri
+            serviceScope.launch {
+                if (!isForThisNode(dataMap)) return@launch
+                val success = when (dataMap.getString(WearFileTransferProtocol.KEY_KIND)) {
+                    WearFileTransferProtocol.KIND_SYNC_ACK -> processSyncAck(dataMap)
+                    WearFileTransferProtocol.KIND_SYNC_BATCH -> processSyncBatch(dataMap)
+                    WearFileTransferProtocol.KIND_PHONE_PUSH_TIMETABLES,
+                    WearFileTransferProtocol.KIND_PHONE_IMPORT_RESULT -> processIncomingTransfer(dataMap)
+                    else -> false
                 }
-                WearFileTransferProtocol.KIND_SYNC_BATCH -> {
-                    val success = processSyncBatch(dataMap)
-                    if (success) deleteDataItem(event)
-                }
-                WearFileTransferProtocol.KIND_PHONE_PUSH_TIMETABLES,
-                WearFileTransferProtocol.KIND_PHONE_IMPORT_RESULT -> {
-                    val success = processIncomingTransfer(dataMap)
-                    if (success) {
-                        runCatching {
-                            LegacyWearIo.deleteDataItem(this, event.dataItem.uri)
-                        }
-                    }
-                }
-                else -> return@forEach
+                if (success) runCatching { LegacyWearIo.deleteDataItem(this@WearOsSyncReceiverService, dataUri) }
             }
         }
     }
 
-    private fun processSyncAck(dataMap: DataMap): Boolean {
+    private suspend fun processSyncAck(dataMap: DataMap): Boolean {
         return runCatching {
             val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET) ?: error("缺少 ACK")
             val bytes = LegacyWearIo.readAsset(this, asset).use { it.readBytes() }
             val ack = json.decodeFromString<SyncAck>(bytes.toString(Charsets.UTF_8))
-            if (ack.appliedRecordIds.isNotEmpty()) kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+            if (ack.appliedRecordIds.isNotEmpty()) {
                 val dao = database.syncRecordDao()
                 dao.markSynced(ack.appliedRecordIds)
                 dao.deleteSyncedBefore(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000)
@@ -99,7 +93,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
         }.isSuccess
     }
 
-    private fun processSyncBatch(dataMap: DataMap): Boolean {
+    private suspend fun processSyncBatch(dataMap: DataMap): Boolean {
         return runCatching {
             val sourceNodeId = dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID)
                 ?: throw IllegalStateException("同步请求缺少源节点")
@@ -107,8 +101,8 @@ class WearOsSyncReceiverService : WearableListenerService() {
                 ?: throw IllegalStateException("同步请求缺少数据")
             val bytes = LegacyWearIo.readAsset(this, asset).use { it.readBytes() }
             val envelope = json.decodeFromString<SyncEnvelope>(bytes.toString(Charsets.UTF_8))
-            val applied = kotlinx.coroutines.runBlocking(Dispatchers.IO) { SyncApplier(database).applyOnce(envelope.requestId, envelope.sourceDeviceId, envelope.records) }
-            val localRecords = kotlinx.coroutines.runBlocking(Dispatchers.IO) { database.syncRecordDao().pending().map { com.hufeng943.timetable.shared.sync.SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) } }
+            val applied = SyncApplier(database).applyOnce(envelope.requestId, envelope.sourceDeviceId, envelope.records)
+            val localRecords = database.syncRecordDao().pending().map { com.hufeng943.timetable.shared.sync.SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) }
             sendSyncAck(sourceNodeId, envelope.requestId, applied, localRecords)
             val complete = applied.size == envelope.records.size
             if (complete) WearSurfaceRefresher.refresh(this)
@@ -142,7 +136,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
         return targetNodeId == localNodeId
     }
 
-    private fun processIncomingTransfer(dataMap: DataMap): Boolean {
+    private suspend fun processIncomingTransfer(dataMap: DataMap): Boolean {
         return runCatching {
             val errorMessage = dataMap.getString(WearFileTransferProtocol.KEY_ERROR_MESSAGE)
             if (!errorMessage.isNullOrBlank()) throw IllegalStateException(errorMessage)
@@ -167,18 +161,21 @@ class WearOsSyncReceiverService : WearableListenerService() {
         }.isSuccess
     }
 
-    private fun importAsset(asset: Asset?, replaceMatching: Boolean, requestId: String?, sourceDeviceId: String?) {
+    private suspend fun importAsset(asset: Asset?, replaceMatching: Boolean, requestId: String?, sourceDeviceId: String?) {
         requireNotNull(asset) { "同步数据缺少文件内容" }
         val bytes = LegacyWearIo.readAsset(this, asset).use { it.readBytes() }
 
         val timetables = TimetableFileParser.parse(bytes)
-        runBlocking(Dispatchers.IO) {
-            if (replaceMatching) {
-                importService.importReplacingMatchesAtomic(timetables, requestId, sourceDeviceId)
-            } else {
-                importService.importAtomic(timetables)
-            }
+        if (replaceMatching) {
+            importService.importReplacingMatchesAtomic(timetables, requestId, sourceDeviceId)
+        } else {
+            importService.importAtomic(timetables)
         }
+    }
+
+    override fun onDestroy() {
+        serviceScope.cancel()
+        super.onDestroy()
     }
 
     private fun sendResultBroadcast(success: Boolean, message: String?) {

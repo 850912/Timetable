@@ -63,7 +63,7 @@ fun ScheduleToolsScreen(
             val nav = rememberSwipeDismissableNavController()
             SwipeDismissableNavHost(navController = nav, startDestination = QuickRoutes.MAIN) {
                 composable(QuickRoutes.MAIN) {
-                    val valid=(end==null||end!!>=start)&&(!useWindow||we>ws)&&(action!=BatchAction.SHIFT||offset!=0)
+                    val valid=(end?.let { it >= start } ?: true)&&(!useWindow||we>ws)&&(action!=BatchAction.SHIFT||offset!=0)
                     val scroll=rememberTransformingLazyColumnState(); val transform=rememberTransformationSpec()
                     ScreenScaffold(scrollState=scroll,timeText={},edgeButton={EdgeButton(enabled=valid,onClick={viewModel.apply(action,start,end,offset,table.timetableId,selectedCourse?.id,if(useWindow)ws else null,if(useWindow)we else null)}){Icon(Icons.Rounded.Check,"确认")}}){padding->
                         TransformingLazyColumn(state=scroll,contentPadding=padding,modifier=Modifier.fillMaxSize()){
@@ -80,7 +80,7 @@ fun ScheduleToolsScreen(
                         }
                     }
                 }
-                composable(QuickRoutes.START){ DatePage(start){start=it;if(end!=null&&end!!<it)end=it;nav.popSafe()} }
+                composable(QuickRoutes.START){ DatePage(start){selected->start=selected;if(end?.let { it < selected } == true)end=selected;nav.popSafe()} }
                 composable(QuickRoutes.END){ DatePage(end?:start){end=it;nav.popSafe()} }
                 composable(QuickRoutes.WS){ TimePage(ws,config.is24HourFormat){ws=it;nav.popSafe()} }
                 composable(QuickRoutes.WE){ TimePage(we,config.is24HourFormat){we=it;nav.popSafe()} }

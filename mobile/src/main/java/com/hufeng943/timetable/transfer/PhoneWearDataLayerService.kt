@@ -28,11 +28,15 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class PhoneWearDataLayerService : WearableListenerService() {
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override fun onPeerConnected(peer: Node) {
         WearConnectionState.update(true)
         AutoSyncJobService.scheduleNow(this)
@@ -55,16 +59,16 @@ class PhoneWearDataLayerService : WearableListenerService() {
             .putLong(WearBridgeProtocol.KEY_READY_AT, System.currentTimeMillis())
             .apply()
 
-        Thread {
+        serviceScope.launch {
             runCatching {
                 LegacyWearIo.sendMessage(
-                    this,
+                    this@PhoneWearDataLayerService,
                     messageEvent.sourceNodeId,
                     WearBridgeProtocol.READY_PATH,
                     "PHONE_READY|${WearBridgeProtocol.PROTOCOL_VERSION}|${System.currentTimeMillis()}".toByteArray()
                 )
             }
-        }.start()
+        }
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -74,39 +78,39 @@ class PhoneWearDataLayerService : WearableListenerService() {
                 !WearFileTransferProtocol.matchesPath(dataPath)
             ) return@forEach
 
+            // Copy callback-owned values before returning from WearableListenerService.
             val dataMap = DataMapItem.fromDataItem(event.dataItem).dataMap
-            val target = dataMap.getString(WearFileTransferProtocol.KEY_TARGET_NODE_ID)
-            if (target != null) {
-                val local = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull()
-                if (local != target) return@forEach
-            }
-            val processed = when (dataMap.getString(WearFileTransferProtocol.KEY_KIND)) {
-                WearFileTransferProtocol.KIND_SYNC_ACK -> runCatching { applySyncAck(dataMap) }.getOrDefault(false)
-                WearFileTransferProtocol.KIND_WEAR_EXPORT ->
-                    runCatching { saveWearExport(dataMap) }.isSuccess
-                else -> false
-            }
-
-            if (processed) {
-                runCatching {
-                    LegacyWearIo.deleteDataItem(this, event.dataItem.uri)
+            val dataUri = event.dataItem.uri
+            serviceScope.launch {
+                val target = dataMap.getString(WearFileTransferProtocol.KEY_TARGET_NODE_ID)
+                if (target != null) {
+                    val local = runCatching { LegacyWearIo.localNodeId(this@PhoneWearDataLayerService) }.getOrNull()
+                    if (local != target) return@launch
+                }
+                val processed = when (dataMap.getString(WearFileTransferProtocol.KEY_KIND)) {
+                    WearFileTransferProtocol.KIND_SYNC_ACK -> runCatching { applySyncAck(dataMap) }.getOrDefault(false)
+                    WearFileTransferProtocol.KIND_WEAR_EXPORT -> runCatching { saveWearExport(dataMap) }.isSuccess
+                    else -> false
+                }
+                if (processed) {
+                    runCatching { LegacyWearIo.deleteDataItem(this@PhoneWearDataLayerService, dataUri) }
                 }
             }
         }
     }
 
-    private fun applySyncAck(dataMap: com.google.android.gms.wearable.DataMap): Boolean {
+    private suspend fun applySyncAck(dataMap: com.google.android.gms.wearable.DataMap): Boolean {
         val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET) ?: error("缺少同步 ACK")
         val bytes = readAsset(asset).use { it.readBytes() }
         val ack = json.decodeFromString<SyncAck>(bytes.toString(Charsets.UTF_8))
         SyncAckTracker.complete(ack)
         val db = TimetableDatabaseProvider.database(this)
         if (ack.appliedRecordIds.isNotEmpty()) {
-            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { db.syncRecordDao().markSynced(ack.appliedRecordIds) }
+            db.syncRecordDao().markSynced(ack.appliedRecordIds)
         }
         if (ack.records.isNotEmpty()) {
             val target = dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID) ?: return false
-            val applied = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { SyncApplier(db).applyOnce(ack.requestId, ack.sourceDeviceId, ack.records) }
+            val applied = SyncApplier(db).applyOnce(ack.requestId, ack.sourceDeviceId, ack.records)
             if (applied.isNotEmpty()) refreshLocalSurfaces()
             sendSyncAck(target, ack.requestId, applied)
             return applied.size == ack.records.size
@@ -134,7 +138,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
         }
     }
 
-    private fun saveWearExport(dataMap: com.google.android.gms.wearable.DataMap) {
+    private suspend fun saveWearExport(dataMap: com.google.android.gms.wearable.DataMap) {
         val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET)
             ?: throw IllegalArgumentException("缺少导出文件")
         val fileName = sanitizeFileName(
@@ -156,14 +160,12 @@ class PhoneWearDataLayerService : WearableListenerService() {
             bytes
         }
         val timetables = TimetableFileParser.parse(appImportBytes)
-        runBlocking(Dispatchers.IO) {
-            TimetableDatabaseProvider.importService(this@PhoneWearDataLayerService)
-                .importReplacingMatchesAtomic(
-                    timetables,
-                    dataMap.getString(WearFileTransferProtocol.KEY_REQUEST_ID),
-                    dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID),
-                )
-        }
+        TimetableDatabaseProvider.importService(this@PhoneWearDataLayerService)
+            .importReplacingMatchesAtomic(
+                timetables,
+                dataMap.getString(WearFileTransferProtocol.KEY_REQUEST_ID),
+                dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID),
+            )
         refreshLocalSurfaces()
 
         bytes.inputStream().use {
@@ -196,11 +198,9 @@ class PhoneWearDataLayerService : WearableListenerService() {
         }
     }
 
-    private fun refreshLocalSurfaces() {
+    private suspend fun refreshLocalSurfaces() {
         runCatching {
-            val tables = runBlocking(Dispatchers.IO) {
-                TimetableDatabaseProvider.repository(this@PhoneWearDataLayerService).getAllTimetables().first()
-            }
+            val tables = TimetableDatabaseProvider.repository(this@PhoneWearDataLayerService).getAllTimetables().first()
             CourseReminderScheduler.schedule(this, tables)
             TodayWidgetProvider.requestRefresh(this)
         }
@@ -208,6 +208,11 @@ class PhoneWearDataLayerService : WearableListenerService() {
 
     private fun readAsset(asset: Asset): InputStream {
         return LegacyWearIo.readAsset(this, asset)
+    }
+
+    override fun onDestroy() {
+        serviceScope.cancel()
+        super.onDestroy()
     }
 
     private fun sanitizeFileName(name: String): String {

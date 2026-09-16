@@ -9,8 +9,12 @@ import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.sync.LegacyWearIo
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Phone-side endpoint opened by the Wear app for importing a timetable file.
@@ -24,8 +28,7 @@ class PhoneFileTransferActivity : Activity() {
         private const val REQUEST_OPEN_FILE = 4101
     }
 
-    private val executor: ExecutorService =
-        Executors.newSingleThreadExecutor()
+    private val transferScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var requestId: String? = null
     private var targetNodeId: String? = null
@@ -82,7 +85,7 @@ class PhoneFileTransferActivity : Activity() {
             return
         }
 
-        executor.execute {
+        transferScope.launch {
             runCatching {
                 sendSelectedFile(uri)
             }.onFailure { error ->
@@ -93,7 +96,7 @@ class PhoneFileTransferActivity : Activity() {
                 }
             }
 
-            runOnUiThread {
+            withContext(Dispatchers.Main) {
                 finish()
             }
         }
@@ -217,7 +220,7 @@ class PhoneFileTransferActivity : Activity() {
     }
 
     override fun onDestroy() {
-        executor.shutdownNow()
+        transferScope.cancel()
         super.onDestroy()
     }
 }

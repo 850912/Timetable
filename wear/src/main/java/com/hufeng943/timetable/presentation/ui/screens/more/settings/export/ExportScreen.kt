@@ -46,7 +46,9 @@ import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import kotlinx.coroutines.launch
 
@@ -116,7 +118,8 @@ fun ExportScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
-                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalAppConfig.current.isLiquidGlassEnabled) LocalAppConfig.current.glassOpacity else 1f))
+                        .globalLiquidGlass(RoundedCornerShape(20.dp), AppTheme.colors.surfaceContainer)
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && LocalAppConfig.current.isLiquidGlassEnabled) 0f else 1f))
                         .padding(12.dp)
                 ) {
                     Column {

@@ -2,7 +2,9 @@ package com.hufeng943.timetable.presentation.ui.screens.more.settings
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -33,6 +35,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
+private const val BACKGROUND_MAX_SIDE_PX = 720
+
 @Composable
 fun BackgroundSelectPager(
     config: AppConfig,
@@ -42,33 +46,75 @@ fun BackgroundSelectPager(
     val scope = rememberCoroutineScope()
     val state = rememberTransformingLazyColumnState()
     val transform = rememberTransformationSpec()
-    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+
+    // Use the Android photo picker contract. AndroidX automatically falls back to
+    // ACTION_OPEN_DOCUMENT on devices where the photo picker is unavailable.
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
             scope.launch {
                 val path = withContext(Dispatchers.IO) {
                     runCatching {
-                        val source = context.contentResolver.openInputStream(uri)?.use(BitmapFactory::decodeStream)
-                            ?: return@runCatching null
-                        val maxSide = 512
-                        val scale = minOf(1f, maxSide.toFloat() / maxOf(source.width, source.height))
-                        val bitmap = if (scale < 1f) {
-                            Bitmap.createScaledBitmap(
-                                source,
-                                (source.width * scale).toInt().coerceAtLeast(1),
-                                (source.height * scale).toInt().coerceAtLeast(1),
-                                true,
-                            ).also { if (it !== source) source.recycle() }
-                        } else source
-                        val target = File(context.filesDir, "timetable_background.webp")
-                        target.outputStream().buffered().use { output ->
-                            @Suppress("DEPRECATION")
-                            bitmap.compress(Bitmap.CompressFormat.WEBP, 82, output)
+                        val resolver = context.contentResolver
+                        val source = ImageDecoder.createSource(resolver, uri)
+                        val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                            val width = info.size.width
+                            val height = info.size.height
+                            if (width <= 0 || height <= 0) error("Invalid image dimensions")
+                            val maxSide = maxOf(width, height)
+                            if (maxSide > BACKGROUND_MAX_SIDE_PX) {
+                                val scale = BACKGROUND_MAX_SIDE_PX.toFloat() / maxSide.toFloat()
+                                decoder.setTargetSize(
+                                    (width * scale).toInt().coerceAtLeast(1),
+                                    (height * scale).toInt().coerceAtLeast(1),
+                                )
+                            }
                         }
-                        bitmap.recycle()
+
+                        val dir = File(context.filesDir, "backgrounds").apply { mkdirs() }
+                        // A unique file name is intentional. Reusing one fixed path makes Compose
+                        // see the same mode/path pair and skip reloading when the user changes image.
+                        val target = File(dir, "timetable_background_${System.currentTimeMillis()}.jpg")
+                        val temp = File(dir, ".${target.name}.tmp")
+
+                        try {
+                            temp.outputStream().buffered().use { output ->
+                                check(bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)) {
+                                    "Failed to encode timetable background"
+                                }
+                            }
+                        } finally {
+                            if (!bitmap.isRecycled) bitmap.recycle()
+                        }
+
+                        check(temp.isFile && temp.length() > 0L) { "Empty timetable background" }
+
+                        // Verify the file can actually be decoded before it becomes persistent state.
+                        val verify = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        BitmapFactory.decodeFile(temp.absolutePath, verify)
+                        check(verify.outWidth > 0 && verify.outHeight > 0) { "Unreadable timetable background" }
+
+                        check(temp.renameTo(target)) { "Failed to finalize timetable background" }
+
+                        // Remove stale copies only after the new file has been fully written/verified.
+                        dir.listFiles()?.forEach { file ->
+                            if (file != target &&
+                                ((file.name.startsWith("timetable_background_") && file.extension == "jpg") ||
+                                    file.name == "timetable_background.jpg")
+                            ) {
+                                runCatching { file.delete() }
+                            }
+                            if (file.name.startsWith(".timetable_background_") && file.extension == "tmp") {
+                                runCatching { file.delete() }
+                            }
+                        }
+
                         target.absolutePath
                     }.getOrNull()
                 }
-                if (path != null) onBackgroundSelected(TimetableBackgroundMode.IMAGE, path)
+                if (path != null) {
+                    onBackgroundSelected(TimetableBackgroundMode.IMAGE, path)
+                }
             }
         }
     }
@@ -110,7 +156,11 @@ fun BackgroundSelectPager(
                     subtitle = stringResource(R.string.settings_background_image_summary),
                     icon = Icons.Rounded.Image,
                     selected = config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE,
-                    onClick = { imagePicker.launch("image/*") },
+                    onClick = {
+                        imagePicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )

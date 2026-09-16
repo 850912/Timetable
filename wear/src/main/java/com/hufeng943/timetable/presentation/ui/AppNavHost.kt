@@ -260,9 +260,15 @@ private fun AppBackground(
             when (config.timetableBackgroundMode) {
                 TimetableBackgroundMode.SOLID -> Unit
                 TimetableBackgroundMode.THEME ->
-                    GalaxyAiAmbientLayer(RectangleShape, strength = 0.92f * config.backgroundBrightness)
-                TimetableBackgroundMode.IMAGE -> backgroundBitmap?.let { bitmap ->
-                    Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
+                TimetableBackgroundMode.IMAGE -> {
+                    val bitmap = backgroundBitmap
+                    if (bitmap != null) {
+                        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    } else {
+                        // Never leave a black/empty page when a previously selected image becomes unreadable.
+                        GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
+                    }
                 }
             }
         }
