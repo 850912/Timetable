@@ -209,8 +209,7 @@ class MainActivity : AppCompatActivity() {
                 text = timetable.semesterName.ifBlank { "未命名课表" }
                 textSize = 20f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
-                maxLines = 1
-                ellipsize = TextUtils.TruncateAt.END
+                maxLines = 2
             })
             card.addView(TextView(this).apply {
                 val end = timetable.semesterEnd?.toString() ?: "长期"
@@ -349,8 +348,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         text = "${eventTypeLabel(event.type)} · ${event.title} · $whenText"
                         setPadding(0, dp(4), 0, dp(4))
-                        maxLines = 1
-                        ellipsize = TextUtils.TruncateAt.END
+                        maxLines = 2
                         isClickable = true
                         isFocusable = true
                         setOnClickListener { showAcademicEventActionsDialog(timetable, event) }
@@ -367,8 +365,7 @@ class MainActivity : AppCompatActivity() {
             card.addView(TextView(this).apply {
                 text = "提示：长按课程可快速处理今天的停课/调课"
                 textSize = 12f
-                maxLines = 1
-                ellipsize = TextUtils.TruncateAt.END
+                maxLines = 2
                 setPadding(0, dp(5), 0, 0)
             })
 

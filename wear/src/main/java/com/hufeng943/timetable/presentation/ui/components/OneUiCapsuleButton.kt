@@ -69,7 +69,8 @@ fun OneUiCapsuleButton(
                         secondaryLabel,
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.textSecondary,
-                        maxLines = 1,
+                        maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
                     )
                 }
             }

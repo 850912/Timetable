@@ -45,8 +45,8 @@ fun OneUiCapsuleSurface(
     accentColor: Color = Color.Unspecified,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    titleMaxLines: Int = 1,
-    subtitleMaxLines: Int = 2,
+    titleMaxLines: Int = Int.MAX_VALUE,
+    subtitleMaxLines: Int = Int.MAX_VALUE,
 ) {
     val colors = AppTheme.colors
     val vividDeleteRed = Color(0xFFFF453A)

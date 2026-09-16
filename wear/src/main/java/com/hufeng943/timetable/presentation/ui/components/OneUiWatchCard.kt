@@ -103,8 +103,8 @@ fun OneUiWatchCard(
                 color = colors.textPrimary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 2,
+                overflow = TextOverflow.Clip
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -142,8 +142,8 @@ fun OneUiWatchCard(
                             text = loc,
                             color = colors.textSecondary,
                             fontSize = 10.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 2,
+                            overflow = TextOverflow.Clip,
                             modifier = Modifier.weight(1f, fill = false)
                         )
                     }
@@ -161,8 +161,8 @@ fun OneUiWatchCard(
                             text = t,
                             color = colors.textSecondary,
                             fontSize = 10.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            maxLines = 2,
+                            overflow = TextOverflow.Clip
                         )
                     }
                 }

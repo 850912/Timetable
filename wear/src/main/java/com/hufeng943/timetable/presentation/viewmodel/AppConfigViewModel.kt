@@ -6,6 +6,7 @@ import com.hufeng943.timetable.data.FirstDayOfTheWeek
 import com.hufeng943.timetable.data.PreferenceStorage
 import com.hufeng943.timetable.data.TimeFormat
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
+import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -55,5 +56,9 @@ class AppConfigViewModel @Inject constructor(
 
     fun updateLiquidGlassEnabled(enabled: Boolean) {
         viewModelScope.launch { preferenceStorage.setLiquidGlassEnabled(enabled) }
+    }
+
+    fun updateTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {
+        viewModelScope.launch { preferenceStorage.setTimetableBackground(mode, imagePath) }
     }
 }

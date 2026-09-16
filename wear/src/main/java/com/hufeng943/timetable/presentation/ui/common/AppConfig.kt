@@ -5,6 +5,8 @@ import com.hufeng943.timetable.data.FirstDayOfTheWeek
 import com.hufeng943.timetable.data.TimeFormat
 import kotlinx.datetime.DayOfWeek
 
+enum class TimetableBackgroundMode { SOLID, THEME, IMAGE }
+
 data class AppConfig(
     val languageTag: String? = null,
     val is24HourFormat: Boolean = true,
@@ -13,7 +15,9 @@ data class AppConfig(
     val effectiveFirstDayOfTheWeek: DayOfWeek = DayOfWeek.MONDAY,
     val isDynamicColorEnabled: Boolean = true,
     val isShowTopTime: Boolean = false,
-    val isLiquidGlassEnabled: Boolean = false
+    val isLiquidGlassEnabled: Boolean = false,
+    val timetableBackgroundMode: TimetableBackgroundMode = TimetableBackgroundMode.THEME,
+    val timetableBackgroundImagePath: String? = null
 )
 
 val LocalAppConfig = staticCompositionLocalOf { AppConfig() }

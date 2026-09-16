@@ -181,7 +181,7 @@ fun CourseCard(
                         text = course.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.SemiBold,
-                        maxLines = 2,
+                        maxLines = 3,
                         overflow = TextOverflow.Clip,
                     )
 
@@ -345,8 +345,8 @@ fun DayFinishedCard(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 2,
+                        overflow = TextOverflow.Clip,
                     )
                     Text(
                         text = subtitle,

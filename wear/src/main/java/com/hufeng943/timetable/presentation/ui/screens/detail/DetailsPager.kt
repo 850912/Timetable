@@ -89,10 +89,9 @@ fun DetailsPager(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 1,
-                            modifier = Modifier
-                                .weight(1f)
-                                .basicMarquee(iterations = Int.MAX_VALUE)
+                            maxLines = 3,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -224,7 +223,7 @@ fun DetailsPager(
 
 @Composable
 fun DetailListItem(
-    icon: ImageVector, text: String, enableMarquee: Boolean = true, modifier: Modifier = Modifier
+    icon: ImageVector, text: String, enableMarquee: Boolean = false, modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier

@@ -41,6 +41,7 @@ fun SettingScreen(
                 onTimeFormatSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.TIME_FORMAT_SELECT) },
                 onFirstDaySelectClick = { internalNavController.navigateSingle(InternalNavRoutes.FIRST_DAY_SELECT) },
                 onThemeSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.THEME_SELECT) },
+                onBackgroundSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.BACKGROUND_SELECT) },
                 onExportClick = { internalNavController.navigateSingle(InternalNavRoutes.EXPORT) },
                 onImportClick = { internalNavController.navigateSingle(InternalNavRoutes.IMPORT) },
                 onShowTopTimeToggle = { enabled ->
@@ -58,6 +59,16 @@ fun SettingScreen(
 
         composable(InternalNavRoutes.IMPORT) {
             ImportScreen(onNavigateBack = { internalNavController.popBackStack() })
+        }
+
+        composable(InternalNavRoutes.BACKGROUND_SELECT) {
+            BackgroundSelectPager(
+                config = config,
+                onBackgroundSelected = { mode, path ->
+                    appConfigViewModel.updateTimetableBackground(mode, path)
+                    internalNavController.popBackStack()
+                }
+            )
         }
 
         composable(InternalNavRoutes.THEME_SELECT) {

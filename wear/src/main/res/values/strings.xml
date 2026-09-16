@@ -238,4 +238,11 @@
     <string name="settings_liquid_glass">Liquid Glass</string>
     <string name="settings_liquid_glass_summary">Real-time refraction, blur and highlights for course cards. Off uses the lower-power glass style.</string>
     <string name="settings_liquid_glass_unsupported">Requires Android 13 / Wear OS with RuntimeShader support. The standard glass style is used on this watch.</string>
+    <string name="settings_timetable_background">Timetable background</string>
+    <string name="settings_background_solid">Solid</string>
+    <string name="settings_background_solid_summary">Pure theme background with the lowest rendering cost.</string>
+    <string name="settings_background_theme">Theme glow</string>
+    <string name="settings_background_theme_summary">Static glow derived from the current theme colors; recommended for Liquid Glass.</string>
+    <string name="settings_background_image">Custom image</string>
+    <string name="settings_background_image_summary">Choose an image. It is resized and stored locally for efficient watch rendering.</string>
 </resources>

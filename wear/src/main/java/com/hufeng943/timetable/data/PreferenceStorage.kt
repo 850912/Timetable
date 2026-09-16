@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
+import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -40,6 +41,8 @@ class PreferenceStorage @Inject constructor(
         val DYNAMIC_COLOR_ENABLED = booleanPreferencesKey("dynamic_color_enabled")
         val SHOW_TOP_TIME = booleanPreferencesKey("show_top_time")
         val LIQUID_GLASS_ENABLED = booleanPreferencesKey("liquid_glass_enabled")
+        val TIMETABLE_BACKGROUND_MODE = stringPreferencesKey("timetable_background_mode")
+        val TIMETABLE_BACKGROUND_IMAGE_PATH = stringPreferencesKey("timetable_background_image_path")
     }
 
     val appConfigFlow: Flow<AppConfig> = context.dataStore.data.map { prefs ->
@@ -79,7 +82,11 @@ class PreferenceStorage @Inject constructor(
             effectiveFirstDayOfTheWeek = effectiveFirstDay,
             isDynamicColorEnabled = prefs[Keys.DYNAMIC_COLOR_ENABLED] ?: true,
             isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false,
-            isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: false
+            isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: false,
+            timetableBackgroundMode = runCatching {
+                TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
+            }.getOrDefault(TimetableBackgroundMode.THEME),
+            timetableBackgroundImagePath = prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH]
         )
     }
 
@@ -110,6 +117,14 @@ class PreferenceStorage @Inject constructor(
 
     suspend fun setLiquidGlassEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.LIQUID_GLASS_ENABLED] = enabled }
+    }
+
+    suspend fun setTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.TIMETABLE_BACKGROUND_MODE] = mode.name
+            if (imagePath.isNullOrBlank()) prefs.remove(Keys.TIMETABLE_BACKGROUND_IMAGE_PATH)
+            else prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH] = imagePath
+        }
     }
 }
 

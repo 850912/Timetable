@@ -8,4 +8,5 @@ object InternalNavRoutes {
     const val EXPORT = "export"
     const val IMPORT = "import"
     const val THEME_SELECT = "theme_select"
+    const val BACKGROUND_SELECT = "background_select"
 }

@@ -2,11 +2,11 @@ package com.hufeng943.timetable.presentation.ui.screens.more.settings
 
 import android.os.Build
 
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.ColorLens
+import androidx.compose.material.icons.rounded.Wallpaper
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
@@ -42,6 +42,7 @@ import com.hufeng943.timetable.R
 import com.hufeng943.timetable.data.FirstDayOfTheWeek
 import com.hufeng943.timetable.data.TimeFormat
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
+import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleButton
 import com.hufeng943.timetable.presentation.ui.theme.ThemePreset
 import kotlinx.coroutines.launch
@@ -54,6 +55,7 @@ fun SettingPager(
     onTimeFormatSelectClick: () -> Unit,
     onFirstDaySelectClick: () -> Unit,
     onThemeSelectClick: () -> Unit,
+    onBackgroundSelectClick: () -> Unit,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
     onShowTopTimeToggle: (Boolean) -> Unit,
@@ -144,6 +146,20 @@ fun SettingPager(
                     value = currentThemePreset.title,
                     transformationSpec = transformationSpec,
                     onClick = onThemeSelectClick
+                )
+            }
+
+            item {
+                SettingItemCard(
+                    icon = Icons.Rounded.Wallpaper,
+                    title = stringResource(R.string.settings_timetable_background),
+                    value = stringResource(when (config.timetableBackgroundMode) {
+                        TimetableBackgroundMode.SOLID -> R.string.settings_background_solid
+                        TimetableBackgroundMode.THEME -> R.string.settings_background_theme
+                        TimetableBackgroundMode.IMAGE -> R.string.settings_background_image
+                    }),
+                    transformationSpec = transformationSpec,
+                    onClick = onBackgroundSelectClick
                 )
             }
 

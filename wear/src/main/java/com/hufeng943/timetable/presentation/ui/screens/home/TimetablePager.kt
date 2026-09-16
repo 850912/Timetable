@@ -1,5 +1,7 @@
 package com.hufeng943.timetable.presentation.ui.screens.home
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
@@ -13,12 +15,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import android.os.Build
@@ -28,6 +34,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
 import androidx.compose.ui.res.stringResource
@@ -69,6 +77,7 @@ import com.hufeng943.timetable.presentation.ui.components.rememberPullToDatePick
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToRefreshConnection
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.home.TimetableViewModel
@@ -105,18 +114,44 @@ fun TimetablePager(
         }
     }
 
+    val backgroundBitmap by produceState<android.graphics.Bitmap?>(
+        initialValue = null,
+        key1 = config.timetableBackgroundMode,
+        key2 = config.timetableBackgroundImagePath,
+    ) {
+        value = if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE) {
+            withContext(Dispatchers.IO) {
+                config.timetableBackgroundImagePath?.let { path ->
+                    runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
+                }
+            }
+        } else null
+    }
+
     Box(Modifier.fillMaxSize()) {
-        if (useLiquidGlass) {
-            // A static, theme-derived source for refraction. Unlike the previous hard-coded
-            // blue/purple layer, this follows the active app/dynamic-color palette and does not
-            // animate, so enabling glass does not introduce a continuous redraw loop.
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .layerBackdrop(liquidGlassBackdrop)
-                    .background(AppTheme.colors.background)
-            ) {
-                GalaxyAiAmbientLayer(RectangleShape, strength = 0.42f)
+        // The background is static: no perpetual animation or timer. When Liquid Glass is on,
+        // the same layer is captured as the refraction source instead of maintaining a second
+        // decorative layer. Custom images are pre-scaled when selected in Settings.
+        Box(
+            Modifier
+                .fillMaxSize()
+                .then(if (useLiquidGlass) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier)
+                .background(AppTheme.colors.background)
+        ) {
+            when (config.timetableBackgroundMode) {
+                TimetableBackgroundMode.SOLID -> Unit
+                TimetableBackgroundMode.THEME -> GalaxyAiAmbientLayer(RectangleShape, strength = 0.42f)
+                TimetableBackgroundMode.IMAGE -> {
+                    backgroundBitmap?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.34f)))
+                    }
+                }
             }
         }
 
@@ -450,8 +485,6 @@ private fun CourseListPager(
                         title = event.title,
                         subtitle = eventSubtitle(event, is24HourFormat),
                         icon = Icons.Rounded.EventAvailable,
-                        titleMaxLines = 2,
-                        subtitleMaxLines = 3,
                         modifier = Modifier
                             .fillMaxWidth()
                             .transformedHeight(this, transformationSpec)
