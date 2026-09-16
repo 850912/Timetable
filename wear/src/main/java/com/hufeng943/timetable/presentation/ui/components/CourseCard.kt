@@ -46,6 +46,8 @@ import androidx.wear.compose.material3.Text
 import androidx.compose.ui.res.stringResource
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 import com.hufeng943.timetable.presentation.ui.theme.galaxyAiAccentBrush
@@ -67,6 +69,7 @@ fun CourseCard(
     onClick: () -> Unit
 ) {
     val colors = AppTheme.colors
+    val glassConfig = LocalAppConfig.current
     val courseColor = course.displayColor
     val slot = course.timeSlot
     val order = course.dailyOrder?.toString() ?: "•"
@@ -103,20 +106,28 @@ fun CourseCard(
             shape = { CourseCapsuleShape },
             effects = {
                 vibrancy()
-                // Watch-class tuned profile: keep real refraction while avoiding an unnecessarily
-                // large blur kernel on every visible list item.
-                blur(if (isCurrent) 3.dp.toPx() else 2.dp.toPx())
-                lens(
-                    if (isCurrent) 12.dp.toPx() else 9.dp.toPx(),
-                    if (isCurrent) 18.dp.toPx() else 14.dp.toPx(),
-                    chromaticAberration = isCurrent || isNext,
-                )
+                // Only the current/next cards use AGSL refraction. The rest of the app uses the
+                // cheaper translucent glass material, avoiding N shader passes in long lists.
+                when (glassConfig.liquidGlassEffect) {
+                    LiquidGlassEffect.SOFT -> {
+                        blur(1.dp.toPx())
+                        lens(6.dp.toPx(), 9.dp.toPx(), chromaticAberration = false)
+                    }
+                    LiquidGlassEffect.BALANCED -> {
+                        blur(2.dp.toPx())
+                        lens(if (isCurrent) 11.dp.toPx() else 8.dp.toPx(), if (isCurrent) 17.dp.toPx() else 12.dp.toPx(), chromaticAberration = isCurrent)
+                    }
+                    LiquidGlassEffect.FLUID -> {
+                        blur(3.dp.toPx())
+                        lens(if (isCurrent) 16.dp.toPx() else 12.dp.toPx(), if (isCurrent) 24.dp.toPx() else 18.dp.toPx(), chromaticAberration = true)
+                    }
+                }
             },
             highlight = { Highlight.Ambient.copy(alpha = if (isCurrent) 0.80f else 0.58f) },
             shadow = { Shadow(radius = 3.dp, color = Color.Black.copy(alpha = 0.18f)) },
             innerShadow = { InnerShadow(radius = 4.dp, alpha = 0.18f) },
             onDrawSurface = {
-                drawRect(courseColor.copy(alpha = if (isCurrent) 0.16f else 0.075f))
+                drawRect(courseColor.copy(alpha = glassConfig.glassOpacity * if (isCurrent) 0.34f else 0.20f))
                 drawRect(Color.White.copy(alpha = 0.025f))
             }
         )
@@ -133,7 +144,7 @@ fun CourseCard(
             } else {
                 // Keep the normal mode genuinely translucent instead of pre-compositing it
                 // into an opaque surface. This preserves the glass look without a shader.
-                courseColor.copy(alpha = if (isCurrent) 0.20f else if (isNext) 0.115f else 0.07f)
+                courseColor.copy(alpha = if (glassConfig.isLiquidGlassEnabled) glassConfig.glassOpacity * (if (isCurrent) 0.40f else if (isNext) 0.28f else 0.20f) else if (isCurrent) 0.20f else if (isNext) 0.115f else 0.07f)
             },
             contentColor = colors.textPrimary,
         ),
@@ -181,7 +192,7 @@ fun CourseCard(
                         text = course.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.SemiBold,
-                        maxLines = 3,
+                        maxLines = Int.MAX_VALUE,
                         overflow = TextOverflow.Clip,
                     )
 
@@ -193,7 +204,7 @@ fun CourseCard(
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.textSecondary,
-                        maxLines = 2,
+                        maxLines = Int.MAX_VALUE,
                     )
 
                     if (isCurrent && minutesLeft != null) {
@@ -228,7 +239,7 @@ fun CourseCard(
                                 text = stringResource(R.string.course_class_mode_next, nextCourseName, minutesUntilNext),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = colors.textSecondary,
-                                maxLines = 2,
+                                maxLines = Int.MAX_VALUE,
                                 overflow = TextOverflow.Clip,
                             )
                         }
@@ -250,7 +261,7 @@ fun CourseCard(
                             text = detail,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.textSecondary.copy(alpha = 0.82f),
-                            maxLines = 2,
+                            maxLines = Int.MAX_VALUE,
                             overflow = TextOverflow.Clip,
                         )
                     }
@@ -345,14 +356,14 @@ fun DayFinishedCard(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 2,
+                        maxLines = Int.MAX_VALUE,
                         overflow = TextOverflow.Clip,
                     )
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.textSecondary,
-                        maxLines = 2,
+                        maxLines = Int.MAX_VALUE,
                         overflow = TextOverflow.Clip,
                     )
                 }

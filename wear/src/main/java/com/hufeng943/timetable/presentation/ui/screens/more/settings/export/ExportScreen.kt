@@ -116,7 +116,7 @@ fun ExportScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
-                        .background(AppTheme.colors.surfaceContainer)
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalAppConfig.current.isLiquidGlassEnabled) LocalAppConfig.current.glassOpacity else 1f))
                         .padding(12.dp)
                 ) {
                     Column {

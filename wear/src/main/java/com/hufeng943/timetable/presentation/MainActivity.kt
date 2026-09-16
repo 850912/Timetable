@@ -57,7 +57,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val currentThemePreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(initialValue = com.hufeng943.timetable.presentation.ui.theme.ThemePreset.AMOLED_BLACK)
-            TimetableTheme(themePreset = currentThemePreset) {
+            val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
+            TimetableTheme(themePreset = currentThemePreset, dynamicColorEnabled = config.isDynamicColorEnabled) {
                 AppNavHost()
             }
         }

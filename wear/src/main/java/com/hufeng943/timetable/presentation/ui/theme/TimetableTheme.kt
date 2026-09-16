@@ -149,13 +149,11 @@ private fun ThemePreset.baseColors(scheme: ColorScheme): TimetableColors = when 
 @Composable
 fun TimetableTheme(
     themePreset: ThemePreset = ThemePreset.AMOLED_BLACK,
+    dynamicColorEnabled: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    val colorScheme = when (themePreset) {
-        ThemePreset.SYSTEM_DYNAMIC -> {
-            dynamicColorScheme(context) ?: AmoledBlackColorScheme
-        }
+    val presetScheme = when (themePreset) {
         ThemePreset.AMOLED_BLACK -> AmoledBlackColorScheme
         ThemePreset.DEEP_BLUE -> DeepBlueColorScheme
         ThemePreset.CYAN_TEAL -> CyanTealColorScheme
@@ -164,10 +162,16 @@ fun TimetableTheme(
         ThemePreset.SAKURA_PINK -> SakuraPinkColorScheme
         ThemePreset.GRAPHITE -> GraphiteColorScheme
         ThemePreset.AURORA -> AuroraColorScheme
+        ThemePreset.SYSTEM_DYNAMIC -> AmoledBlackColorScheme
         else -> AmoledBlackColorScheme
     }
+    // Wear Material 3 dynamicColorScheme follows the active watch-face palette. The old
+    // implementation only used it when a separate preset was selected, so the setting toggle
+    // appeared to do nothing. When enabled, dynamic color now has explicit priority.
+    val dynamicScheme = if (dynamicColorEnabled) dynamicColorScheme(context) else null
+    val colorScheme = dynamicScheme ?: presetScheme
 
-    val timetableColors = themePreset.baseColors(colorScheme)
+    val timetableColors = if (dynamicScheme != null) AmoledBlackColors.fromColorScheme(colorScheme) else themePreset.baseColors(colorScheme)
 
     CompositionLocalProvider(
         LocalThemePreset provides themePreset,

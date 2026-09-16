@@ -20,6 +20,7 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 
 @Composable
 fun OneUiInfoCapsule(
@@ -29,11 +30,12 @@ fun OneUiInfoCapsule(
     maxLines: Int = Int.MAX_VALUE,
 ) {
     val colors = AppTheme.colors
+    val glassConfig = LocalAppConfig.current
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(OneUiCapsuleShape)
-            .background(colors.surfaceContainer)
+            .background(colors.surfaceContainer.copy(alpha = if (glassConfig.isLiquidGlassEnabled) glassConfig.glassOpacity else 1f))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

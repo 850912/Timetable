@@ -245,4 +245,18 @@
     <string name="settings_background_theme_summary">Static glow derived from the current theme colors; recommended for Liquid Glass.</string>
     <string name="settings_background_image">Custom image</string>
     <string name="settings_background_image_summary">Choose an image. It is resized and stored locally for efficient watch rendering.</string>
+
+    <string name="settings_liquid_glass_advanced">Liquid Glass advanced</string>
+    <string name="settings_liquid_glass_on">On · advanced settings</string>
+    <string name="settings_liquid_glass_off">Off · advanced settings</string>
+    <string name="settings_glass_opacity">Glass transparency</string>
+    <string name="settings_glass_opacity_value">Surface opacity %1$d%% · tap to adjust</string>
+    <string name="settings_liquid_effect">Liquid effect</string>
+    <string name="settings_liquid_effect_soft">Soft · lowest GPU load</string>
+    <string name="settings_liquid_effect_balanced">Balanced · recommended</string>
+    <string name="settings_liquid_effect_fluid">Fluid · stronger refraction</string>
+    <string name="settings_background_brightness">Background brightness</string>
+    <string name="settings_background_brightness_value">Brightness %1$d%% · tap to adjust</string>
+    <string name="settings_glass_readability">Readability protection</string>
+    <string name="settings_glass_readability_summary">A contrast scrim is applied automatically. Lower background brightness when text competes with photos or bright colors.</string>
 </resources>

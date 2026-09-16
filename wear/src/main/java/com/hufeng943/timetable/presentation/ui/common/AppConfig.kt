@@ -7,6 +7,8 @@ import kotlinx.datetime.DayOfWeek
 
 enum class TimetableBackgroundMode { SOLID, THEME, IMAGE }
 
+enum class LiquidGlassEffect { SOFT, BALANCED, FLUID }
+
 data class AppConfig(
     val languageTag: String? = null,
     val is24HourFormat: Boolean = true,
@@ -16,6 +18,9 @@ data class AppConfig(
     val isDynamicColorEnabled: Boolean = true,
     val isShowTopTime: Boolean = false,
     val isLiquidGlassEnabled: Boolean = false,
+    val glassOpacity: Float = 0.42f,
+    val liquidGlassEffect: LiquidGlassEffect = LiquidGlassEffect.BALANCED,
+    val backgroundBrightness: Float = 0.62f,
     val timetableBackgroundMode: TimetableBackgroundMode = TimetableBackgroundMode.THEME,
     val timetableBackgroundImagePath: String? = null
 )

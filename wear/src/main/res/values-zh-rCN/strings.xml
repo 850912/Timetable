@@ -229,4 +229,18 @@
     <string name="settings_background_theme_summary">根据当前主题色生成静态光晕，推荐搭配液态玻璃。</string>
     <string name="settings_background_image">自定义图片</string>
     <string name="settings_background_image_summary">选择图片后会缩放并保存在本机，避免手表运行时反复处理原图。</string>
+
+    <string name="settings_liquid_glass_advanced">液态玻璃高级设置</string>
+    <string name="settings_liquid_glass_on">已开启 · 点按进入高级设置</string>
+    <string name="settings_liquid_glass_off">已关闭 · 点按进入高级设置</string>
+    <string name="settings_glass_opacity">玻璃透明度</string>
+    <string name="settings_glass_opacity_value">表面不透明度 %1$d%% · 点按调节</string>
+    <string name="settings_liquid_effect">液态玻璃效果</string>
+    <string name="settings_liquid_effect_soft">柔和 · GPU 开销最低</string>
+    <string name="settings_liquid_effect_balanced">均衡 · 推荐</string>
+    <string name="settings_liquid_effect_fluid">流体 · 折射更明显</string>
+    <string name="settings_background_brightness">背景亮度</string>
+    <string name="settings_background_brightness_value">亮度 %1$d%% · 点按调节</string>
+    <string name="settings_glass_readability">可读性保护</string>
+    <string name="settings_glass_readability_summary">自动叠加对比度遮罩；照片或亮色背景影响文字时，可继续降低背景亮度。</string>
 </resources>

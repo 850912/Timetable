@@ -7,6 +7,7 @@ import com.hufeng943.timetable.data.PreferenceStorage
 import com.hufeng943.timetable.data.TimeFormat
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
+import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -57,6 +58,10 @@ class AppConfigViewModel @Inject constructor(
     fun updateLiquidGlassEnabled(enabled: Boolean) {
         viewModelScope.launch { preferenceStorage.setLiquidGlassEnabled(enabled) }
     }
+
+    fun updateGlassOpacity(value: Float) { viewModelScope.launch { preferenceStorage.setGlassOpacity(value) } }
+    fun updateLiquidGlassEffect(value: LiquidGlassEffect) { viewModelScope.launch { preferenceStorage.setLiquidGlassEffect(value) } }
+    fun updateBackgroundBrightness(value: Float) { viewModelScope.launch { preferenceStorage.setBackgroundBrightness(value) } }
 
     fun updateTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {
         viewModelScope.launch { preferenceStorage.setTimetableBackground(mode, imagePath) }

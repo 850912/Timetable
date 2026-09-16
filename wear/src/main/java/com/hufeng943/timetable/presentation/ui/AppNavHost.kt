@@ -1,9 +1,19 @@
 package com.hufeng943.timetable.presentation.ui
 
 import androidx.compose.runtime.Composable
+import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
+import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
+import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.navigation.NavType
 import androidx.navigation.navigation
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -11,6 +21,11 @@ import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.TimeTextDefaults.rememberTimeSource
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import android.graphics.BitmapFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -63,10 +78,12 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
             LocalNavController provides navController,
             LocalAppConfig provides config
         ) {
-            SwipeDismissableNavHost(
-                navController = navController,
-                startDestination = NavRoutes.MAIN
-            ) {
+            AppBackground(config = config)
+            Box(Modifier.fillMaxSize()) {
+                SwipeDismissableNavHost(
+                    navController = navController,
+                    startDestination = NavRoutes.MAIN
+                ) {
                 composable(NavRoutes.MAIN) {
                     HomeScreen()
                 }
@@ -190,6 +207,45 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 }
 
             }
+            }
         }
+    }
+}
+
+
+@Composable
+private fun AppBackground(config: com.hufeng943.timetable.presentation.ui.common.AppConfig) {
+    val backgroundBitmap by produceState<android.graphics.Bitmap?>(
+        initialValue = null,
+        key1 = config.timetableBackgroundMode,
+        key2 = config.timetableBackgroundImagePath,
+    ) {
+        value = if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE) {
+            withContext(Dispatchers.IO) {
+                config.timetableBackgroundImagePath?.let { path ->
+                    runCatching { BitmapFactory.decodeFile(path) }.getOrNull()
+                }
+            }
+        } else null
+    }
+
+    Box(Modifier.fillMaxSize().background(AppTheme.colors.background)) {
+        when (config.timetableBackgroundMode) {
+            TimetableBackgroundMode.SOLID -> Unit
+            TimetableBackgroundMode.THEME ->
+                GalaxyAiAmbientLayer(RectangleShape, strength = 0.92f * config.backgroundBrightness)
+            TimetableBackgroundMode.IMAGE -> backgroundBitmap?.let { bitmap ->
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+        }
+        // One readability model for every route. The upper bound intentionally leaves
+        // background detail visible for refraction while protecting text over bright photos.
+        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.70f).coerceIn(0f, 0.70f)
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
     }
 }

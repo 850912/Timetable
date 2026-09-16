@@ -24,6 +24,7 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 
 private val CapsuleShape = RoundedCornerShape(26.dp)
@@ -38,11 +39,12 @@ fun OneUiCapsuleButton(
     emphasize: Boolean = false,
 ) {
     val colors = AppTheme.colors
+    val glassConfig = LocalAppConfig.current
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(CapsuleShape)
-            .background(colors.surfaceContainer)
+            .background(colors.surfaceContainer.copy(alpha = if (glassConfig.isLiquidGlassEnabled) glassConfig.glassOpacity else 1f))
             .clickable(onClick = onClick)
     ) {
         if (emphasize) {
@@ -69,7 +71,7 @@ fun OneUiCapsuleButton(
                         secondaryLabel,
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.textSecondary,
-                        maxLines = 2,
+                        maxLines = Int.MAX_VALUE,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
                     )
                 }

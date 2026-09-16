@@ -56,10 +56,11 @@ fun SettingPager(
     onFirstDaySelectClick: () -> Unit,
     onThemeSelectClick: () -> Unit,
     onBackgroundSelectClick: () -> Unit,
+    onLiquidGlassAdvancedClick: () -> Unit,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
     onShowTopTimeToggle: (Boolean) -> Unit,
-    onLiquidGlassToggle: (Boolean) -> Unit
+    onDynamicColorToggle: (Boolean) -> Unit
 ) {
     val scrollState = rememberTransformingLazyColumnState()
     val transformationSpec = rememberTransformationSpec()
@@ -164,28 +165,25 @@ fun SettingPager(
             }
 
             item {
+                SettingItemCard(
+                    icon = Icons.Rounded.BlurOn,
+                    title = stringResource(R.string.settings_liquid_glass),
+                    value = stringResource(if (config.isLiquidGlassEnabled && liquidGlassSupported) R.string.settings_liquid_glass_on else R.string.settings_liquid_glass_off),
+                    transformationSpec = transformationSpec,
+                    onClick = onLiquidGlassAdvancedClick
+                )
+            }
+
+            item {
                 SwitchButton(
-                    checked = config.isLiquidGlassEnabled && liquidGlassSupported,
-                    onCheckedChange = { enabled ->
-                        if (liquidGlassSupported) onLiquidGlassToggle(enabled)
-                    },
-                    enabled = liquidGlassSupported,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                    checked = config.isDynamicColorEnabled,
+                    onCheckedChange = onDynamicColorToggle,
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec),
-                    icon = { Icon(Icons.Rounded.BlurOn, contentDescription = null) },
-                    label = { Text(stringResource(R.string.settings_liquid_glass)) },
-                    secondaryLabel = {
-                        Text(
-                            stringResource(
-                                if (liquidGlassSupported) R.string.settings_liquid_glass_summary
-                                else R.string.settings_liquid_glass_unsupported
-                            ),
-                            maxLines = 3
-                        )
-                    }
+                    icon = { Icon(Icons.Rounded.ColorLens, contentDescription = null) },
+                    label = { Text(stringResource(R.string.settings_dynamic_color)) },
+                    secondaryLabel = { Text(stringResource(R.string.settings_dynamic_color_summary)) }
                 )
             }
 

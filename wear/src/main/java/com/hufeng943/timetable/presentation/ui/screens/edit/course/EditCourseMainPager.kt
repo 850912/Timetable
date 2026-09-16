@@ -1,6 +1,5 @@
 package com.hufeng943.timetable.presentation.ui.screens.edit.course
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Book
@@ -60,9 +59,7 @@ fun EditCourseMainPager(
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) {
-                    AnimatedContent(targetState = course.id == 0L, label = "header_text") { isAdd ->
-                        Text(if (isAdd) stringResource(R.string.edit_course_add) else stringResource(R.string.edit_course_edit))
-                    }
+                    Text(if (course.id == 0L) stringResource(R.string.edit_course_add) else stringResource(R.string.edit_course_edit))
                 }
             }
 

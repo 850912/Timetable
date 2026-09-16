@@ -45,22 +45,26 @@ fun GalaxyAiAmbientLayer(
     val ambientBrush = remember(primary, secondary, midGlow, endGlow, effectAlpha) {
         Brush.linearGradient(
             colorStops = arrayOf(
-                0.00f to primary.copy(alpha = 0.18f * effectAlpha),
-                0.30f to midGlow.copy(alpha = 0.11f * effectAlpha),
-                0.72f to endGlow.copy(alpha = 0.07f * effectAlpha),
-                1.00f to secondary.copy(alpha = 0.03f * effectAlpha),
+                0.00f to primary.copy(alpha = 0.42f * effectAlpha),
+                0.34f to midGlow.copy(alpha = 0.26f * effectAlpha),
+                0.72f to endGlow.copy(alpha = 0.18f * effectAlpha),
+                1.00f to secondary.copy(alpha = 0.10f * effectAlpha),
             ),
             start = Offset.Zero,
-            end = Offset(520f, 180f),
+            end = Offset(420f, 260f),
         )
     }
+    val glowA = remember(primary, effectAlpha) {
+        Brush.radialGradient(listOf(primary.copy(alpha = 0.34f * effectAlpha), Color.Transparent), center = Offset(70f, 35f), radius = 190f)
+    }
+    val glowB = remember(secondary, effectAlpha) {
+        Brush.radialGradient(listOf(secondary.copy(alpha = 0.28f * effectAlpha), Color.Transparent), center = Offset(320f, 330f), radius = 230f)
+    }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .clip(shape)
-            .background(ambientBrush)
-    )
+    Box(modifier = modifier.fillMaxSize().clip(shape).background(ambientBrush)) {
+        Box(Modifier.fillMaxSize().background(glowA))
+        Box(Modifier.fillMaxSize().background(glowB))
+    }
 }
 
 fun galaxyAiAccentBrush(

@@ -38,6 +38,7 @@ import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleShape
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 
 @Composable
@@ -75,7 +76,7 @@ fun TextEditScreen(label: String, initialText: String, onSave: (String) -> Unit)
                         .transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                         .clip(OneUiCapsuleShape)
-                        .background(AppTheme.colors.surfaceContainer),
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalAppConfig.current.isLiquidGlassEnabled) LocalAppConfig.current.glassOpacity else 1f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     GalaxyAiAmbientLayer(shape = OneUiCapsuleShape, strength = 0.22f)

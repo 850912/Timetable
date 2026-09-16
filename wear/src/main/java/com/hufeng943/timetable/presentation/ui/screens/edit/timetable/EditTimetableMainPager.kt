@@ -1,6 +1,5 @@
 package com.hufeng943.timetable.presentation.ui.screens.edit.timetable
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -64,9 +63,7 @@ fun EditTimetableMainPager(
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) {
-                    AnimatedContent(targetState = timetable.timetableId == 0L, label = "header_text") { isAdd ->
-                        Text(if (isAdd) stringResource(R.string.edit_timetable_add) else stringResource(R.string.edit_timetable_edit))
-                    }
+                    Text(if (timetable.timetableId == 0L) stringResource(R.string.edit_timetable_add) else stringResource(R.string.edit_timetable_edit))
                 }
             }
 

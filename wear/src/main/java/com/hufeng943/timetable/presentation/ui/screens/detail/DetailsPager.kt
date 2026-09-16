@@ -1,6 +1,5 @@
 package com.hufeng943.timetable.presentation.ui.screens.detail
 
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -89,7 +88,7 @@ fun DetailsPager(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 3,
+                            maxLines = Int.MAX_VALUE,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
                             modifier = Modifier.weight(1f)
                         )
@@ -117,10 +116,7 @@ fun DetailsPager(
                                 .fillMaxWidth()
                                 .transformedHeight(this, transformationSpec)
                                 .minimumVerticalContentPadding(TextDefaults.minimumTopListContentPadding)
-                                .padding(horizontal = 8.dp, vertical = 12.dp)
-                                .basicMarquee(
-                                    iterations = Int.MAX_VALUE,
-                                ), verticalAlignment = Alignment.Bottom
+                                .padding(horizontal = 8.dp, vertical = 12.dp), verticalAlignment = Alignment.Bottom
                         ) {
                             if (dayStr.isNotEmpty()) {
                                 Text(
@@ -182,7 +178,6 @@ fun DetailsPager(
                         DetailListItem(
                             icon = Icons.AutoMirrored.Rounded.Notes,
                             text = remark,
-                            enableMarquee = false,
                             modifier = Modifier
                                 .transformedHeight(this, transformationSpec)
                                 .minimumVerticalContentPadding(TextDefaults.minimumTopListContentPadding)
@@ -223,20 +218,20 @@ fun DetailsPager(
 
 @Composable
 fun DetailListItem(
-    icon: ImageVector, text: String, enableMarquee: Boolean = false, modifier: Modifier = Modifier
+    icon: ImageVector, text: String, modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = if (enableMarquee) Alignment.CenterVertically else Alignment.Top
+        verticalAlignment = Alignment.Top
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
-                .run { if (!enableMarquee) padding(top = 2.dp) else this }
+                .padding(top = 2.dp)
                 .size(28.dp))
         Spacer(modifier = Modifier.width(16.dp))
 
@@ -244,9 +239,7 @@ fun DetailListItem(
             text = text,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            maxLines = if (enableMarquee) 1 else Int.MAX_VALUE,
-            modifier = Modifier.weight(1f).run {
-                if (enableMarquee) basicMarquee(iterations = Int.MAX_VALUE) else this
-            })
+            maxLines = Int.MAX_VALUE,
+            modifier = Modifier.weight(1f))
     }
 }

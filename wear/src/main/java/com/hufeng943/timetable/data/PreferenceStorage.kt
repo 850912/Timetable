@@ -3,11 +3,13 @@ package com.hufeng943.timetable.data
 import android.content.Context
 import android.text.format.DateFormat
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
+import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,6 +43,9 @@ class PreferenceStorage @Inject constructor(
         val DYNAMIC_COLOR_ENABLED = booleanPreferencesKey("dynamic_color_enabled")
         val SHOW_TOP_TIME = booleanPreferencesKey("show_top_time")
         val LIQUID_GLASS_ENABLED = booleanPreferencesKey("liquid_glass_enabled")
+        val GLASS_OPACITY = floatPreferencesKey("glass_opacity")
+        val LIQUID_GLASS_EFFECT = stringPreferencesKey("liquid_glass_effect")
+        val BACKGROUND_BRIGHTNESS = floatPreferencesKey("background_brightness")
         val TIMETABLE_BACKGROUND_MODE = stringPreferencesKey("timetable_background_mode")
         val TIMETABLE_BACKGROUND_IMAGE_PATH = stringPreferencesKey("timetable_background_image_path")
     }
@@ -83,6 +88,9 @@ class PreferenceStorage @Inject constructor(
             isDynamicColorEnabled = prefs[Keys.DYNAMIC_COLOR_ENABLED] ?: true,
             isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false,
             isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: false,
+            glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.42f).coerceIn(0.20f, 0.78f),
+            liquidGlassEffect = runCatching { LiquidGlassEffect.valueOf(prefs[Keys.LIQUID_GLASS_EFFECT] ?: LiquidGlassEffect.BALANCED.name) }.getOrDefault(LiquidGlassEffect.BALANCED),
+            backgroundBrightness = (prefs[Keys.BACKGROUND_BRIGHTNESS] ?: 0.62f).coerceIn(0.30f, 1f),
             timetableBackgroundMode = runCatching {
                 TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
             }.getOrDefault(TimetableBackgroundMode.THEME),
@@ -117,6 +125,18 @@ class PreferenceStorage @Inject constructor(
 
     suspend fun setLiquidGlassEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.LIQUID_GLASS_ENABLED] = enabled }
+    }
+
+    suspend fun setGlassOpacity(value: Float) {
+        context.dataStore.edit { it[Keys.GLASS_OPACITY] = value.coerceIn(0.20f, 0.78f) }
+    }
+
+    suspend fun setLiquidGlassEffect(value: LiquidGlassEffect) {
+        context.dataStore.edit { it[Keys.LIQUID_GLASS_EFFECT] = value.name }
+    }
+
+    suspend fun setBackgroundBrightness(value: Float) {
+        context.dataStore.edit { it[Keys.BACKGROUND_BRIGHTNESS] = value.coerceIn(0.30f, 1f) }
     }
 
     suspend fun setTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {

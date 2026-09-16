@@ -140,7 +140,7 @@ fun TimetablePager(
         ) {
             when (config.timetableBackgroundMode) {
                 TimetableBackgroundMode.SOLID -> Unit
-                TimetableBackgroundMode.THEME -> GalaxyAiAmbientLayer(RectangleShape, strength = 0.42f)
+                TimetableBackgroundMode.THEME -> GalaxyAiAmbientLayer(RectangleShape, strength = 0.92f * config.backgroundBrightness)
                 TimetableBackgroundMode.IMAGE -> {
                     backgroundBitmap?.let { bitmap ->
                         Image(
@@ -149,10 +149,13 @@ fun TimetablePager(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                         )
-                        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.34f)))
+                        Unit
                     }
                 }
             }
+            // Readability protection applies to every background mode. It is deliberately static,
+            // so bright photos/theme glows cannot wash out text and it adds no animation cost.
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = ((1f - config.backgroundBrightness) * 0.70f).coerceIn(0f, 0.70f))))
         }
 
         Box(Modifier.fillMaxSize()) {
@@ -226,7 +229,7 @@ fun TimetablePager(
                     } else null,
                     minutesUntilNext = if (statusSummary.currentId == courseId) statusSummary.minutesUntilNext else null,
                     is24HourFormat = config.is24HourFormat,
-                    liquidGlassBackdrop = liquidGlassBackdrop.takeIf { useLiquidGlass },
+                    liquidGlassBackdrop = liquidGlassBackdrop.takeIf { useLiquidGlass && (statusSummary.currentId == courseId || statusSummary.nextId == courseId) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)
@@ -449,7 +452,7 @@ private fun CourseListPager(
                                         else -> dateTitle
                                     },
                                     style = MaterialTheme.typography.titleMedium,
-                                    maxLines = 2,
+                                    maxLines = Int.MAX_VALUE,
                                     overflow = TextOverflow.Clip,
                                     textAlign = TextAlign.Center,
                                 )
@@ -464,7 +467,7 @@ private fun CourseListPager(
                                 Text(
                                     text = if (statusLine == null) daySummary else "$daySummary\n$statusLine",
                                     style = MaterialTheme.typography.labelSmall,
-                                    maxLines = 2,
+                                    maxLines = Int.MAX_VALUE,
                                     overflow = TextOverflow.Clip,
                                     textAlign = TextAlign.Center,
                                 )

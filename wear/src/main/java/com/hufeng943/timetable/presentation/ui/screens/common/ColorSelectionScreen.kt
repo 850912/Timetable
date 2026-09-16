@@ -33,6 +33,7 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleShape
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 
 @Composable
@@ -73,7 +74,7 @@ fun ColorSelectionScreen(onSave: (color: Color) -> Unit) {
                         .transformedHeight(this, transformationSpec)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                         .clip(OneUiCapsuleShape)
-                        .background(AppTheme.colors.surfaceContainer)
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalAppConfig.current.isLiquidGlassEnabled) LocalAppConfig.current.glassOpacity else 1f))
                         .padding(horizontal = 10.dp, vertical = 8.dp),
                 ) {
                     if (rowIndex == 0) GalaxyAiAmbientLayer(OneUiCapsuleShape, strength = 0.20f)

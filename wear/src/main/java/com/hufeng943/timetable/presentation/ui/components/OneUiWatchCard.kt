@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.Text
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import kotlinx.datetime.LocalTime
 
 @Composable
@@ -43,6 +44,7 @@ fun OneUiWatchCard(
     modifier: Modifier = Modifier
 ) {
     val colors = AppTheme.colors
+    val glassConfig = LocalAppConfig.current
     val cardBackground = when (countdownState.status) {
         CourseStatus.IN_PROGRESS -> colors.courseCurrent
         CourseStatus.NOT_STARTED -> colors.surfaceContainer
@@ -53,7 +55,7 @@ fun OneUiWatchCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(cardBackground)
+            .background(cardBackground.copy(alpha = if (glassConfig.isLiquidGlassEnabled) glassConfig.glassOpacity else 1f))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
@@ -103,7 +105,7 @@ fun OneUiWatchCard(
                 color = colors.textPrimary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 2,
+                maxLines = Int.MAX_VALUE,
                 overflow = TextOverflow.Clip
             )
 
@@ -142,7 +144,7 @@ fun OneUiWatchCard(
                             text = loc,
                             color = colors.textSecondary,
                             fontSize = 10.sp,
-                            maxLines = 2,
+                            maxLines = Int.MAX_VALUE,
                             overflow = TextOverflow.Clip,
                             modifier = Modifier.weight(1f, fill = false)
                         )
@@ -161,7 +163,7 @@ fun OneUiWatchCard(
                             text = t,
                             color = colors.textSecondary,
                             fontSize = 10.sp,
-                            maxLines = 2,
+                            maxLines = Int.MAX_VALUE,
                             overflow = TextOverflow.Clip
                         )
                     }

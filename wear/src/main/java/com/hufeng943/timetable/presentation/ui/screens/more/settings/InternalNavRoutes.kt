@@ -9,4 +9,5 @@ object InternalNavRoutes {
     const val IMPORT = "import"
     const val THEME_SELECT = "theme_select"
     const val BACKGROUND_SELECT = "background_select"
+    const val LIQUID_GLASS_ADVANCED = "liquid_glass_advanced"
 }

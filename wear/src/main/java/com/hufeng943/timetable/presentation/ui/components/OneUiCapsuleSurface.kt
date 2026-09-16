@@ -29,6 +29,7 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 
 val OneUiCapsuleShape = RoundedCornerShape(26.dp)
@@ -49,6 +50,7 @@ fun OneUiCapsuleSurface(
     subtitleMaxLines: Int = Int.MAX_VALUE,
 ) {
     val colors = AppTheme.colors
+    val glassConfig = LocalAppConfig.current
     val vividDeleteRed = Color(0xFFFF453A)
     val resolvedAccent = when {
         destructive -> vividDeleteRed
@@ -64,7 +66,7 @@ fun OneUiCapsuleSurface(
     var root = modifier
         .fillMaxWidth()
         .clip(OneUiCapsuleShape)
-        .background(backgroundColor)
+        .background(backgroundColor.copy(alpha = if (glassConfig.isLiquidGlassEnabled) glassConfig.glassOpacity else 1f))
         .then(
             if (destructive) Modifier.border(1.dp, vividDeleteRed.copy(alpha = 0.82f), OneUiCapsuleShape)
             else Modifier

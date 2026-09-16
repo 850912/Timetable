@@ -42,14 +42,13 @@ fun SettingScreen(
                 onFirstDaySelectClick = { internalNavController.navigateSingle(InternalNavRoutes.FIRST_DAY_SELECT) },
                 onThemeSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.THEME_SELECT) },
                 onBackgroundSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.BACKGROUND_SELECT) },
+                onLiquidGlassAdvancedClick = { internalNavController.navigateSingle(InternalNavRoutes.LIQUID_GLASS_ADVANCED) },
                 onExportClick = { internalNavController.navigateSingle(InternalNavRoutes.EXPORT) },
                 onImportClick = { internalNavController.navigateSingle(InternalNavRoutes.IMPORT) },
                 onShowTopTimeToggle = { enabled ->
                     appConfigViewModel.updateShowTopTime(enabled)
                 },
-                onLiquidGlassToggle = { enabled ->
-                    appConfigViewModel.updateLiquidGlassEnabled(enabled)
-                }
+                onDynamicColorToggle = { enabled -> appConfigViewModel.updateDynamicColorEnabled(enabled) }
             )
         }
 
@@ -59,6 +58,16 @@ fun SettingScreen(
 
         composable(InternalNavRoutes.IMPORT) {
             ImportScreen(onNavigateBack = { internalNavController.popBackStack() })
+        }
+
+        composable(InternalNavRoutes.LIQUID_GLASS_ADVANCED) {
+            LiquidGlassAdvancedPager(
+                config = config,
+                onEnabledChange = appConfigViewModel::updateLiquidGlassEnabled,
+                onOpacityChange = appConfigViewModel::updateGlassOpacity,
+                onEffectChange = appConfigViewModel::updateLiquidGlassEffect,
+                onBrightnessChange = appConfigViewModel::updateBackgroundBrightness,
+            )
         }
 
         composable(InternalNavRoutes.BACKGROUND_SELECT) {

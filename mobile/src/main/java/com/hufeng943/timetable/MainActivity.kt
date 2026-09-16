@@ -209,7 +209,6 @@ class MainActivity : AppCompatActivity() {
                 text = timetable.semesterName.ifBlank { "未命名课表" }
                 textSize = 20f
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
-                maxLines = 2
             })
             card.addView(TextView(this).apply {
                 val end = timetable.semesterEnd?.toString() ?: "长期"
@@ -278,8 +277,6 @@ class MainActivity : AppCompatActivity() {
                             text = occurrence.course.name.ifBlank { "未命名课程" }
                             textSize = if (isCurrent) 17f else 16f
                             setTypeface(typeface, if (isCurrent) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
-                            maxLines = 2
-                            ellipsize = TextUtils.TruncateAt.END
                         })
                         addView(TextView(this@MainActivity).apply {
                             text = buildString {
@@ -289,8 +286,6 @@ class MainActivity : AppCompatActivity() {
                             }
                             textSize = 13f
                             setPadding(0, dp(2), 0, 0)
-                            maxLines = 2
-                            ellipsize = TextUtils.TruncateAt.END
                         })
                     })
                     row.setOnClickListener { showCourseActionsDialog(timetable, occurrence.course) }
@@ -318,8 +313,6 @@ class MainActivity : AppCompatActivity() {
                         listOfNotNull(course.location, course.teacher).takeIf { it.isNotEmpty() }
                             ?.joinToString(prefix = "  （", postfix = "）", separator = " / ").orEmpty()
                     setPadding(0, dp(6), 0, dp(6))
-                    maxLines = 2
-                    ellipsize = TextUtils.TruncateAt.END
                     isClickable = true
                     isFocusable = true
                     setOnClickListener { showCourseActionsDialog(timetable, course) }
