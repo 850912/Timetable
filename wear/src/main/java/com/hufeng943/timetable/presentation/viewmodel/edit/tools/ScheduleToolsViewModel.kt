@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
+import com.hufeng943.timetable.shared.data.repository.TimeSlotMutation
 import com.hufeng943.timetable.shared.model.OpenEndedBatchAction
 import com.hufeng943.timetable.shared.model.ScheduleBatchOperations
 import com.hufeng943.timetable.shared.model.Timetable
@@ -92,6 +93,7 @@ class ScheduleToolsViewModel @Inject constructor(
         timeWindowStart: LocalTime?,
         timeWindowEnd: LocalTime?,
     ) {
+        val mutations = mutableListOf<TimeSlotMutation>()
         if (endDate == null) {
             timetable.allCourses
                 .asSequence()
@@ -109,35 +111,36 @@ class ScheduleToolsViewModel @Inject constructor(
                             },
                             offsetMinutes = offsetMinutes,
                         )
-                        if (updated != slot) repository.upsertTimeSlot(updated, course.id)
+                        if (updated != slot) mutations += TimeSlotMutation(updated, course.id)
                     }
                 }
-            return
-        }
-
-        val matching = if (action == BatchAction.RESTORE) emptyMap() else {
-            ScheduleBatchOperations.matchingDates(
-                timetable, startDate, endDate, timeWindowStart, timeWindowEnd,
-            )
-        }
-        timetable.allCourses
-            .asSequence()
-            .filter { courseId == null || it.id == courseId }
-            .forEach { course ->
-                course.timeSlots.forEach slotLoop@ { slot ->
-                    val updated = if (action == BatchAction.RESTORE) {
-                        ScheduleBatchOperations.clearRange(slot, startDate, endDate, timeWindowStart, timeWindowEnd)
-                    } else {
-                        val dates = matching[slot.id].orEmpty()
-                        if (dates.isEmpty()) return@slotLoop
-                        when (action) {
-                            BatchAction.SHIFT -> ScheduleBatchOperations.shiftDates(slot, dates, offsetMinutes)
-                            BatchAction.CANCEL -> ScheduleBatchOperations.cancelDates(slot, dates)
-                            BatchAction.RESTORE -> slot
-                        }
-                    }
-                    if (updated != slot) repository.upsertTimeSlot(updated, course.id)
-                }
+        } else {
+            val matching = if (action == BatchAction.RESTORE) emptyMap() else {
+                ScheduleBatchOperations.matchingDates(
+                    timetable, startDate, endDate, timeWindowStart, timeWindowEnd,
+                )
             }
+            timetable.allCourses
+                .asSequence()
+                .filter { courseId == null || it.id == courseId }
+                .forEach { course ->
+                    course.timeSlots.forEach slotLoop@ { slot ->
+                        val updated = if (action == BatchAction.RESTORE) {
+                            ScheduleBatchOperations.clearRange(slot, startDate, endDate, timeWindowStart, timeWindowEnd)
+                        } else {
+                            val dates = matching[slot.id].orEmpty()
+                            if (dates.isEmpty()) return@slotLoop
+                            when (action) {
+                                BatchAction.SHIFT -> ScheduleBatchOperations.shiftDates(slot, dates, offsetMinutes)
+                                BatchAction.CANCEL -> ScheduleBatchOperations.cancelDates(slot, dates)
+                                BatchAction.RESTORE -> slot
+                            }
+                        }
+                        if (updated != slot) mutations += TimeSlotMutation(updated, course.id)
+                    }
+                }
+        }
+        // One user action must not leave half of the timetable changed if a later write fails.
+        repository.applyTimeSlotMutations(mutations)
     }
 }

@@ -15,6 +15,7 @@ object NavRoutes {
 
     //----------------------------------
     const val LIST_TIMETABLE = "list_timetable"
+    const val SCHEDULE_TOOLS = "schedule_tools"
 
     // Nested graph
     const val EDIT_TIMETABLE = "edit_timetable/{${NavArgs.TABLE_ID}}"

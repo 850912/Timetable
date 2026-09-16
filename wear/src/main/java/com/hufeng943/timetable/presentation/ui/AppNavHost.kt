@@ -1,5 +1,15 @@
 package com.hufeng943.timetable.presentation.ui
 
+import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
+
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+
+import com.kyant.backdrop.backdrops.layerBackdrop
+
+import android.os.Build
+
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
@@ -42,6 +52,7 @@ import com.hufeng943.timetable.presentation.ui.screens.edit.course.EditCourseTea
 import com.hufeng943.timetable.presentation.ui.screens.edit.timeslot.EditTimeSlotScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.timeslot.TimeSlotListScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.TimetableListScreen
+import com.hufeng943.timetable.presentation.ui.screens.edit.tools.ScheduleToolsScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.timetable.EditTimetableScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.tools.DayArrangementScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.tools.CourseAdjustmentScreen
@@ -59,6 +70,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navController = rememberSwipeDismissableNavController()
     val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
+    val globalGlassBackdrop = rememberLayerBackdrop()
+    val useLiquidGlass = config.isLiquidGlassEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
     AppScaffold(
         timeText = {
@@ -76,9 +89,10 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     ) {
         CompositionLocalProvider(
             LocalNavController provides navController,
-            LocalAppConfig provides config
+            LocalAppConfig provides config,
+            LocalLiquidGlassBackdrop provides globalGlassBackdrop.takeIf { useLiquidGlass }
         ) {
-            AppBackground(config = config)
+            AppBackground(config = config, liquidGlassBackdrop = globalGlassBackdrop.takeIf { useLiquidGlass })
             Box(Modifier.fillMaxSize()) {
                 SwipeDismissableNavHost(
                     navController = navController,
@@ -92,9 +106,8 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     CourseDetailScreen()
                 }
 
-                composable(NavRoutes.LIST_TIMETABLE) {
-                    TimetableListScreen()
-                }
+                composable(NavRoutes.LIST_TIMETABLE) { TimetableListScreen() }
+                composable(NavRoutes.SCHEDULE_TOOLS) { ScheduleToolsScreen() }
 
                 composable(NavRoutes.LIST_COURSE) {
                     CourseListScreen()
@@ -214,7 +227,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
 
 
 @Composable
-private fun AppBackground(config: com.hufeng943.timetable.presentation.ui.common.AppConfig) {
+private fun AppBackground(config: com.hufeng943.timetable.presentation.ui.common.AppConfig, liquidGlassBackdrop: com.kyant.backdrop.Backdrop?) {
     val backgroundBitmap by produceState<android.graphics.Bitmap?>(
         initialValue = null,
         key1 = config.timetableBackgroundMode,
@@ -229,22 +242,23 @@ private fun AppBackground(config: com.hufeng943.timetable.presentation.ui.common
         } else null
     }
 
-    Box(Modifier.fillMaxSize().background(AppTheme.colors.background)) {
-        when (config.timetableBackgroundMode) {
-            TimetableBackgroundMode.SOLID -> Unit
-            TimetableBackgroundMode.THEME ->
-                GalaxyAiAmbientLayer(RectangleShape, strength = 0.92f * config.backgroundBrightness)
-            TimetableBackgroundMode.IMAGE -> backgroundBitmap?.let { bitmap ->
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
+    Box(Modifier.fillMaxSize().then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier).background(AppTheme.colors.background)) {
+        // Background blur is a single full-screen layer, not one blur pass per card. This keeps
+        // the optional effect predictable on Wear OS while allowing it to be disabled entirely.
+        Box(
+            Modifier
+                .fillMaxSize()
+                .then(if (config.blurredBackgroundEnabled && config.backgroundBlurRadius > 0f) Modifier.blur(config.backgroundBlurRadius.dp) else Modifier)
+        ) {
+            when (config.timetableBackgroundMode) {
+                TimetableBackgroundMode.SOLID -> Unit
+                TimetableBackgroundMode.THEME ->
+                    GalaxyAiAmbientLayer(RectangleShape, strength = 0.92f * config.backgroundBrightness)
+                TimetableBackgroundMode.IMAGE -> backgroundBitmap?.let { bitmap ->
+                    Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                }
             }
         }
-        // One readability model for every route. The upper bound intentionally leaves
-        // background detail visible for refraction while protecting text over bright photos.
         val scrimAlpha = ((1f - config.backgroundBrightness) * 0.70f).coerceIn(0f, 0.70f)
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
     }

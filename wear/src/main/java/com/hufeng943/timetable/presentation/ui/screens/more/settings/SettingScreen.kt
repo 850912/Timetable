@@ -67,6 +67,13 @@ fun SettingScreen(
                 onOpacityChange = appConfigViewModel::updateGlassOpacity,
                 onEffectChange = appConfigViewModel::updateLiquidGlassEffect,
                 onBrightnessChange = appConfigViewModel::updateBackgroundBrightness,
+                onHighSaturationChange = appConfigViewModel::updateGlassHighSaturation,
+                onChromaticAberrationChange = appConfigViewModel::updateGlassChromaticAberration,
+                onLensDistortionChange = appConfigViewModel::updateGlassLensDistortion,
+                onBlurEnabledChange = appConfigViewModel::updateGlassBlurEnabled,
+                onBlurRadiusChange = appConfigViewModel::updateGlassBlurRadius,
+                onBlurredBackgroundChange = appConfigViewModel::updateBlurredBackgroundEnabled,
+                onBackgroundBlurRadiusChange = appConfigViewModel::updateBackgroundBlurRadius,
             )
         }
 

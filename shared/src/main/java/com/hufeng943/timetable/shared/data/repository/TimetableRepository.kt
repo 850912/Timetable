@@ -13,6 +13,8 @@ interface TimetableRepository {
     suspend fun upsertTimetable(timetable: Timetable): Long
     suspend fun upsertCourse(course: Course, timetableId: Long): Long
     suspend fun upsertTimeSlot(timeSlot: TimeSlot, courseId: Long): Long
+    /** Atomically applies ordinary time-slot mutations without adding entries to the adjustment undo journal. */
+    suspend fun applyTimeSlotMutations(mutations: List<TimeSlotMutation>)
     /** Atomically applies schedule-adjustment slot changes and records their undo journal. */
     suspend fun applyAdjustmentMutations(timetableId: Long, mutations: List<TimeSlotMutation>)
     /** Atomically restores all adjustment mutations for one timetable and clears their journal. */

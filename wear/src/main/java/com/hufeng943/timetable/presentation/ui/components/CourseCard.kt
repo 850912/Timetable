@@ -105,22 +105,22 @@ fun CourseCard(
             backdrop = liquidGlassBackdrop,
             shape = { CourseCapsuleShape },
             effects = {
-                vibrancy()
-                // Only the current/next cards use AGSL refraction. The rest of the app uses the
-                // cheaper translucent glass material, avoiding N shader passes in long lists.
-                when (glassConfig.liquidGlassEffect) {
-                    LiquidGlassEffect.SOFT -> {
-                        blur(1.dp.toPx())
-                        lens(6.dp.toPx(), 9.dp.toPx(), chromaticAberration = false)
-                    }
-                    LiquidGlassEffect.BALANCED -> {
-                        blur(2.dp.toPx())
-                        lens(if (isCurrent) 11.dp.toPx() else 8.dp.toPx(), if (isCurrent) 17.dp.toPx() else 12.dp.toPx(), chromaticAberration = isCurrent)
-                    }
-                    LiquidGlassEffect.FLUID -> {
-                        blur(3.dp.toPx())
-                        lens(if (isCurrent) 16.dp.toPx() else 12.dp.toPx(), if (isCurrent) 24.dp.toPx() else 18.dp.toPx(), chromaticAberration = true)
-                    }
+                // Expensive effects remain limited to current/next cards. Each pass is independently
+                // configurable so users can trade appearance for battery life without multiplying
+                // shader work across the whole list.
+                if (glassConfig.glassHighSaturation) vibrancy()
+                if (glassConfig.glassBlurEnabled && glassConfig.glassBlurRadius > 0f) {
+                    blur(glassConfig.glassBlurRadius.dp.toPx())
+                }
+                if (glassConfig.glassLensDistortion > 0f) {
+                    val amount = glassConfig.glassLensDistortion
+                    val inner = (if (isCurrent) 16f else 12f) * amount
+                    val outer = (if (isCurrent) 24f else 18f) * amount
+                    lens(
+                        inner.dp.toPx(),
+                        outer.dp.toPx(),
+                        chromaticAberration = glassConfig.glassChromaticAberration,
+                    )
                 }
             },
             highlight = { Highlight.Ambient.copy(alpha = if (isCurrent) 0.80f else 0.58f) },

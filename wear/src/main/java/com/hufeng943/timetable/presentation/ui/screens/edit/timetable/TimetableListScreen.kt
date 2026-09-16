@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hufeng943.timetable.presentation.ui.NavRoutes.editTimetable
 import com.hufeng943.timetable.presentation.ui.NavRoutes.listCourse
+import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
@@ -26,6 +27,8 @@ fun TimetableListScreen(
             navController.navigateSingle(listCourse(id))
         }, onTimetableLongClick = { id ->
             navController.navigateSingle(editTimetable(id))
+        }, onScheduleToolsClick = {
+            navController.navigateSingle(NavRoutes.SCHEDULE_TOOLS)
         })
     }
 }

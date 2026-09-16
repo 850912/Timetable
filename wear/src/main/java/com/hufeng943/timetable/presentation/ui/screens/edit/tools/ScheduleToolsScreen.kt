@@ -42,11 +42,19 @@ fun ScheduleToolsScreen(
         ScheduleToolsState.Loading -> ScreenScaffold(timeText={}) {}
         is ScheduleToolsState.Error -> SimpleMessageScreen("快捷修改", current.message)
         is ScheduleToolsState.Ready -> {
-            val table = current.timetables.firstOrNull { it.timetableId == fixedTimetableId }
-                ?: if (fixedTimetableId == null) current.timetables.firstOrNull() else null
-            if (table == null) { SimpleMessageScreen("快捷修改", "课表不存在"); return }
+            var tableIndex by remember { mutableIntStateOf(0) }
+            LaunchedEffect(current.timetables.size) {
+                if (tableIndex !in current.timetables.indices) tableIndex = 0
+            }
+            val table = if (fixedTimetableId != null) {
+                current.timetables.firstOrNull { it.timetableId == fixedTimetableId }
+            } else current.timetables.getOrNull(tableIndex)
+            if (table == null) { SimpleMessageScreen("批量日程工具", "课表不存在"); return }
             val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
             var courseIndex by remember(table.timetableId) { mutableIntStateOf(0) }
+            LaunchedEffect(table.timetableId, table.allCourses.size) {
+                if (courseIndex !in 0..table.allCourses.size) courseIndex = 0
+            }
             var start by remember { mutableStateOf(today) }; var end by remember { mutableStateOf<LocalDate?>(null) }
             var offset by remember { mutableIntStateOf(10) }; var useWindow by remember { mutableStateOf(false) }
             var ws by remember { mutableStateOf(LocalTime(8,0)) }; var we by remember { mutableStateOf(LocalTime(18,0)) }
@@ -59,7 +67,8 @@ fun ScheduleToolsScreen(
                     val scroll=rememberTransformingLazyColumnState(); val transform=rememberTransformationSpec()
                     ScreenScaffold(scrollState=scroll,timeText={},edgeButton={EdgeButton(enabled=valid,onClick={viewModel.apply(action,start,end,offset,table.timetableId,selectedCourse?.id,if(useWindow)ws else null,if(useWindow)we else null)}){Icon(Icons.Rounded.Check,"确认")}}){padding->
                         TransformingLazyColumn(state=scroll,contentPadding=padding,modifier=Modifier.fillMaxSize()){
-                            item{ListHeader(modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text("快捷修改")}}
+                            item{ListHeader(modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text(if(fixedTimetableId==null)"批量日程工具" else "快捷修改")}}
+                            if(fixedTimetableId==null)item{OneUiCapsuleSurface(title="课表：${table.semesterName}",subtitle="点按切换课表",onClick={tableIndex=(tableIndex+1)%current.timetables.size},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
                             item{OneUiCapsuleSurface(title="范围：${selectedCourse?.name ?: "全部课程"}",subtitle="点按循环选择全部/单门课程",onClick={courseIndex=(courseIndex+1)%(table.allCourses.size+1)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
                             item{OneUiCapsuleSurface(title="临时放假",subtitle="从 ${start.toDisplayString()} 起 · 点按选择天数",icon=Icons.Rounded.EventBusy,emphasize=true,onClick={nav.navigateSingle(QuickRoutes.DAYS)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
                             item{OneUiCapsuleSurface(title=when(action){BatchAction.SHIFT->if(offset<0)"统一提前 ${-offset} 分钟" else "统一延时 $offset 分钟";BatchAction.CANCEL->"停课";BatchAction.RESTORE->"恢复正常"},subtitle="点按切换：调时 → 停课 → 恢复；长按设置提前/延时",icon=when(action){BatchAction.SHIFT->Icons.Rounded.Schedule;BatchAction.CANCEL->Icons.Rounded.EventBusy;BatchAction.RESTORE->Icons.Rounded.Restore},onClick={action=BatchAction.entries[(action.ordinal+1)%BatchAction.entries.size]},onLongClick={nav.navigateSingle(QuickRoutes.OFFSET)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}

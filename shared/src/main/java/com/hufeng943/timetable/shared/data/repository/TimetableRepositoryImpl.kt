@@ -135,6 +135,12 @@ class TimetableRepositoryImpl(
         upsertTimeSlotInternal(timeSlot, courseId)
     }
 
+    override suspend fun applyTimeSlotMutations(mutations: List<TimeSlotMutation>) = db.withTransaction {
+        mutations.forEach { mutation ->
+            upsertTimeSlotInternal(mutation.slot, mutation.courseId)
+        }
+    }
+
     override suspend fun applyAdjustmentMutations(timetableId: Long, mutations: List<TimeSlotMutation>) = db.withTransaction {
         if (mutations.isEmpty()) return@withTransaction
         val historyDao = db.scheduleAdjustmentHistoryDao()

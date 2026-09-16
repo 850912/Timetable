@@ -36,6 +36,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
+import com.hufeng943.timetable.shared.data.repository.TimeSlotMutation
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
 import com.hufeng943.timetable.shared.model.AcademicEvent
 import com.hufeng943.timetable.shared.model.AcademicEventType
@@ -1030,7 +1031,7 @@ class MainActivity : AppCompatActivity() {
                                 val matching = ScheduleBatchOperations.matchingDates(
                                     timetable, input.startDate, input.endDate, input.windowStart, input.windowEnd
                                 )
-                                var changed = 0
+                                val mutations = mutableListOf<TimeSlotMutation>()
                                 timetable.allCourses
                                     .filter { selectedCourseId == null || it.id == selectedCourseId }
                                     .forEach { course ->
@@ -1048,13 +1049,11 @@ class MainActivity : AppCompatActivity() {
                                                 1 -> ScheduleBatchOperations.cancelDates(slot, dates)
                                                 else -> ScheduleBatchOperations.clearDates(slot, dates)
                                             }
-                                            if (updated != slot) {
-                                                repository.upsertTimeSlot(updated, course.id)
-                                                changed++
-                                            }
+                                            if (updated != slot) mutations += TimeSlotMutation(updated, course.id)
                                         }
                                     }
-                                changed
+                                repository.applyTimeSlotMutations(mutations)
+                                mutations.size
                             }
                         }.onSuccess { changed ->
                             dialog.dismiss()
