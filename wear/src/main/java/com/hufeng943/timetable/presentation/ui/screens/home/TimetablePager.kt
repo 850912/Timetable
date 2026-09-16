@@ -189,8 +189,8 @@ fun TimetablePager(
         }
     }
 }
+}
 
-// Keep this declaration at top level; an extra closing brace here previously broke Wear compilation.
 /**
  * 空状态页面组件
  */
