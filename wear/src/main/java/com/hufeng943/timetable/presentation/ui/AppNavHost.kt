@@ -70,6 +70,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navController = rememberSwipeDismissableNavController()
     val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
+    // CI hotfix v2: keep the concrete LayerBackdrop value for Modifier.layerBackdrop().
     val globalGlassBackdrop = rememberLayerBackdrop()
     val useLiquidGlass = config.isLiquidGlassEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
@@ -92,7 +93,10 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
             LocalAppConfig provides config,
             LocalLiquidGlassBackdrop provides globalGlassBackdrop.takeIf { useLiquidGlass }
         ) {
-            AppBackground(config = config, liquidGlassBackdrop = globalGlassBackdrop.takeIf { useLiquidGlass })
+            AppBackground(
+                config = config,
+                modifier = if (useLiquidGlass) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
+            )
             Box(Modifier.fillMaxSize()) {
                 SwipeDismissableNavHost(
                     navController = navController,
@@ -227,7 +231,10 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
 
 
 @Composable
-private fun AppBackground(config: com.hufeng943.timetable.presentation.ui.common.AppConfig, liquidGlassBackdrop: com.kyant.backdrop.Backdrop?) {
+private fun AppBackground(
+    config: com.hufeng943.timetable.presentation.ui.common.AppConfig,
+    modifier: Modifier = Modifier,
+) {
     val backgroundBitmap by produceState<android.graphics.Bitmap?>(
         initialValue = null,
         key1 = config.timetableBackgroundMode,
@@ -242,7 +249,7 @@ private fun AppBackground(config: com.hufeng943.timetable.presentation.ui.common
         } else null
     }
 
-    Box(Modifier.fillMaxSize().then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier).background(AppTheme.colors.background)) {
+    Box(modifier.fillMaxSize().background(AppTheme.colors.background)) {
         // Background blur is a single full-screen layer, not one blur pass per card. This keeps
         // the optional effect predictable on Wear OS while allowing it to be disabled entirely.
         Box(

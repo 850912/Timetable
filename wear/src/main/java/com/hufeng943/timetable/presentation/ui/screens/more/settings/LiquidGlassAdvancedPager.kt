@@ -47,8 +47,16 @@ fun LiquidGlassAdvancedPager(
     val state = rememberTransformingLazyColumnState()
     val transform = rememberTransformationSpec()
     val supported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-    fun itemModifier(scope: androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope) =
-        with(scope) { Modifier.fillMaxWidth().transformedHeight(this, transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding) }
+    @Composable
+    fun itemModifier(scope: androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope): Modifier {
+        // minimumVerticalContentPadding is composable, so this helper must stay in composable context.
+        return with(scope) {
+            Modifier
+                .fillMaxWidth()
+                .transformedHeight(this, transform)
+                .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+        }
+    }
 
     ScreenScaffold(scrollState = state) { padding ->
         TransformingLazyColumn(

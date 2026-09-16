@@ -285,4 +285,3 @@ private fun rememberLazyListRotarySnapLayoutInfoProvider(
             get() = state.layoutInfo.totalItemsCount
     }
 }
-
