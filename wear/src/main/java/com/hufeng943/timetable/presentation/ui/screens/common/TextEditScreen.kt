@@ -79,7 +79,7 @@ fun TextEditScreen(label: String, initialText: String, onSave: (String) -> Unit)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                         .clip(OneUiCapsuleShape)
                         .globalLiquidGlass(OneUiCapsuleShape, AppTheme.colors.surfaceContainer)
-                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled || LocalAppConfig.current.isFrostedGlassEnabled)) 0f else 1f)),
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled || LocalAppConfig.current.isFrostedGlassEnabled || LocalAppConfig.current.isGlobalGlassMaterialEnabled)) 0f else 1f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     GalaxyAiAmbientLayer(shape = OneUiCapsuleShape, strength = 0.22f)

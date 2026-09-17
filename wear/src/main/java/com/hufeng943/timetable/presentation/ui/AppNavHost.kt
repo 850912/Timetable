@@ -1,12 +1,7 @@
 package com.hufeng943.timetable.presentation.ui
 
-import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
-import com.kyant.backdrop.backdrops.layerBackdrop
-
-import android.os.Build
 
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
@@ -14,7 +9,6 @@ import androidx.compose.runtime.Composable
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
@@ -40,6 +34,9 @@ import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.common.LocalHazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.screens.detail.CourseDetailScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.course.CourseListScreen
@@ -65,15 +62,16 @@ import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.LocalSwipeToDismissBackgroundScrimColor
+import androidx.wear.compose.foundation.LocalSwipeToDismissContentScrimColor
 
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navController = rememberSwipeDismissableNavController()
     val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
-    // CI hotfix v2: keep the concrete LayerBackdrop value for Modifier.layerBackdrop().
-    val globalGlassBackdrop = rememberLayerBackdrop()
-    val glassSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-    val useBackdropEffects = glassSupported && (config.isLiquidGlassEnabled || config.isFrostedGlassEnabled)
+    val globalHazeState = rememberHazeState()
+    // Haze supplies its own Android fallback backend, so glass is no longer hard-gated to API 33+.
+    val useBackdropEffects = config.isLiquidGlassEnabled || config.isFrostedGlassEnabled || config.isGlobalGlassMaterialEnabled
 
     AppScaffold(
         containerColor = Color.Transparent,
@@ -93,17 +91,21 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         CompositionLocalProvider(
             LocalNavController provides navController,
             LocalAppConfig provides config,
-            LocalLiquidGlassBackdrop provides globalGlassBackdrop.takeIf { useBackdropEffects }
+            LocalHazeState provides globalHazeState.takeIf { useBackdropEffects }
         ) {
             AppBackground(
                 config = config,
-                modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
+                modifier = if (useBackdropEffects) Modifier.hazeSource(globalHazeState, key = "app-background") else Modifier,
             )
             Box(Modifier.fillMaxSize()) {
-                SwipeDismissableNavHost(
-                    navController = navController,
-                    startDestination = NavRoutes.MAIN
+                CompositionLocalProvider(
+                    LocalSwipeToDismissBackgroundScrimColor provides Color.Transparent,
+                    LocalSwipeToDismissContentScrimColor provides Color.Transparent,
                 ) {
+                    SwipeDismissableNavHost(
+                        navController = navController,
+                        startDestination = NavRoutes.MAIN
+                    ) {
                 composable(NavRoutes.MAIN) {
                     HomeScreen()
                 }
@@ -225,7 +227,8 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     EditTimetableScreen()
                 }
 
-            }
+                    }
+                }
             }
         }
     }
@@ -275,7 +278,7 @@ private fun AppBackground(
         Box(
             Modifier
                 .fillMaxSize()
-                .then(if (config.blurredBackgroundEnabled && config.backgroundBlurRadius > 0f) Modifier.blur(config.backgroundBlurRadius.dp) else Modifier)
+                
         ) {
             when (config.timetableBackgroundMode) {
                 TimetableBackgroundMode.SOLID -> Unit
@@ -292,7 +295,7 @@ private fun AppBackground(
                 }
             }
         }
-        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.70f).coerceIn(0f, 0.70f)
+        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.35f).coerceIn(0f, 0.35f)
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
     }
 }

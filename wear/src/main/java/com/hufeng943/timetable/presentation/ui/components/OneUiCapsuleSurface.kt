@@ -76,7 +76,7 @@ fun OneUiCapsuleSurface(
         .fillMaxWidth()
         .clip(OneUiCapsuleShape)
         .globalLiquidGlass(OneUiCapsuleShape, backgroundColor)
-        .background(backgroundColor.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled)) 0f else 1f))
+        .background(backgroundColor.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled || glassConfig.isGlobalGlassMaterialEnabled)) 0f else 1f))
         .then(
             when {
                 destructive -> Modifier.border(1.dp, vividDeleteRed.copy(alpha = 0.74f), OneUiCapsuleShape)

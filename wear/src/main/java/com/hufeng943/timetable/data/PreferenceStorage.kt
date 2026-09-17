@@ -43,8 +43,10 @@ class PreferenceStorage @Inject constructor(
         val DYNAMIC_COLOR_ENABLED = booleanPreferencesKey("dynamic_color_enabled")
         val SHOW_TOP_TIME = booleanPreferencesKey("show_top_time")
         val UI_ANIMATIONS_ENABLED = booleanPreferencesKey("ui_animations_enabled")
+        val CONDITIONAL_UI_ENABLED = booleanPreferencesKey("conditional_ui_enabled")
         val LIQUID_GLASS_ENABLED = booleanPreferencesKey("liquid_glass_enabled")
         val FROSTED_GLASS_ENABLED = booleanPreferencesKey("frosted_glass_enabled")
+        val GLOBAL_GLASS_MATERIAL_ENABLED = booleanPreferencesKey("global_glass_material_enabled")
         val GLASS_OPACITY = floatPreferencesKey("glass_opacity")
         val LIQUID_GLASS_EFFECT = stringPreferencesKey("liquid_glass_effect")
         val GLASS_HIGH_SATURATION = booleanPreferencesKey("glass_high_saturation")
@@ -97,8 +99,10 @@ class PreferenceStorage @Inject constructor(
             isDynamicColorEnabled = prefs[Keys.DYNAMIC_COLOR_ENABLED] ?: true,
             isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false,
             uiAnimationsEnabled = prefs[Keys.UI_ANIMATIONS_ENABLED] ?: true,
+            conditionalUiEnabled = prefs[Keys.CONDITIONAL_UI_ENABLED] ?: true,
             isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: false,
             isFrostedGlassEnabled = prefs[Keys.FROSTED_GLASS_ENABLED] ?: false,
+            isGlobalGlassMaterialEnabled = prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] ?: false,
             glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.42f).coerceIn(0.05f, 0.95f),
             liquidGlassEffect = runCatching { LiquidGlassEffect.valueOf(prefs[Keys.LIQUID_GLASS_EFFECT] ?: LiquidGlassEffect.BALANCED.name) }.getOrDefault(LiquidGlassEffect.BALANCED),
             glassHighSaturation = prefs[Keys.GLASS_HIGH_SATURATION] ?: false,
@@ -108,7 +112,7 @@ class PreferenceStorage @Inject constructor(
             glassBlurRadius = (prefs[Keys.GLASS_BLUR_RADIUS] ?: 1f).coerceIn(0f, 8f),
             blurredBackgroundEnabled = prefs[Keys.BLURRED_BACKGROUND_ENABLED] ?: false,
             backgroundBlurRadius = (prefs[Keys.BACKGROUND_BLUR_RADIUS] ?: 4f).coerceIn(0f, 12f),
-            backgroundBrightness = (prefs[Keys.BACKGROUND_BRIGHTNESS] ?: 0.62f).coerceIn(0.10f, 1f),
+            backgroundBrightness = (prefs[Keys.BACKGROUND_BRIGHTNESS] ?: 0.82f).coerceIn(0.10f, 1f),
             timetableBackgroundMode = runCatching {
                 TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
             }.getOrDefault(TimetableBackgroundMode.THEME),
@@ -145,12 +149,26 @@ class PreferenceStorage @Inject constructor(
         context.dataStore.edit { it[Keys.UI_ANIMATIONS_ENABLED] = enabled }
     }
 
+    suspend fun setConditionalUiEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.CONDITIONAL_UI_ENABLED] = enabled }
+    }
+
     suspend fun setLiquidGlassEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.LIQUID_GLASS_ENABLED] = enabled }
+        context.dataStore.edit { prefs ->
+            // Haze is now the only glass engine. Old global/frosted switches are migration-only
+            // state and must not remain active behind the single visible glass control.
+            prefs[Keys.LIQUID_GLASS_ENABLED] = enabled
+            prefs[Keys.FROSTED_GLASS_ENABLED] = false
+            prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] = false
+        }
     }
 
     suspend fun setFrostedGlassEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.FROSTED_GLASS_ENABLED] = enabled }
+    }
+
+    suspend fun setGlobalGlassMaterialEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] = enabled }
     }
 
     suspend fun setGlassOpacity(value: Float) {

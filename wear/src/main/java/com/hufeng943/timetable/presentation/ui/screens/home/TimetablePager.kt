@@ -54,7 +54,6 @@ import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.NavRoutes.courseDetail
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
-import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
 import com.hufeng943.timetable.presentation.ui.components.CourseCard
@@ -94,10 +93,6 @@ fun TimetablePager(
     val selectedDateEvents by viewModel.selectedDateEvents.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
-    // The root AppNavHost owns one shared backdrop source. Reusing it avoids drawing and
-    // capturing a second full-screen background just for the timetable page.
-    val liquidGlassBackdrop = LocalLiquidGlassBackdrop.current
-    val useLiquidGlass = liquidGlassBackdrop != null
 
     LaunchedEffect(uiState) {
         if (uiState !is UiState.Success) {
@@ -176,7 +171,6 @@ fun TimetablePager(
                     } else null,
                     minutesUntilNext = if (statusSummary.currentId == courseId) statusSummary.minutesUntilNext else null,
                     is24HourFormat = config.is24HourFormat,
-                    liquidGlassBackdrop = liquidGlassBackdrop.takeIf { useLiquidGlass && (statusSummary.currentId == courseId || statusSummary.nextId == courseId) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .transformedHeight(this, transformationSpec)

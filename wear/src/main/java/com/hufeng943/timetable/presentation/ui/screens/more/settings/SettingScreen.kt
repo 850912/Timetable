@@ -54,9 +54,9 @@ fun SettingScreen(
                 onBackgroundSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.BACKGROUND_SELECT) },
                 onLiquidGlassAdvancedClick = { internalNavController.navigateSingle(InternalNavRoutes.LIQUID_GLASS_ADVANCED) },
                 onDynamicColorToggle = appConfigViewModel::updateDynamicColorEnabled,
-                onFrostedGlassToggle = appConfigViewModel::updateFrostedGlassEnabled,
                 onShowTopTimeToggle = appConfigViewModel::updateShowTopTime,
                 onUiAnimationsToggle = appConfigViewModel::updateUiAnimationsEnabled,
+                onConditionalUiToggle = appConfigViewModel::updateConditionalUiEnabled,
             )
         }
 
@@ -75,13 +75,10 @@ fun SettingScreen(
                 onOpacityChange = appConfigViewModel::updateGlassOpacity,
                 onEffectChange = appConfigViewModel::updateLiquidGlassEffect,
                 onBrightnessChange = appConfigViewModel::updateBackgroundBrightness,
-                onHighSaturationChange = appConfigViewModel::updateGlassHighSaturation,
                 onChromaticAberrationChange = appConfigViewModel::updateGlassChromaticAberration,
                 onLensDistortionChange = appConfigViewModel::updateGlassLensDistortion,
                 onBlurEnabledChange = appConfigViewModel::updateGlassBlurEnabled,
                 onBlurRadiusChange = appConfigViewModel::updateGlassBlurRadius,
-                onBlurredBackgroundChange = appConfigViewModel::updateBlurredBackgroundEnabled,
-                onBackgroundBlurRadiusChange = appConfigViewModel::updateBackgroundBlurRadius,
             )
         }
 

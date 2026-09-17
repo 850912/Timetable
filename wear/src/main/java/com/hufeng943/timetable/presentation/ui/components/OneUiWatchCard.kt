@@ -59,7 +59,7 @@ fun OneUiWatchCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
             .globalLiquidGlass(RoundedCornerShape(22.dp), cardBackground)
-            .background(cardBackground.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled)) 0f else 1f))
+            .background(cardBackground.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled || glassConfig.isGlobalGlassMaterialEnabled)) 0f else 1f))
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {

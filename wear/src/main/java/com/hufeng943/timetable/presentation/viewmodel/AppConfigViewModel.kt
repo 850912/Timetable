@@ -59,12 +59,20 @@ class AppConfigViewModel @Inject constructor(
         viewModelScope.launch { preferenceStorage.setUiAnimationsEnabled(enabled) }
     }
 
+    fun updateConditionalUiEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferenceStorage.setConditionalUiEnabled(enabled) }
+    }
+
     fun updateLiquidGlassEnabled(enabled: Boolean) {
         viewModelScope.launch { preferenceStorage.setLiquidGlassEnabled(enabled) }
     }
 
     fun updateFrostedGlassEnabled(enabled: Boolean) {
         viewModelScope.launch { preferenceStorage.setFrostedGlassEnabled(enabled) }
+    }
+
+    fun updateGlobalGlassMaterialEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferenceStorage.setGlobalGlassMaterialEnabled(enabled) }
     }
 
     fun updateGlassOpacity(value: Float) { viewModelScope.launch { preferenceStorage.setGlassOpacity(value) } }

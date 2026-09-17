@@ -1,11 +1,11 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.settings
 
-import android.os.Build
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Animation
 import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.ColorLens
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Tune
@@ -40,13 +40,12 @@ fun UiManagementPager(
     onBackgroundSelectClick: () -> Unit,
     onLiquidGlassAdvancedClick: () -> Unit,
     onDynamicColorToggle: (Boolean) -> Unit,
-    onFrostedGlassToggle: (Boolean) -> Unit,
     onShowTopTimeToggle: (Boolean) -> Unit,
     onUiAnimationsToggle: (Boolean) -> Unit,
+    onConditionalUiToggle: (Boolean) -> Unit,
 ) {
     val state = rememberTransformingLazyColumnState()
     val transform = rememberTransformationSpec()
-    val glassSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
     fun backgroundLabel(): String = when (config.timetableBackgroundMode) {
         TimetableBackgroundMode.SOLID -> "纯色"
@@ -97,23 +96,12 @@ fun UiManagementPager(
                     icon = Icons.Rounded.BlurOn,
                     label = stringResource(R.string.settings_liquid_glass),
                     secondaryLabel = when {
-                        !glassSupported -> "Android 13 及以上可用"
-                        config.isLiquidGlassEnabled -> "已开启 · ${config.liquidGlassEffect.name.lowercase()}"
-                        else -> "已关闭 · 点按进入玻璃与背景高级设置"
+                        config.isLiquidGlassEnabled -> "液态 · ${config.liquidGlassEffect.name.lowercase()}"
+                        config.isFrostedGlassEnabled -> "磨砂"
+                        config.isGlobalGlassMaterialEnabled -> "全局材质"
+                        else -> "已关闭 · Haze 玻璃材质设置"
                     },
                     onClick = onLiquidGlassAdvancedClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
-            }
-            item {
-                OneUiSwitchCapsule(
-                    title = "全局磨砂玻璃",
-                    subtitle = if (glassSupported) "应用到选项、按钮、信息面板和主要卡片" else "当前系统版本不支持实时玻璃",
-                    icon = Icons.Rounded.BlurOn,
-                    checked = config.isFrostedGlassEnabled && glassSupported,
-                    enabled = glassSupported,
-                    onCheckedChange = onFrostedGlassToggle,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
@@ -136,6 +124,17 @@ fun UiManagementPager(
                     icon = Icons.Rounded.Animation,
                     checked = config.uiAnimationsEnabled,
                     onCheckedChange = onUiAnimationsToggle,
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+            item {
+                OneUiSwitchCapsule(
+                    title = "条件 UI",
+                    subtitle = "根据当前能力和开关状态隐藏无效的高级选项，减少滚动与误触",
+                    icon = Icons.Rounded.AutoAwesome,
+                    checked = config.conditionalUiEnabled,
+                    onCheckedChange = onConditionalUiToggle,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )

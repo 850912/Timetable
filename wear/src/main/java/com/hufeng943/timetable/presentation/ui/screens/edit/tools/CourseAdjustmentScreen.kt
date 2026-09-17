@@ -35,50 +35,101 @@ private object AdjustRoutes { const val MAIN="main"; const val DATE="date"; cons
 
 @Composable
 fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewModel()) {
-    val state by viewModel.state.collectAsStateWithLifecycle(); val outerNav=LocalNavController.current
-    LaunchedEffect(viewModel){viewModel.completed.collect{outerNav.popSafe()}}
-    when(val current=state){
-        ScheduleAdjustmentState.Loading -> ScreenScaffold(timeText={}){}
-        is ScheduleAdjustmentState.Error -> SimpleMessageScreen("课程调节",current.message)
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val outerNav = LocalNavController.current
+    LaunchedEffect(viewModel) { viewModel.completed.collect { outerNav.popSafe() } }
+    when (val current = state) {
+        ScheduleAdjustmentState.Loading -> ScreenScaffold(timeText = {}) {}
+        is ScheduleAdjustmentState.Error -> SimpleMessageScreen("课程调节", current.message)
         is ScheduleAdjustmentState.Ready -> {
-            var tableIndex by remember { mutableIntStateOf(0) }
-            LaunchedEffect(current.timetables.size) { if (tableIndex !in current.timetables.indices) tableIndex = 0 }
-            val table=current.timetables[tableIndex]; val today=remember{Clock.System.todayIn(TimeZone.currentSystemDefault())}
-            var date by remember{mutableStateOf(today)}; var sourceSlotId by remember(table.timetableId){mutableLongStateOf(-1L)}; var targetCourseId by remember(table.timetableId){mutableLongStateOf(-1L)}
-            var browsingCourseId by remember{mutableLongStateOf(-1L)}; var mode by remember{mutableStateOf(CourseAdjustmentMode.OCCUPY)}; var permanent by remember{mutableStateOf(false)}
-            val occurrences=remember(table,date){table.resolveDate(date)}
-            val a=occurrences.firstOrNull{it.timeSlot.id==sourceSlotId}?:occurrences.firstOrNull().also{if(sourceSlotId<0&&it!=null)sourceSlotId=it.timeSlot.id}
-            val bCourses=table.allCourses.filter{it.id!=a?.course?.id}; val b=bCourses.firstOrNull{it.id==targetCourseId}?:bCourses.firstOrNull().also{if(targetCourseId<0&&it!=null)targetCourseId=it.id}
-            val bOccurs=b?.let{bc->occurrences.any{it.course.id==bc.id}}==true; val valid=a!=null&&b!=null&&(mode!=CourseAdjustmentMode.SWAP||bOccurs)
-            val nav=rememberSwipeDismissableNavController()
-            SwipeDismissableNavHost(navController=nav,startDestination=AdjustRoutes.MAIN){
-                composable(AdjustRoutes.MAIN){
-                    val scroll=rememberTransformingLazyColumnState();val transform=rememberTransformationSpec()
-                    ScreenScaffold(scrollState=scroll,timeText={},edgeButton={EdgeButton(enabled=valid,onClick={if(a!=null&&b!=null)viewModel.applyCourseAdjustment(table.timetableId,date,a.timeSlot.id,b.id,mode,permanent)}){Icon(Icons.Rounded.Check,"确认")}}){padding->TransformingLazyColumn(state=scroll,contentPadding=padding,modifier=Modifier.fillMaxSize()){
-                        item{ListHeader(modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text("课程调节")}}
-                        item{OneUiCapsuleSurface(title="课表：${table.semesterName}",subtitle="可在 ${current.timetables.size} 个课表之间切换 · 点按切换",icon=Icons.Rounded.SelectAll,onClick={tableIndex=(tableIndex+1)%current.timetables.size},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                        item{OneUiCapsuleSurface(title="日期：${date.toDisplayString()}",subtitle="${date.dayOfWeek.toDisplayString(TextStyle.FULL)} · 点按打开日期选择",icon=Icons.Rounded.DateRange,onClick={nav.navigateSingle(AdjustRoutes.DATE)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                        item{OneUiCapsuleSurface(title="A 课：${a?.course?.name?:"当天无课"}",subtitle=a?.let{"${it.startTime.toDisplayString(true)}–${it.endTime.toDisplayString(true)} · 点按按课程→课时选择"}?:"请选择其他日期",onClick={nav.navigateSingle(AdjustRoutes.A_COURSES)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                        item{OneUiCapsuleSurface(title="B 课：${b?.name?:"无可选课程"}",subtitle="点按按课程→课时选择",onClick={nav.navigateSingle(AdjustRoutes.B_COURSES)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                        item{OneUiCapsuleSurface(title=if(mode==CourseAdjustmentMode.SWAP)"换课" else "占课",subtitle=if(mode==CourseAdjustmentMode.SWAP)if(bOccurs)"A、B 互换" else "B 当天无课时，不能换课" else "B 使用 A 的时间，A 当天取消",icon=Icons.Rounded.SwapCalls,selected=mode==CourseAdjustmentMode.SWAP,onClick={mode=if(mode==CourseAdjustmentMode.SWAP)CourseAdjustmentMode.OCCUPY else CourseAdjustmentMode.SWAP},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                        item{OneUiCapsuleSurface(title=if(permanent)"永久" else "仅当天",subtitle=if(permanent)"同步修改实际课时归属" else "只修改所选日期",icon=if(permanent)Icons.Rounded.Repeat else Icons.Rounded.Today,selected=permanent,onClick={permanent=!permanent},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                        item{OneUiCapsuleSurface(title="恢复课程调节",subtitle="恢复全部课表中由调休、课程调节产生的修改",icon=Icons.Rounded.Restore,onClick={viewModel.restoreAdjustments()},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                    }}
+            val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+            var date by remember { mutableStateOf(today) }
+            var sourceSlotId by remember { mutableLongStateOf(-1L) }
+            var sourceTableId by remember { mutableLongStateOf(-1L) }
+            var targetCourseId by remember { mutableLongStateOf(-1L) }
+            var browsingCourseId by remember { mutableLongStateOf(-1L) }
+            var mode by remember { mutableStateOf(CourseAdjustmentMode.OCCUPY) }
+            var permanent by remember { mutableStateOf(false) }
+
+            // Course adjustment is a global entry point: every timetable participates in discovery.
+            // The selected A occurrence determines the owning timetable for the atomic mutation;
+            // there is deliberately no "scope to one timetable" selector in this tool.
+            val allOccurrences = remember(current.timetables, date) {
+                current.timetables.flatMap { table ->
+                    table.resolveDate(date).map { occurrence -> Triple(table.timetableId, table.semesterName, occurrence) }
                 }
-                composable(AdjustRoutes.DATE){ScreenScaffold(timeText={}){DatePicker(initialDate=date.toJavaLocalDate(),onDatePicked={date=it.toKotlinLocalDate();sourceSlotId=-1;targetCourseId=-1;nav.popSafe()})}}
-                composable(AdjustRoutes.A_COURSES){
-                    val courses=occurrences.map{it.course}.distinctBy{it.id}
-                    CourseSelectionPage("选择 A 课",courses){browsingCourseId=it;nav.navigateSingle(AdjustRoutes.A_SLOTS)}
+            }
+            val selected = allOccurrences.firstOrNull { (tableId, _, occurrence) ->
+                tableId == sourceTableId && occurrence.timeSlot.id == sourceSlotId
+            } ?: allOccurrences.firstOrNull().also { first ->
+                if (sourceSlotId < 0 && first != null) {
+                    sourceTableId = first.first
+                    sourceSlotId = first.third.timeSlot.id
                 }
-                composable(AdjustRoutes.A_SLOTS){
-                    val slots=occurrences.filter{it.course.id==browsingCourseId}
-                    OccurrenceSelectionPage("选择 A 课时",slots){sourceSlotId=it;targetCourseId=-1;nav.popBackStack(AdjustRoutes.MAIN,false)}
+            }
+            val table = selected?.let { hit -> current.timetables.firstOrNull { it.timetableId == hit.first } }
+            val a = selected?.third
+            val tableOccurrences = remember(table, date) { table?.resolveDate(date).orEmpty() }
+            val bCourses = table?.allCourses.orEmpty().filter { it.id != a?.course?.id }
+            val b = bCourses.firstOrNull { it.id == targetCourseId } ?: bCourses.firstOrNull().also {
+                if (targetCourseId < 0 && it != null) targetCourseId = it.id
+            }
+            val bOccurs = b?.let { bc -> tableOccurrences.any { it.course.id == bc.id } } == true
+            val valid = a != null && b != null && table != null && (mode != CourseAdjustmentMode.SWAP || bOccurs)
+            val nav = rememberSwipeDismissableNavController()
+
+            SwipeDismissableNavHost(navController = nav, startDestination = AdjustRoutes.MAIN) {
+                composable(AdjustRoutes.MAIN) {
+                    val scroll = rememberTransformingLazyColumnState(); val transform = rememberTransformationSpec()
+                    ScreenScaffold(scrollState = scroll, timeText = {}, edgeButton = {
+                        EdgeButton(enabled = valid, onClick = {
+                            if (a != null && b != null && table != null) viewModel.applyCourseAdjustment(table.timetableId, date, a.timeSlot.id, b.id, mode, permanent)
+                        }) { Icon(Icons.Rounded.Check, "确认") }
+                    }) { padding ->
+                        TransformingLazyColumn(state = scroll, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
+                            item { ListHeader(modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text("课程调节")} }
+                            item { OneUiCapsuleSurface(title="范围：全部课表",subtitle="${current.timetables.size} 个课表参与课程与课时发现；无需选择作用课表",icon=Icons.Rounded.SelectAll,modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title="日期：${date.toDisplayString()}",subtitle="${date.dayOfWeek.toDisplayString(TextStyle.FULL)} · 点按打开日期选择",icon=Icons.Rounded.DateRange,onClick={nav.navigateSingle(AdjustRoutes.DATE)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title="A 课：${a?.course?.name?:"当天无课"}",subtitle=a?.let{"${selected?.second.orEmpty()} · ${it.startTime.toDisplayString(true)}–${it.endTime.toDisplayString(true)}"}?:"所有课表当天均无课",onClick={nav.navigateSingle(AdjustRoutes.A_COURSES)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title="B 课：${b?.name?:"无可选课程"}",subtitle="跟随 A 课所属课表，避免跨课表破坏课程归属",onClick={nav.navigateSingle(AdjustRoutes.B_COURSES)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title=if(mode==CourseAdjustmentMode.SWAP)"换课" else "占课",subtitle=if(mode==CourseAdjustmentMode.SWAP)if(bOccurs)"A、B 互换" else "B 当天无课时，不能换课" else "B 使用 A 的时间，A 当天取消",icon=Icons.Rounded.SwapCalls,selected=mode==CourseAdjustmentMode.SWAP,onClick={mode=if(mode==CourseAdjustmentMode.SWAP)CourseAdjustmentMode.OCCUPY else CourseAdjustmentMode.SWAP},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title=if(permanent)"永久" else "仅当天",subtitle=if(permanent)"同步修改实际课时归属" else "只修改所选日期",icon=if(permanent)Icons.Rounded.Repeat else Icons.Rounded.Today,selected=permanent,onClick={permanent=!permanent},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title="恢复课程调节",subtitle="恢复全部课表中由调休、课程调节产生的修改",icon=Icons.Rounded.Restore,onClick={viewModel.restoreAdjustments()},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                        }
+                    }
                 }
-                composable(AdjustRoutes.B_COURSES){CourseSelectionPage("选择 B 课",bCourses){browsingCourseId=it;nav.navigateSingle(AdjustRoutes.B_SLOTS)}}
-                composable(AdjustRoutes.B_SLOTS){
+                composable(AdjustRoutes.DATE) { ScreenScaffold(timeText={}) { DatePicker(initialDate=date.toJavaLocalDate(),onDatePicked={date=it.toKotlinLocalDate();sourceSlotId=-1;sourceTableId=-1;targetCourseId=-1;nav.popSafe()}) } }
+                composable(AdjustRoutes.A_COURSES) {
+                    val courses = allOccurrences.map { it.third.course }.distinctBy { it.id }
+                    CourseSelectionPage("选择 A 课", courses) { browsingCourseId=it;nav.navigateSingle(AdjustRoutes.A_SLOTS) }
+                }
+                composable(AdjustRoutes.A_SLOTS) {
+                    val slots = allOccurrences.filter { it.third.course.id == browsingCourseId }
+                    GlobalOccurrenceSelectionPage("选择 A 课时", slots) { tableId, slotId -> sourceTableId=tableId;sourceSlotId=slotId;targetCourseId=-1;nav.popBackStack(AdjustRoutes.MAIN,false) }
+                }
+                composable(AdjustRoutes.B_COURSES) { CourseSelectionPage("选择 B 课",bCourses){browsingCourseId=it;nav.navigateSingle(AdjustRoutes.B_SLOTS)} }
+                composable(AdjustRoutes.B_SLOTS) {
                     val course=bCourses.firstOrNull{it.id==browsingCourseId}
                     TimeSlotSelectionPage("选择 B 课时",course){targetCourseId=browsingCourseId;nav.popBackStack(AdjustRoutes.MAIN,false)}
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GlobalOccurrenceSelectionPage(title:String, items:List<Triple<Long,String,ResolvedSchedule>>, onSelect:(Long,Long)->Unit) {
+    val state=rememberTransformingLazyColumnState(); val transform=rememberTransformationSpec()
+    ScreenScaffold(scrollState=state,timeText={}) { padding ->
+        TransformingLazyColumn(state=state,contentPadding=padding,modifier=Modifier.fillMaxSize()) {
+            item { ListHeader(modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text(title)} }
+            items(items,key={"${it.first}:${it.third.timeSlot.id}"}) { hit ->
+                OneUiCapsuleSurface(
+                    title=hit.third.course.name,
+                    subtitle="${hit.second} · ${hit.third.startTime.toDisplayString(true)}–${hit.third.endTime.toDisplayString(true)}",
+                    onClick={onSelect(hit.first,hit.third.timeSlot.id)},
+                    modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                )
             }
         }
     }

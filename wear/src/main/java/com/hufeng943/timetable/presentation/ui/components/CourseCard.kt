@@ -29,14 +29,6 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.InnerShadow
-import com.kyant.backdrop.shadow.Shadow
 import androidx.wear.compose.material3.Card
 import androidx.wear.compose.material3.CardDefaults
 import androidx.wear.compose.material3.Icon
@@ -47,7 +39,6 @@ import androidx.compose.ui.res.stringResource
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
-import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 import com.hufeng943.timetable.presentation.ui.theme.galaxyAiAccentBrush
@@ -65,7 +56,6 @@ fun CourseCard(
     nextCourseName: String? = null,
     minutesUntilNext: Int? = null,
     is24HourFormat: Boolean = true,
-    liquidGlassBackdrop: Backdrop? = null,
     onClick: () -> Unit
 ) {
     val colors = AppTheme.colors
@@ -100,47 +90,9 @@ fun CourseCard(
         isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.46f), CourseCapsuleShape)
         else -> modifier.border(0.8.dp, Color.White.copy(alpha = 0.16f), CourseCapsuleShape)
     }
-    val cardModifier = if (liquidGlassBackdrop != null) {
-        baseCardModifier.drawBackdrop(
-            backdrop = liquidGlassBackdrop,
-            shape = { CourseCapsuleShape },
-            effects = {
-                // Expensive effects remain limited to current/next cards. Each pass is independently
-                // configurable so users can trade appearance for battery life without multiplying
-                // shader work across the whole list.
-                if (glassConfig.isLiquidGlassEnabled) {
-                    if (glassConfig.glassHighSaturation && glassConfig.liquidGlassEffect != LiquidGlassEffect.SOFT) vibrancy()
-                    val cap = when (glassConfig.liquidGlassEffect) {
-                        LiquidGlassEffect.SOFT -> 0.75f
-                        LiquidGlassEffect.BALANCED -> 1.25f
-                        LiquidGlassEffect.FLUID -> 1.75f
-                    }
-                    if (glassConfig.glassBlurEnabled && glassConfig.glassBlurRadius > 0f) {
-                        blur(glassConfig.glassBlurRadius.coerceAtMost(cap).dp.toPx())
-                    }
-                    if (glassConfig.glassLensDistortion > 0f && glassConfig.liquidGlassEffect != LiquidGlassEffect.SOFT) {
-                        val profileScale = if (glassConfig.liquidGlassEffect == LiquidGlassEffect.FLUID) 0.45f else 0.30f
-                        val amount = glassConfig.glassLensDistortion.coerceIn(0f, 1f) * profileScale
-                        val inner = (if (isCurrent) 8f else 6f) * amount
-                        val outer = (if (isCurrent) 12f else 9f) * amount
-                        lens(
-                            inner.dp.toPx(),
-                            outer.dp.toPx(),
-                            chromaticAberration = glassConfig.glassChromaticAberration && glassConfig.liquidGlassEffect == LiquidGlassEffect.FLUID,
-                        )
-                    }
-                } else if (glassConfig.isFrostedGlassEnabled) {
-                    blur(2.25.dp.toPx())
-                }
-            },
-            highlight = { Highlight.Ambient.copy(alpha = if (isCurrent) 0.80f else 0.58f) },
-            shadow = { Shadow(radius = 3.dp, color = Color.Black.copy(alpha = 0.18f)) },
-            innerShadow = { InnerShadow(radius = 4.dp, alpha = 0.18f) },
-            onDrawSurface = {
-                drawRect(courseColor.copy(alpha = glassConfig.glassOpacity * if (isCurrent) 0.34f else 0.20f))
-                drawRect(Color.White.copy(alpha = 0.025f))
-            }
-        )
+    val glassActive = glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled || glassConfig.isGlobalGlassMaterialEnabled
+    val cardModifier = if (glassActive) {
+        baseCardModifier.globalLiquidGlass(CourseCapsuleShape, courseColor)
     } else baseCardModifier
 
     Card(
@@ -149,7 +101,7 @@ fun CourseCard(
         transformation = transformation,
         shape = CourseCapsuleShape,
         colors = CardDefaults.cardColors(
-            containerColor = if (liquidGlassBackdrop != null) {
+            containerColor = if (glassActive) {
                 Color.Transparent
             } else {
                 // Keep the normal mode genuinely translucent instead of pre-compositing it
@@ -168,7 +120,7 @@ fun CourseCard(
         ) {
             GalaxyAiAmbientLayer(
                 shape = CourseCapsuleShape,
-                strength = if (liquidGlassBackdrop != null) 0.16f else if (isCurrent) 0.58f else if (isNext) 0.36f else 0.22f,
+                strength = if (glassActive) 0.16f else if (isCurrent) 0.58f else if (isNext) 0.36f else 0.22f,
             )
             Box(
                 modifier = Modifier
