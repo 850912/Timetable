@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -73,9 +74,18 @@ fun CourseCard(
         Brush.horizontalGradient(
             listOf(
                 Color.Transparent,
-                courseColor.copy(alpha = if (isCurrent) 0.90f else 0.45f),
-                Color.White.copy(alpha = 0.24f),
+                Color.White.copy(alpha = if (isCurrent) 0.34f else 0.20f),
+                courseColor.copy(alpha = if (isCurrent) 0.42f else 0.22f),
                 Color.Transparent,
+            )
+        )
+    }
+    val opticalTintBrush = remember(courseColor) {
+        Brush.horizontalGradient(
+            listOf(
+                courseColor.copy(alpha = 0.12f),
+                Color.Transparent,
+                courseColor.copy(alpha = 0.055f),
             )
         )
     }
@@ -86,13 +96,13 @@ fun CourseCard(
         Brush.horizontalGradient(listOf(courseColor.copy(alpha = 0.72f), courseColor))
     }
     val baseCardModifier = when {
-        isCurrent -> modifier.border(2.dp, courseColor.copy(alpha = 0.98f), CourseCapsuleShape)
-        isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.46f), CourseCapsuleShape)
-        else -> modifier.border(0.8.dp, Color.White.copy(alpha = 0.16f), CourseCapsuleShape)
+        isCurrent -> modifier.border(1.2.dp, Color.White.copy(alpha = 0.38f), CourseCapsuleShape)
+        isNext -> modifier.border(0.9.dp, courseColor.copy(alpha = 0.34f), CourseCapsuleShape)
+        else -> modifier.border(0.7.dp, Color.White.copy(alpha = 0.13f), CourseCapsuleShape)
     }
-    val glassActive = glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled || glassConfig.isGlobalGlassMaterialEnabled
+    val glassActive = glassConfig.isLiquidGlassEnabled
     val cardModifier = if (glassActive) {
-        baseCardModifier.globalLiquidGlass(CourseCapsuleShape, courseColor)
+        baseCardModifier.globalLiquidGlass(CourseCapsuleShape, colors.surfaceContainer)
     } else baseCardModifier
 
     Card(
@@ -106,7 +116,7 @@ fun CourseCard(
             } else {
                 // Keep the normal mode genuinely translucent instead of pre-compositing it
                 // into an opaque surface. This preserves the glass look without a shader.
-                courseColor.copy(alpha = if (glassConfig.isLiquidGlassEnabled) glassConfig.glassOpacity * (if (isCurrent) 0.40f else if (isNext) 0.28f else 0.20f) else if (isCurrent) 0.20f else if (isNext) 0.115f else 0.07f)
+                colors.surfaceContainer.copy(alpha = if (isCurrent) 0.78f else if (isNext) 0.66f else 0.56f)
             },
             contentColor = colors.textPrimary,
         ),
@@ -118,10 +128,15 @@ fun CourseCard(
                 .heightIn(min = 72.dp)
                 .clip(CourseCapsuleShape)
         ) {
-            GalaxyAiAmbientLayer(
-                shape = CourseCapsuleShape,
-                strength = if (glassActive) 0.16f else if (isCurrent) 0.58f else if (isNext) 0.36f else 0.22f,
-            )
+            if (!glassActive) {
+                GalaxyAiAmbientLayer(
+                    shape = CourseCapsuleShape,
+                    strength = if (isCurrent) 0.36f else if (isNext) 0.24f else 0.14f,
+                )
+            }
+            // In glass mode the shared backdrop already supplies depth. Keep only one cheap
+            // course-color reflection instead of stacking another three-gradient ambient layer.
+            Box(Modifier.matchParentSize().background(opticalTintBrush))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -235,8 +250,8 @@ fun CourseCard(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(CircleShape)
-                        .background(courseColor.copy(alpha = if (isCurrent) 0.26f else 0.16f))
-                        .border(0.8.dp, courseColor.copy(alpha = 0.42f), CircleShape),
+                        .background(Color.White.copy(alpha = if (isCurrent) 0.14f else 0.08f))
+                        .border(0.7.dp, courseColor.copy(alpha = if (isCurrent) 0.46f else 0.28f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

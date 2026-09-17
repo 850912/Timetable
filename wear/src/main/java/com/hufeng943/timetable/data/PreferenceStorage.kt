@@ -97,15 +97,17 @@ class PreferenceStorage @Inject constructor(
             isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false,
             uiAnimationsEnabled = prefs[Keys.UI_ANIMATIONS_ENABLED] ?: true,
             conditionalUiEnabled = prefs[Keys.CONDITIONAL_UI_ENABLED] ?: true,
-            isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: false,
-            isFrostedGlassEnabled = prefs[Keys.FROSTED_GLASS_ENABLED] ?: false,
-            isGlobalGlassMaterialEnabled = prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] ?: false,
-            glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.42f).coerceIn(0.05f, 0.95f),
+            // Treat the two retired glass flags as a one-way compatibility migration so old
+            // installs do not render glass while the visible master switch appears disabled.
+            isLiquidGlassEnabled = (prefs[Keys.LIQUID_GLASS_ENABLED] ?: false) ||
+                (prefs[Keys.FROSTED_GLASS_ENABLED] ?: false) ||
+                (prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] ?: false),
+            glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.38f).coerceIn(0.10f, 0.70f),
             liquidGlassEffect = runCatching { LiquidGlassEffect.valueOf(prefs[Keys.LIQUID_GLASS_EFFECT] ?: LiquidGlassEffect.BALANCED.name) }.getOrDefault(LiquidGlassEffect.BALANCED),
             glassChromaticAberration = prefs[Keys.GLASS_CHROMATIC_ABERRATION] ?: false,
             glassLensDistortion = (prefs[Keys.GLASS_LENS_DISTORTION] ?: 0.20f).coerceIn(0f, 1f),
             glassBlurEnabled = prefs[Keys.GLASS_BLUR_ENABLED] ?: true,
-            glassBlurRadius = (prefs[Keys.GLASS_BLUR_RADIUS] ?: 1f).coerceIn(0f, 8f),
+            glassBlurRadius = (prefs[Keys.GLASS_BLUR_RADIUS] ?: 1f).coerceIn(0f, 2f),
             backgroundBrightness = (prefs[Keys.BACKGROUND_BRIGHTNESS] ?: 0.82f).coerceIn(0.10f, 1f),
             timetableBackgroundMode = runCatching {
                 TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
@@ -157,16 +159,10 @@ class PreferenceStorage @Inject constructor(
         }
     }
 
-    suspend fun setFrostedGlassEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.FROSTED_GLASS_ENABLED] = enabled }
-    }
 
-    suspend fun setGlobalGlassMaterialEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] = enabled }
-    }
 
     suspend fun setGlassOpacity(value: Float) {
-        context.dataStore.edit { it[Keys.GLASS_OPACITY] = value.coerceIn(0.05f, 0.95f) }
+        context.dataStore.edit { it[Keys.GLASS_OPACITY] = value.coerceIn(0.10f, 0.70f) }
     }
 
     suspend fun setLiquidGlassEffect(value: LiquidGlassEffect) {
@@ -176,7 +172,7 @@ class PreferenceStorage @Inject constructor(
     suspend fun setGlassChromaticAberration(enabled: Boolean) { context.dataStore.edit { it[Keys.GLASS_CHROMATIC_ABERRATION] = enabled } }
     suspend fun setGlassLensDistortion(value: Float) { context.dataStore.edit { it[Keys.GLASS_LENS_DISTORTION] = value.coerceIn(0f, 1f) } }
     suspend fun setGlassBlurEnabled(enabled: Boolean) { context.dataStore.edit { it[Keys.GLASS_BLUR_ENABLED] = enabled } }
-    suspend fun setGlassBlurRadius(value: Float) { context.dataStore.edit { it[Keys.GLASS_BLUR_RADIUS] = value.coerceIn(0f, 8f) } }
+    suspend fun setGlassBlurRadius(value: Float) { context.dataStore.edit { it[Keys.GLASS_BLUR_RADIUS] = value.coerceIn(0f, 2f) } }
 
     suspend fun setBackgroundBrightness(value: Float) {
         context.dataStore.edit { it[Keys.BACKGROUND_BRIGHTNESS] = value.coerceIn(0.10f, 1f) }

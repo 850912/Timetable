@@ -3,7 +3,6 @@ package com.hufeng943.timetable.presentation.ui
 
 
 
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
@@ -63,8 +62,6 @@ import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.foundation.LocalSwipeToDismissBackgroundScrimColor
-import androidx.wear.compose.foundation.LocalSwipeToDismissContentScrimColor
 
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
@@ -72,7 +69,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
     val globalGlassBackdrop = rememberLayerBackdrop()
     // Backdrop capture is shared by all glass surfaces; the renderer falls back below Android 13.
-    val useBackdropEffects = config.isLiquidGlassEnabled || config.isFrostedGlassEnabled || config.isGlobalGlassMaterialEnabled
+    val useBackdropEffects = config.isLiquidGlassEnabled
 
     AppScaffold(
         containerColor = Color.Transparent,
@@ -99,14 +96,12 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
             )
             Box(Modifier.fillMaxSize()) {
-                CompositionLocalProvider(
-                    LocalSwipeToDismissBackgroundScrimColor provides Color.Black.copy(alpha = 0.18f),
-                    LocalSwipeToDismissContentScrimColor provides Color.Black.copy(alpha = 0.10f),
+                // Keep the navigation transition fully owned by Wear Compose.
+                // Custom swipe scrims caused a visible discontinuity at the end of back gestures.
+                SwipeDismissableNavHost(
+                    navController = navController,
+                    startDestination = NavRoutes.MAIN
                 ) {
-                    SwipeDismissableNavHost(
-                        navController = navController,
-                        startDestination = NavRoutes.MAIN
-                    ) {
                 composable(NavRoutes.MAIN) {
                     HomeScreen()
                 }
@@ -227,8 +222,6 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 composable(NavRoutes.EDIT_TIMETABLE) {
                     EditTimetableScreen()
                 }
-
-                    }
                 }
             }
         }
