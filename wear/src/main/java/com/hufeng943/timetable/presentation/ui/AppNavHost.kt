@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import android.graphics.BitmapFactory
+import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
@@ -71,7 +72,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
     val globalGlassBackdrop = rememberLayerBackdrop()
     // Backdrop capture is shared by all glass surfaces; the renderer falls back below Android 13.
-    val useBackdropEffects = config.isLiquidGlassEnabled
+    val useBackdropEffects = config.isLiquidGlassEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
     AppScaffold(
         containerColor = Color.Transparent,
@@ -237,12 +238,16 @@ private fun decodeWearBackground(path: String, maxSide: Int = 512): android.grap
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
     var sample = 1
     var largest = maxOf(bounds.outWidth, bounds.outHeight)
-    while (largest / sample > maxSide * 2) sample *= 2
+    while (largest / sample > maxSide) sample *= 2
     val options = BitmapFactory.Options().apply {
         inSampleSize = sample.coerceAtLeast(1)
         inPreferredConfig = android.graphics.Bitmap.Config.RGB_565
     }
-    return BitmapFactory.decodeFile(path, options)
+    return BitmapFactory.decodeFile(path, options)?.also { bitmap ->
+        // Start texture upload before the first Image draw; this avoids doing all preparation on
+        // the first visible frame when a custom background becomes active.
+        bitmap.prepareToDraw()
+    }
 }
 
 @Composable
@@ -268,41 +273,44 @@ private fun AppBackground(
         }
     }
 
-    // IMPORTANT: THEME and IMAGE must remain the actual root pixels. Do not put a full-screen
-    // surface/scrim above them: Backdrop needs to sample the real background and the user must
-    // be able to see the fluid/image background directly between glass elements.
-    Box(modifier.fillMaxSize()) {
+    // The base color sits BEHIND the selected background. Do not place a readability scrim above
+    // THEME/IMAGE: it both obscures the user's background and adds a full-screen alpha blend.
+    Box(modifier.fillMaxSize().background(AppTheme.colors.background)) {
+        // AppConfig now exposes the real source luminance. Legacy scrim-era values are converted
+        // in PreferenceStorage, so rendering and the settings percentage share one meaning.
+        val sourceLuminance = config.backgroundBrightness.coerceIn(0.10f, 1f)
         when (config.timetableBackgroundMode) {
-            TimetableBackgroundMode.SOLID ->
-                Box(Modifier.fillMaxSize().background(AppTheme.colors.background))
-
-            TimetableBackgroundMode.THEME ->
+            TimetableBackgroundMode.SOLID -> Unit
+            TimetableBackgroundMode.THEME -> {
+                // Keep the ambient effect at full material strength. Brightness changes its source
+                // colors, not the layer opacity, so it no longer doubles as an "effect intensity".
                 GalaxyAiAmbientLayer(
-                    RectangleShape,
-                    strength = config.backgroundBrightness.coerceIn(0.10f, 1f),
+                    shape = RectangleShape,
+                    strength = 1f,
+                    sourceLuminance = sourceLuminance,
                 )
-
+            }
             TimetableBackgroundMode.IMAGE -> {
                 val bitmap = backgroundBitmap
                 if (bitmap != null) {
-                    // Brightness is applied to the image itself, not by drawing a black scrim on
-                    // top. That keeps the backdrop unobstructed and avoids another alpha layer.
-                    val brightness = config.backgroundBrightness.coerceIn(0.10f, 1f)
-                    val matrix = remember(brightness) {
-                        ColorMatrix().apply { setToScale(brightness, brightness, brightness, 1f) }
+                    val brightnessMatrix = remember(sourceLuminance) {
+                        ColorMatrix().apply {
+                            setToScale(sourceLuminance, sourceLuminance, sourceLuminance, 1f)
+                        }
                     }
                     Image(
                         bitmap = bitmap.asImageBitmap(),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        colorFilter = ColorFilter.colorMatrix(matrix),
+                        colorFilter = ColorFilter.colorMatrix(brightnessMatrix),
                     )
                 } else {
-                    // Missing image: use the theme ambient background as a visible fallback.
+                    // Keep the fallback visible without adding an overlay above the backdrop.
                     GalaxyAiAmbientLayer(
-                        RectangleShape,
-                        strength = config.backgroundBrightness.coerceIn(0.10f, 1f),
+                        shape = RectangleShape,
+                        strength = 1f,
+                        sourceLuminance = sourceLuminance,
                     )
                 }
             }

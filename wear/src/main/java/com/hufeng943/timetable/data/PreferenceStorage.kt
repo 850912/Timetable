@@ -54,6 +54,7 @@ class PreferenceStorage @Inject constructor(
         val GLASS_BLUR_ENABLED = booleanPreferencesKey("glass_blur_enabled")
         val GLASS_BLUR_RADIUS = floatPreferencesKey("glass_blur_radius")
         val BACKGROUND_BRIGHTNESS = floatPreferencesKey("background_brightness")
+        val BACKGROUND_BRIGHTNESS_DIRECT = booleanPreferencesKey("background_brightness_direct")
         val TIMETABLE_BACKGROUND_MODE = stringPreferencesKey("timetable_background_mode")
         val TIMETABLE_BACKGROUND_IMAGE_PATH = stringPreferencesKey("timetable_background_image_path")
     }
@@ -105,10 +106,16 @@ class PreferenceStorage @Inject constructor(
             glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.38f).coerceIn(0.10f, 0.70f),
             liquidGlassEffect = runCatching { LiquidGlassEffect.valueOf(prefs[Keys.LIQUID_GLASS_EFFECT] ?: LiquidGlassEffect.BALANCED.name) }.getOrDefault(LiquidGlassEffect.BALANCED),
             glassChromaticAberration = prefs[Keys.GLASS_CHROMATIC_ABERRATION] ?: false,
-            glassLensDistortion = (prefs[Keys.GLASS_LENS_DISTORTION] ?: 0.20f).coerceIn(0f, 1f),
+            glassLensDistortion = (prefs[Keys.GLASS_LENS_DISTORTION] ?: 0.20f).coerceIn(0f, 0.60f),
             glassBlurEnabled = prefs[Keys.GLASS_BLUR_ENABLED] ?: true,
             glassBlurRadius = (prefs[Keys.GLASS_BLUR_RADIUS] ?: 1f).coerceIn(0f, 2f),
-            backgroundBrightness = (prefs[Keys.BACKGROUND_BRIGHTNESS] ?: 0.82f).coerceIn(0.10f, 1f),
+            backgroundBrightness = prefs[Keys.BACKGROUND_BRIGHTNESS]?.let { stored ->
+                // Values written before the unobstructed-background fix controlled a black scrim:
+                // alpha=(1-stored)*0.35. Convert those values once at read time so AppConfig and
+                // the settings UI expose the real source luminance. New writes are direct.
+                if (prefs[Keys.BACKGROUND_BRIGHTNESS_DIRECT] == true) stored
+                else 0.65f + 0.35f * stored
+            }?.coerceIn(0.10f, 1f) ?: 1f,
             timetableBackgroundMode = runCatching {
                 TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
             }.getOrDefault(TimetableBackgroundMode.THEME),
@@ -170,12 +177,15 @@ class PreferenceStorage @Inject constructor(
     }
 
     suspend fun setGlassChromaticAberration(enabled: Boolean) { context.dataStore.edit { it[Keys.GLASS_CHROMATIC_ABERRATION] = enabled } }
-    suspend fun setGlassLensDistortion(value: Float) { context.dataStore.edit { it[Keys.GLASS_LENS_DISTORTION] = value.coerceIn(0f, 1f) } }
+    suspend fun setGlassLensDistortion(value: Float) { context.dataStore.edit { it[Keys.GLASS_LENS_DISTORTION] = value.coerceIn(0f, 0.60f) } }
     suspend fun setGlassBlurEnabled(enabled: Boolean) { context.dataStore.edit { it[Keys.GLASS_BLUR_ENABLED] = enabled } }
     suspend fun setGlassBlurRadius(value: Float) { context.dataStore.edit { it[Keys.GLASS_BLUR_RADIUS] = value.coerceIn(0f, 2f) } }
 
     suspend fun setBackgroundBrightness(value: Float) {
-        context.dataStore.edit { it[Keys.BACKGROUND_BRIGHTNESS] = value.coerceIn(0.10f, 1f) }
+        context.dataStore.edit { prefs ->
+            prefs[Keys.BACKGROUND_BRIGHTNESS] = value.coerceIn(0.10f, 1f)
+            prefs[Keys.BACKGROUND_BRIGHTNESS_DIRECT] = true
+        }
     }
 
     suspend fun setTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {

@@ -94,14 +94,18 @@ fun CourseCard(
     val progressBrush = remember(courseColor) {
         Brush.horizontalGradient(listOf(courseColor.copy(alpha = 0.72f), courseColor))
     }
-    val baseCardModifier = when {
-        isCurrent -> modifier.border(0.8.dp, Color.White.copy(alpha = 0.30f), CourseCapsuleShape)
-        isNext -> modifier.border(0.65.dp, Color.White.copy(alpha = 0.20f), CourseCapsuleShape)
-        else -> modifier.border(0.5.dp, Color.White.copy(alpha = 0.11f), CourseCapsuleShape)
-    }
     val glassActive = glassConfig.isLiquidGlassEnabled
+    val baseCardModifier = if (glassActive) {
+        modifier
+    } else {
+        when {
+            isCurrent -> modifier.border(0.8.dp, Color.White.copy(alpha = 0.30f), CourseCapsuleShape)
+            isNext -> modifier.border(0.65.dp, Color.White.copy(alpha = 0.20f), CourseCapsuleShape)
+            else -> modifier.border(0.5.dp, Color.White.copy(alpha = 0.11f), CourseCapsuleShape)
+        }
+    }
     val cardModifier = if (glassActive) {
-        // A neutral optical body lets the captured backdrop/refraction define the material.
+        // Kyant already renders the optical edge/highlight. Avoid a second full-card border pass.
         baseCardModifier.globalLiquidGlass(CourseCapsuleShape, Color.Transparent)
     } else baseCardModifier
 
@@ -135,12 +139,16 @@ fun CourseCard(
                 )
             }
             // No full-card colour wash in glass mode: it turns refraction into coloured plastic.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(topHighlightBrush)
-            )
+            if (!glassActive) {
+                // Non-glass fallback keeps a cheap highlight. In glass mode Kyant already draws
+                // the optical highlight, so drawing this again only adds overdraw.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(topHighlightBrush)
+                )
+            }
 
             Row(
                 modifier = Modifier
