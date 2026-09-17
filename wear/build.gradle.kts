@@ -47,7 +47,11 @@ if (isRelease && !releaseSigningConfigured) {
 
 configure<ApplicationExtension> {
     namespace = "com.hufeng943.timetable"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
 
     defaultConfig {

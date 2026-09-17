@@ -36,7 +36,11 @@ if (releaseTaskRequested && !releaseSigningConfigured) {
 
 configure<ApplicationExtension> {
     namespace = "com.hufeng943.timetable"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "com.hufeng943.timetable"
