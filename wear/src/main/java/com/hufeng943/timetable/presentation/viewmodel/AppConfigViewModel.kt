@@ -1,0 +1,84 @@
+package com.hufeng943.timetable.presentation.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.hufeng943.timetable.data.FirstDayOfTheWeek
+import com.hufeng943.timetable.data.PreferenceStorage
+import com.hufeng943.timetable.data.TimeFormat
+import com.hufeng943.timetable.presentation.ui.common.AppConfig
+import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
+import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class AppConfigViewModel @Inject constructor(
+    private val preferenceStorage: PreferenceStorage
+) : ViewModel() {
+
+    val appConfig: StateFlow<AppConfig> = preferenceStorage.appConfigFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = AppConfig()
+    )
+
+    private val _localeRecreateEvent = MutableSharedFlow<Unit>()
+    val localeRecreateEvent: SharedFlow<Unit> = _localeRecreateEvent.asSharedFlow()
+
+    fun updateLanguage(languageTag: String?) {
+        viewModelScope.launch {
+            preferenceStorage.setLanguage(languageTag)
+            _localeRecreateEvent.emit(Unit)
+        }
+    }
+
+    fun updateFormat(timeFormat: TimeFormat) {
+        viewModelScope.launch { preferenceStorage.setTimeFormat(timeFormat) }
+    }
+
+    fun updateFirstDayOfTheWeek(firstDay: FirstDayOfTheWeek) {
+        viewModelScope.launch { preferenceStorage.setFirstDayOfTheWeek(firstDay) }
+    }
+
+    fun updateDynamicColorEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferenceStorage.setDynamicColorEnabled(enabled) }
+    }
+
+    fun updateShowTopTime(enabled: Boolean) {
+        viewModelScope.launch { preferenceStorage.setShowTopTime(enabled) }
+    }
+
+    fun updateUiAnimationsEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferenceStorage.setUiAnimationsEnabled(enabled) }
+    }
+
+    fun updateLiquidGlassEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferenceStorage.setLiquidGlassEnabled(enabled) }
+    }
+
+    fun updateFrostedGlassEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferenceStorage.setFrostedGlassEnabled(enabled) }
+    }
+
+    fun updateGlassOpacity(value: Float) { viewModelScope.launch { preferenceStorage.setGlassOpacity(value) } }
+    fun updateLiquidGlassEffect(value: LiquidGlassEffect) { viewModelScope.launch { preferenceStorage.setLiquidGlassEffect(value) } }
+    fun updateGlassHighSaturation(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setGlassHighSaturation(enabled) } }
+    fun updateGlassChromaticAberration(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setGlassChromaticAberration(enabled) } }
+    fun updateGlassLensDistortion(value: Float) { viewModelScope.launch { preferenceStorage.setGlassLensDistortion(value) } }
+    fun updateGlassBlurEnabled(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setGlassBlurEnabled(enabled) } }
+    fun updateGlassBlurRadius(value: Float) { viewModelScope.launch { preferenceStorage.setGlassBlurRadius(value) } }
+    fun updateBlurredBackgroundEnabled(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setBlurredBackgroundEnabled(enabled) } }
+    fun updateBackgroundBlurRadius(value: Float) { viewModelScope.launch { preferenceStorage.setBackgroundBlurRadius(value) } }
+    fun updateBackgroundBrightness(value: Float) { viewModelScope.launch { preferenceStorage.setBackgroundBrightness(value) } }
+
+    fun updateTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {
+        viewModelScope.launch { preferenceStorage.setTimetableBackground(mode, imagePath) }
+    }
+}
