@@ -43,11 +43,20 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
     val requestedAlpha = config.glassOpacity.coerceIn(0.10f, 0.70f)
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || backdrop == null) {
         return drawWithCache {
-            val material = Brush.verticalGradient(
-                0f to Color.White.copy(alpha = 0.12f),
-                0.28f to surfaceColor.copy(alpha = requestedAlpha),
-                1f to surfaceColor.copy(alpha = (requestedAlpha * 0.70f).coerceAtLeast(0.08f)),
-            )
+            val neutral = surfaceColor.alpha <= 0.001f
+            val material = if (neutral) {
+                Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = 0.12f),
+                    0.30f to Color.White.copy(alpha = 0.045f),
+                    1f to Color.White.copy(alpha = 0.018f),
+                )
+            } else {
+                Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = 0.12f),
+                    0.28f to surfaceColor.copy(alpha = requestedAlpha),
+                    1f to surfaceColor.copy(alpha = (requestedAlpha * 0.70f).coerceAtLeast(0.08f)),
+                )
+            }
             onDrawBehind { drawRect(material) }
         }
     }
@@ -78,7 +87,8 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
         LiquidGlassEffect.BALANCED -> 0.31f
         LiquidGlassEffect.FLUID -> 0.39f
     }
-    val surfaceAlpha = when (profile) {
+    val neutralOpticalSurface = surfaceColor.alpha <= 0.001f
+    val surfaceAlpha = if (neutralOpticalSurface) 0f else when (profile) {
         LiquidGlassEffect.SOFT -> requestedAlpha * 0.90f
         LiquidGlassEffect.BALANCED -> requestedAlpha
         LiquidGlassEffect.FLUID -> requestedAlpha * 0.92f
@@ -113,11 +123,11 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
             )
         },
         onDrawSurface = {
-            drawRect(surfaceColor.copy(alpha = surfaceAlpha))
+            if (!neutralOpticalSurface) drawRect(surfaceColor.copy(alpha = surfaceAlpha))
             drawRect(Color.White.copy(alpha = when (profile) {
-                LiquidGlassEffect.SOFT -> 0.020f
-                LiquidGlassEffect.BALANCED -> 0.030f
-                LiquidGlassEffect.FLUID -> 0.042f
+                LiquidGlassEffect.SOFT -> if (neutralOpticalSurface) 0.012f else 0.020f
+                LiquidGlassEffect.BALANCED -> if (neutralOpticalSurface) 0.018f else 0.030f
+                LiquidGlassEffect.FLUID -> if (neutralOpticalSurface) 0.026f else 0.042f
             }))
         },
     )
