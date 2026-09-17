@@ -26,6 +26,8 @@ import androidx.wear.compose.material3.TimeTextDefaults.rememberTimeSource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
@@ -266,30 +268,44 @@ private fun AppBackground(
         }
     }
 
-    Box(modifier.fillMaxSize().background(AppTheme.colors.background)) {
-        // Background blur is a single full-screen layer, not one blur pass per card. This keeps
-        // the optional effect predictable on Wear OS while allowing it to be disabled entirely.
-        Box(
-            Modifier
-                .fillMaxSize()
-                
-        ) {
-            when (config.timetableBackgroundMode) {
-                TimetableBackgroundMode.SOLID -> Unit
-                TimetableBackgroundMode.THEME ->
-                    GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
-                TimetableBackgroundMode.IMAGE -> {
-                    val bitmap = backgroundBitmap
-                    if (bitmap != null) {
-                        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                    } else {
-                        // Never leave a black/empty page when a previously selected image becomes unreadable.
-                        GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
+    // IMPORTANT: THEME and IMAGE must remain the actual root pixels. Do not put a full-screen
+    // surface/scrim above them: Backdrop needs to sample the real background and the user must
+    // be able to see the fluid/image background directly between glass elements.
+    Box(modifier.fillMaxSize()) {
+        when (config.timetableBackgroundMode) {
+            TimetableBackgroundMode.SOLID ->
+                Box(Modifier.fillMaxSize().background(AppTheme.colors.background))
+
+            TimetableBackgroundMode.THEME ->
+                GalaxyAiAmbientLayer(
+                    RectangleShape,
+                    strength = config.backgroundBrightness.coerceIn(0.10f, 1f),
+                )
+
+            TimetableBackgroundMode.IMAGE -> {
+                val bitmap = backgroundBitmap
+                if (bitmap != null) {
+                    // Brightness is applied to the image itself, not by drawing a black scrim on
+                    // top. That keeps the backdrop unobstructed and avoids another alpha layer.
+                    val brightness = config.backgroundBrightness.coerceIn(0.10f, 1f)
+                    val matrix = remember(brightness) {
+                        ColorMatrix().apply { setToScale(brightness, brightness, brightness, 1f) }
                     }
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        colorFilter = ColorFilter.colorMatrix(matrix),
+                    )
+                } else {
+                    // Missing image: use the theme ambient background as a visible fallback.
+                    GalaxyAiAmbientLayer(
+                        RectangleShape,
+                        strength = config.backgroundBrightness.coerceIn(0.10f, 1f),
+                    )
                 }
             }
         }
-        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.35f).coerceIn(0f, 0.35f)
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
     }
 }
