@@ -48,7 +48,7 @@ fun OneUiCapsuleSurface(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     titleMaxLines: Int = 2,
-    subtitleMaxLines: Int = 3,
+    subtitleMaxLines: Int = 2,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val colors = AppTheme.colors

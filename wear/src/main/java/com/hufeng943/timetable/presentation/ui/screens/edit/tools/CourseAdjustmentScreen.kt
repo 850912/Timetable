@@ -14,6 +14,7 @@ import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -77,8 +78,10 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
             val bOccurs = b?.let { bc -> tableOccurrences.any { it.course.id == bc.id } } == true
             val valid = a != null && b != null && table != null && (mode != CourseAdjustmentMode.SWAP || bOccurs)
             val nav = rememberSwipeDismissableNavController()
+    val internalBackStackEntry by nav.currentBackStackEntryAsState()
+    val internalSwipeBackEnabled = internalBackStackEntry != null && nav.previousBackStackEntry != null
 
-            SwipeDismissableNavHost(navController = nav, startDestination = AdjustRoutes.MAIN) {
+            SwipeDismissableNavHost(navController = nav, userSwipeEnabled = internalSwipeBackEnabled, startDestination = AdjustRoutes.MAIN) {
                 composable(AdjustRoutes.MAIN) {
                     val scroll = rememberTransformingLazyColumnState(); val transform = rememberTransformationSpec()
                     ScreenScaffold(scrollState = scroll, timeText = {}, edgeButton = {
@@ -88,13 +91,13 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
                     }) { padding ->
                         TransformingLazyColumn(state = scroll, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
                             item { ListHeader(modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text("课程调节")} }
-                            item { OneUiCapsuleSurface(title="范围：全部课表",subtitle="${current.timetables.size} 个课表参与课程与课时发现；无需选择作用课表",icon=Icons.Rounded.SelectAll,modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
-                            item { OneUiCapsuleSurface(title="日期：${date.toDisplayString()}",subtitle="${date.dayOfWeek.toDisplayString(TextStyle.FULL)} · 点按打开日期选择",icon=Icons.Rounded.DateRange,onClick={nav.navigateSingle(AdjustRoutes.DATE)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title="范围：全部课表",subtitle="${current.timetables.size} 个课表 · 全部课程/课时",icon=Icons.Rounded.SelectAll,modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title="日期：${date.toDisplayString()}",subtitle="${date.dayOfWeek.toDisplayString(TextStyle.FULL)} · 点按选日期",icon=Icons.Rounded.DateRange,onClick={nav.navigateSingle(AdjustRoutes.DATE)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
                             item { OneUiCapsuleSurface(title="A 课：${a?.course?.name?:"当天无课"}",subtitle=a?.let{"${selected?.second.orEmpty()} · ${it.startTime.toDisplayString(true)}–${it.endTime.toDisplayString(true)}"}?:"所有课表当天均无课",onClick={nav.navigateSingle(AdjustRoutes.A_COURSES)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
-                            item { OneUiCapsuleSurface(title="B 课：${b?.name?:"无可选课程"}",subtitle="跟随 A 课所属课表，避免跨课表破坏课程归属",onClick={nav.navigateSingle(AdjustRoutes.B_COURSES)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title="B 课：${b?.name?:"无可选课程"}",subtitle="与 A 课同课表",onClick={nav.navigateSingle(AdjustRoutes.B_COURSES)},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
                             item { OneUiCapsuleSurface(title=if(mode==CourseAdjustmentMode.SWAP)"换课" else "占课",subtitle=if(mode==CourseAdjustmentMode.SWAP)if(bOccurs)"A、B 互换" else "B 当天无课时，不能换课" else "B 使用 A 的时间，A 当天取消",icon=Icons.Rounded.SwapCalls,selected=mode==CourseAdjustmentMode.SWAP,onClick={mode=if(mode==CourseAdjustmentMode.SWAP)CourseAdjustmentMode.OCCUPY else CourseAdjustmentMode.SWAP},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
                             item { OneUiCapsuleSurface(title=if(permanent)"永久" else "仅当天",subtitle=if(permanent)"同步修改实际课时归属" else "只修改所选日期",icon=if(permanent)Icons.Rounded.Repeat else Icons.Rounded.Today,selected=permanent,onClick={permanent=!permanent},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
-                            item { OneUiCapsuleSurface(title="恢复课程调节",subtitle="恢复全部课表中由调休、课程调节产生的修改",icon=Icons.Rounded.Restore,onClick={viewModel.restoreAdjustments()},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
+                            item { OneUiCapsuleSurface(title="恢复课程调节",subtitle="恢复调休与课程调节",icon=Icons.Rounded.Restore,onClick={viewModel.restoreAdjustments()},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)) }
                         }
                     }
                 }

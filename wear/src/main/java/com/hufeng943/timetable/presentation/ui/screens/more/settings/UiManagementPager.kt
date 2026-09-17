@@ -65,7 +65,7 @@ fun UiManagementPager(
             item {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Tune,
-                    text = "主题、背景、玻璃、动态配色、时间显示和交互动效都集中在这里。",
+                    text = "主题、背景、玻璃与动效。",
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     maxLines = 3,
@@ -99,7 +99,7 @@ fun UiManagementPager(
                         config.isLiquidGlassEnabled -> "液态 · ${config.liquidGlassEffect.name.lowercase()}"
                         config.isFrostedGlassEnabled -> "磨砂"
                         config.isGlobalGlassMaterialEnabled -> "全局材质"
-                        else -> "已关闭 · Haze 玻璃材质设置"
+                        else -> "已关闭"
                     },
                     onClick = onLiquidGlassAdvancedClick,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
@@ -120,7 +120,7 @@ fun UiManagementPager(
             item {
                 OneUiSwitchCapsule(
                     title = "界面动效",
-                    subtitle = "启用轻量按压、状态切换动效；关闭可进一步减少 GPU 工作量",
+                    subtitle = "按压与切换动画",
                     icon = Icons.Rounded.Animation,
                     checked = config.uiAnimationsEnabled,
                     onCheckedChange = onUiAnimationsToggle,
@@ -131,7 +131,7 @@ fun UiManagementPager(
             item {
                 OneUiSwitchCapsule(
                     title = "条件 UI",
-                    subtitle = "根据当前能力和开关状态隐藏无效的高级选项，减少滚动与误触",
+                    subtitle = "自动隐藏无效选项",
                     icon = Icons.Rounded.AutoAwesome,
                     checked = config.conditionalUiEnabled,
                     onCheckedChange = onConditionalUiToggle,
@@ -142,7 +142,7 @@ fun UiManagementPager(
             item {
                 OneUiSwitchCapsule(
                     title = "顶部时间显示",
-                    subtitle = "显示应用内当前时间，不影响系统表盘时间",
+                    subtitle = "显示应用内时间",
                     icon = Icons.Rounded.Schedule,
                     checked = config.isShowTopTime,
                     onCheckedChange = onShowTopTimeToggle,

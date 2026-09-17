@@ -119,6 +119,7 @@ kotlin {
 }
 
 dependencies {
+    implementation("io.github.kyant0:backdrop:2.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
     // 核心基础与 AndroidX
     implementation(libs.androidx.appcompat)
@@ -168,9 +169,5 @@ dependencies {
 
     implementation(libs.materialKolor)
 
-    // Apache-2.0: Chris Banes / Haze 2.0. Unified blur + refractive glass engine.
-    // Keep all Haze artifacts on exactly the same version.
-    implementation("dev.chrisbanes.haze:haze:2.0.0-rc01")
-    implementation("dev.chrisbanes.haze:haze-blur:2.0.0-rc01")
-    implementation("dev.chrisbanes.haze:haze-glass:2.0.0-rc01")
+    // Apache-2.0: Kyant AndroidLiquidGlass / Backdrop, matching the reference app renderer.
 }

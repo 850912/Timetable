@@ -13,6 +13,7 @@ import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -53,8 +54,10 @@ fun ScheduleToolsScreen(
             var we by remember { mutableStateOf(LocalTime(18, 0)) }
             var action by remember { mutableStateOf(BatchAction.SHIFT) }
             val nav = rememberSwipeDismissableNavController()
+    val internalBackStackEntry by nav.currentBackStackEntryAsState()
+    val internalSwipeBackEnabled = internalBackStackEntry != null && nav.previousBackStackEntry != null
 
-            SwipeDismissableNavHost(navController = nav, startDestination = QuickRoutes.MAIN) {
+            SwipeDismissableNavHost(navController = nav, userSwipeEnabled = internalSwipeBackEnabled, startDestination = QuickRoutes.MAIN) {
                 composable(QuickRoutes.MAIN) {
                     val valid = (end?.let { it >= start } ?: true) &&
                         (!useWindow || we > ws) &&
@@ -97,7 +100,7 @@ fun ScheduleToolsScreen(
                             item {
                                 OneUiCapsuleSurface(
                                     title = "范围：全部课表",
-                                    subtitle = "${current.timetables.size} 个课表 · 全部课程 · 全部课时",
+                                    subtitle = "${current.timetables.size} 个课表 · 全部课程/课时",
                                     icon = Icons.Rounded.SelectAll,
                                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
@@ -121,7 +124,7 @@ fun ScheduleToolsScreen(
                                         BatchAction.CANCEL -> "停课"
                                         BatchAction.RESTORE -> "恢复正常"
                                     },
-                                    subtitle = "点按切换：调时 → 停课 → 恢复；长按设置提前/延时",
+                                    subtitle = "点按切换操作；长按调时",
                                     icon = when (action) {
                                         BatchAction.SHIFT -> Icons.Rounded.Schedule
                                         BatchAction.CANCEL -> Icons.Rounded.EventBusy
@@ -155,7 +158,7 @@ fun ScheduleToolsScreen(
                             item {
                                 OneUiCapsuleSurface(
                                     title = "结束：${end?.toDisplayString() ?: "永不结束"}",
-                                    subtitle = "点按选择；长按设为永不结束",
+                                    subtitle = "点按选择；长按永久",
                                     onClick = { nav.navigateSingle(QuickRoutes.END) },
                                     onLongClick = { end = null },
                                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
@@ -165,7 +168,7 @@ fun ScheduleToolsScreen(
                             item {
                                 OneUiCapsuleSurface(
                                     title = if (useWindow) "仅处理 ${ws.toDisplayString(config.is24HourFormat)}–${we.toDisplayString(config.is24HourFormat)}" else "全部时段",
-                                    subtitle = "点按开关时间范围；长按设置开始",
+                                    subtitle = "点按开关；长按设开始",
                                     selected = useWindow,
                                     onClick = { useWindow = !useWindow },
                                     onLongClick = { useWindow = true; nav.navigateSingle(QuickRoutes.WS) },

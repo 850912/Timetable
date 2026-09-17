@@ -35,9 +35,9 @@ import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
-import com.hufeng943.timetable.presentation.ui.common.LocalHazeState
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
+import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.screens.detail.CourseDetailScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.course.CourseListScreen
@@ -70,8 +70,8 @@ import androidx.wear.compose.foundation.LocalSwipeToDismissContentScrimColor
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navController = rememberSwipeDismissableNavController()
     val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
-    val globalHazeState = rememberHazeState()
-    // Haze supplies its own Android fallback backend, so glass is no longer hard-gated to API 33+.
+    val globalGlassBackdrop = rememberLayerBackdrop()
+    // Backdrop capture is shared by all glass surfaces; the renderer falls back below Android 13.
     val useBackdropEffects = config.isLiquidGlassEnabled || config.isFrostedGlassEnabled || config.isGlobalGlassMaterialEnabled
 
     AppScaffold(
@@ -92,16 +92,16 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         CompositionLocalProvider(
             LocalNavController provides navController,
             LocalAppConfig provides config,
-            LocalHazeState provides globalHazeState.takeIf { useBackdropEffects }
+            LocalLiquidGlassBackdrop provides globalGlassBackdrop.takeIf { useBackdropEffects }
         ) {
             AppBackground(
                 config = config,
-                modifier = if (useBackdropEffects) Modifier.hazeSource(globalHazeState, key = "app-background") else Modifier,
+                modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
             )
             Box(Modifier.fillMaxSize()) {
                 CompositionLocalProvider(
-                    LocalSwipeToDismissBackgroundScrimColor provides Color.Transparent,
-                    LocalSwipeToDismissContentScrimColor provides Color.Transparent,
+                    LocalSwipeToDismissBackgroundScrimColor provides Color.Black.copy(alpha = 0.18f),
+                    LocalSwipeToDismissContentScrimColor provides Color.Black.copy(alpha = 0.10f),
                 ) {
                     SwipeDismissableNavHost(
                         navController = navController,
@@ -236,7 +236,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
 }
 
 
-private fun decodeWearBackground(path: String, maxSide: Int = 720): android.graphics.Bitmap? {
+private fun decodeWearBackground(path: String, maxSide: Int = 512): android.graphics.Bitmap? {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(path, bounds)
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null

@@ -6,6 +6,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.material3.DatePicker
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -33,9 +34,11 @@ fun EditTimetableScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val internalNavController = rememberSwipeDismissableNavController()
+    val internalBackStackEntry by internalNavController.currentBackStackEntryAsState()
+    val internalSwipeBackEnabled = internalBackStackEntry != null && internalNavController.previousBackStackEntry != null
 
     SwipeDismissableNavHost(
-        navController = internalNavController, startDestination = InternalNavRoutes.MAIN
+        navController = internalNavController, userSwipeEnabled = internalSwipeBackEnabled, startDestination = InternalNavRoutes.MAIN
     ) {
         composable(InternalNavRoutes.MAIN) {
             HandleEditUiState(uiState) { timetable ->

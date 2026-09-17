@@ -149,8 +149,8 @@ class PreferenceStorage @Inject constructor(
 
     suspend fun setLiquidGlassEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
-            // Haze is now the only glass engine. Old global/frosted switches are migration-only
-            // state and must not remain active behind the single visible glass control.
+            // Keep the visible liquid-glass switch authoritative; legacy global/frosted flags
+            // are migration-only and must not remain active behind it.
             prefs[Keys.LIQUID_GLASS_ENABLED] = enabled
             prefs[Keys.FROSTED_GLASS_ENABLED] = false
             prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] = false

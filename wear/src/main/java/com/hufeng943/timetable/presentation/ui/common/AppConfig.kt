@@ -4,7 +4,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import com.hufeng943.timetable.data.FirstDayOfTheWeek
 import com.hufeng943.timetable.data.TimeFormat
 import kotlinx.datetime.DayOfWeek
-import dev.chrisbanes.haze.HazeState
+import com.kyant.backdrop.Backdrop
 
 enum class TimetableBackgroundMode { SOLID, THEME, IMAGE }
 
@@ -35,9 +35,5 @@ data class AppConfig(
 )
 
 val LocalAppConfig = staticCompositionLocalOf { AppConfig() }
-/** Shared Haze state for the entire app. Kept nullable so glass can be disabled without capture work. */
-val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
-
-// Compatibility name while screens migrate; the implementation is Haze-only.
-@Deprecated("Use LocalHazeState")
-val LocalLiquidGlassBackdrop = LocalHazeState
+/** Shared backdrop for liquid-glass surfaces. Null keeps capture work off when glass is disabled. */
+val LocalLiquidGlassBackdrop = staticCompositionLocalOf<Backdrop?> { null }

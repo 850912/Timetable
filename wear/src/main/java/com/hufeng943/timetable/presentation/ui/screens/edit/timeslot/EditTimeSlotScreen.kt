@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.TimePicker
 import androidx.wear.compose.material3.TimePickerType
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -40,6 +41,8 @@ fun EditTimeSlotScreen(
     val groupSyncPrompt by viewModel.groupSyncPrompt.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val internalNavController = rememberSwipeDismissableNavController()
+    val internalBackStackEntry by internalNavController.currentBackStackEntryAsState()
+    val internalSwipeBackEnabled = internalBackStackEntry != null && internalNavController.previousBackStackEntry != null
     val config = LocalAppConfig.current
 
     LaunchedEffect(viewModel) {
@@ -48,6 +51,7 @@ fun EditTimeSlotScreen(
 
     SwipeDismissableNavHost(
         navController = internalNavController,
+        userSwipeEnabled = internalSwipeBackEnabled,
         startDestination = InternalNavRoutes.MAIN
     ) {
         composable(InternalNavRoutes.MAIN) {

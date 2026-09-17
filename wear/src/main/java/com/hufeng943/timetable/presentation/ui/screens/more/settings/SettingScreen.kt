@@ -6,6 +6,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -25,12 +26,15 @@ fun SettingScreen(
     themePreference: ThemePreference = hiltViewModel<ThemePrefViewModel>().themePreference
 ) {
     val internalNavController = rememberSwipeDismissableNavController()
+    val internalBackStackEntry by internalNavController.currentBackStackEntryAsState()
+    val internalSwipeBackEnabled = internalBackStackEntry != null && internalNavController.previousBackStackEntry != null
     val config = LocalAppConfig.current
     val scope = rememberCoroutineScope()
     val currentPreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(initialValue = ThemePreset.AMOLED_BLACK)
 
     SwipeDismissableNavHost(
         navController = internalNavController,
+        userSwipeEnabled = internalSwipeBackEnabled,
         startDestination = InternalNavRoutes.MAIN
     ) {
         composable(InternalNavRoutes.MAIN) {

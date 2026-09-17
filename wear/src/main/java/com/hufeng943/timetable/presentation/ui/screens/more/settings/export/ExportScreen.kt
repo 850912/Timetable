@@ -167,7 +167,7 @@ fun ExportScreen(
             item {
                 OneUiCapsuleSurface(
                     title = "日历 (.ics)",
-                    subtitle = "流式实例导出 · 可导入系统日历",
+                    subtitle = "可导入系统日历",
                     selected = selectedFormat == ExportFormat.ICS,
                     emphasize = selectedFormat == ExportFormat.ICS,
                     onClick = { selectedFormat = ExportFormat.ICS },
@@ -181,7 +181,7 @@ fun ExportScreen(
             item {
                 OneUiCapsuleSurface(
                     title = "表格 (.csv)",
-                    subtitle = "UTF-8 BOM · 适合 Excel / Numbers",
+                    subtitle = "适合 Excel / Numbers",
                     selected = selectedFormat == ExportFormat.CSV,
                     onClick = { selectedFormat = ExportFormat.CSV },
                     modifier = Modifier
@@ -194,7 +194,7 @@ fun ExportScreen(
             item {
                 OneUiCapsuleSurface(
                     title = "完整备份 (.json)",
-                    subtitle = "完整课表数据备份 · 推荐迁移时使用",
+                    subtitle = "完整课表备份",
                     selected = selectedFormat == ExportFormat.JSON_BACKUP,
                     onClick = { selectedFormat = ExportFormat.JSON_BACKUP },
                     modifier = Modifier

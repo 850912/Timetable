@@ -123,7 +123,7 @@ fun ImportScreen(
             item {
                 OneUiCapsuleSurface(
                     title = if (importState is ImportState.Importing) "正在导入…" else "从 Galaxy 手机选择文件",
-                    subtitle = "在 S25+ 上选择 .json / .ics / .csv，自动发送到 Watch7",
+                    subtitle = "手机选择文件并发送到手表",
                     icon = Icons.Rounded.PhoneAndroid,
                     emphasize = true,
                     onClick = {
