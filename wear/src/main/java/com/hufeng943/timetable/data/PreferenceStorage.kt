@@ -49,13 +49,10 @@ class PreferenceStorage @Inject constructor(
         val GLOBAL_GLASS_MATERIAL_ENABLED = booleanPreferencesKey("global_glass_material_enabled")
         val GLASS_OPACITY = floatPreferencesKey("glass_opacity")
         val LIQUID_GLASS_EFFECT = stringPreferencesKey("liquid_glass_effect")
-        val GLASS_HIGH_SATURATION = booleanPreferencesKey("glass_high_saturation")
         val GLASS_CHROMATIC_ABERRATION = booleanPreferencesKey("glass_chromatic_aberration")
         val GLASS_LENS_DISTORTION = floatPreferencesKey("glass_lens_distortion")
         val GLASS_BLUR_ENABLED = booleanPreferencesKey("glass_blur_enabled")
         val GLASS_BLUR_RADIUS = floatPreferencesKey("glass_blur_radius")
-        val BLURRED_BACKGROUND_ENABLED = booleanPreferencesKey("blurred_background_enabled")
-        val BACKGROUND_BLUR_RADIUS = floatPreferencesKey("background_blur_radius")
         val BACKGROUND_BRIGHTNESS = floatPreferencesKey("background_brightness")
         val TIMETABLE_BACKGROUND_MODE = stringPreferencesKey("timetable_background_mode")
         val TIMETABLE_BACKGROUND_IMAGE_PATH = stringPreferencesKey("timetable_background_image_path")
@@ -105,13 +102,10 @@ class PreferenceStorage @Inject constructor(
             isGlobalGlassMaterialEnabled = prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] ?: false,
             glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.42f).coerceIn(0.05f, 0.95f),
             liquidGlassEffect = runCatching { LiquidGlassEffect.valueOf(prefs[Keys.LIQUID_GLASS_EFFECT] ?: LiquidGlassEffect.BALANCED.name) }.getOrDefault(LiquidGlassEffect.BALANCED),
-            glassHighSaturation = prefs[Keys.GLASS_HIGH_SATURATION] ?: false,
             glassChromaticAberration = prefs[Keys.GLASS_CHROMATIC_ABERRATION] ?: false,
             glassLensDistortion = (prefs[Keys.GLASS_LENS_DISTORTION] ?: 0.20f).coerceIn(0f, 1f),
             glassBlurEnabled = prefs[Keys.GLASS_BLUR_ENABLED] ?: true,
             glassBlurRadius = (prefs[Keys.GLASS_BLUR_RADIUS] ?: 1f).coerceIn(0f, 8f),
-            blurredBackgroundEnabled = prefs[Keys.BLURRED_BACKGROUND_ENABLED] ?: false,
-            backgroundBlurRadius = (prefs[Keys.BACKGROUND_BLUR_RADIUS] ?: 4f).coerceIn(0f, 12f),
             backgroundBrightness = (prefs[Keys.BACKGROUND_BRIGHTNESS] ?: 0.82f).coerceIn(0.10f, 1f),
             timetableBackgroundMode = runCatching {
                 TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
@@ -179,13 +173,10 @@ class PreferenceStorage @Inject constructor(
         context.dataStore.edit { it[Keys.LIQUID_GLASS_EFFECT] = value.name }
     }
 
-    suspend fun setGlassHighSaturation(enabled: Boolean) { context.dataStore.edit { it[Keys.GLASS_HIGH_SATURATION] = enabled } }
     suspend fun setGlassChromaticAberration(enabled: Boolean) { context.dataStore.edit { it[Keys.GLASS_CHROMATIC_ABERRATION] = enabled } }
     suspend fun setGlassLensDistortion(value: Float) { context.dataStore.edit { it[Keys.GLASS_LENS_DISTORTION] = value.coerceIn(0f, 1f) } }
     suspend fun setGlassBlurEnabled(enabled: Boolean) { context.dataStore.edit { it[Keys.GLASS_BLUR_ENABLED] = enabled } }
     suspend fun setGlassBlurRadius(value: Float) { context.dataStore.edit { it[Keys.GLASS_BLUR_RADIUS] = value.coerceIn(0f, 8f) } }
-    suspend fun setBlurredBackgroundEnabled(enabled: Boolean) { context.dataStore.edit { it[Keys.BLURRED_BACKGROUND_ENABLED] = enabled } }
-    suspend fun setBackgroundBlurRadius(value: Float) { context.dataStore.edit { it[Keys.BACKGROUND_BLUR_RADIUS] = value.coerceIn(0f, 12f) } }
 
     suspend fun setBackgroundBrightness(value: Float) {
         context.dataStore.edit { it[Keys.BACKGROUND_BRIGHTNESS] = value.coerceIn(0.10f, 1f) }

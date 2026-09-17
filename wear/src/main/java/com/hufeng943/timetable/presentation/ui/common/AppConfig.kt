@@ -25,13 +25,10 @@ data class AppConfig(
     val isGlobalGlassMaterialEnabled: Boolean = false,
     val glassOpacity: Float = 0.42f,
     val liquidGlassEffect: LiquidGlassEffect = LiquidGlassEffect.BALANCED,
-    val glassHighSaturation: Boolean = false,
     val glassChromaticAberration: Boolean = false,
     val glassLensDistortion: Float = 0.20f,
     val glassBlurEnabled: Boolean = true,
     val glassBlurRadius: Float = 1f,
-    val blurredBackgroundEnabled: Boolean = false,
-    val backgroundBlurRadius: Float = 4f,
     val backgroundBrightness: Float = 0.82f,
     val timetableBackgroundMode: TimetableBackgroundMode = TimetableBackgroundMode.THEME,
     val timetableBackgroundImagePath: String? = null

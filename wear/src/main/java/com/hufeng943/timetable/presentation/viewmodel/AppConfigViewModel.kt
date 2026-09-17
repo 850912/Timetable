@@ -67,23 +67,12 @@ class AppConfigViewModel @Inject constructor(
         viewModelScope.launch { preferenceStorage.setLiquidGlassEnabled(enabled) }
     }
 
-    fun updateFrostedGlassEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferenceStorage.setFrostedGlassEnabled(enabled) }
-    }
-
-    fun updateGlobalGlassMaterialEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferenceStorage.setGlobalGlassMaterialEnabled(enabled) }
-    }
-
     fun updateGlassOpacity(value: Float) { viewModelScope.launch { preferenceStorage.setGlassOpacity(value) } }
     fun updateLiquidGlassEffect(value: LiquidGlassEffect) { viewModelScope.launch { preferenceStorage.setLiquidGlassEffect(value) } }
-    fun updateGlassHighSaturation(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setGlassHighSaturation(enabled) } }
     fun updateGlassChromaticAberration(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setGlassChromaticAberration(enabled) } }
     fun updateGlassLensDistortion(value: Float) { viewModelScope.launch { preferenceStorage.setGlassLensDistortion(value) } }
     fun updateGlassBlurEnabled(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setGlassBlurEnabled(enabled) } }
     fun updateGlassBlurRadius(value: Float) { viewModelScope.launch { preferenceStorage.setGlassBlurRadius(value) } }
-    fun updateBlurredBackgroundEnabled(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setBlurredBackgroundEnabled(enabled) } }
-    fun updateBackgroundBlurRadius(value: Float) { viewModelScope.launch { preferenceStorage.setBackgroundBlurRadius(value) } }
     fun updateBackgroundBrightness(value: Float) { viewModelScope.launch { preferenceStorage.setBackgroundBrightness(value) } }
 
     fun updateTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {
