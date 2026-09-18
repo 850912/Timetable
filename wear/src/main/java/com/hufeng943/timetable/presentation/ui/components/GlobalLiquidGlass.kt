@@ -37,7 +37,7 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
     val lowRamDevice = remember(context) {
         (context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.isLowRamDevice == true
     }
-    val enabled = config.isLiquidGlassEnabled || config.isFrostedGlassEnabled || config.isGlobalGlassMaterialEnabled
+    val enabled = config.isLiquidGlassEnabled
     if (!enabled) return this
 
     val backdrop = LocalLiquidGlassBackdrop.current
@@ -53,7 +53,7 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
         }
     }
 
-    val liquid = config.isLiquidGlassEnabled || config.isGlobalGlassMaterialEnabled
+    val liquid = config.isLiquidGlassEnabled
     val profile = config.liquidGlassEffect
     // Wear optimization: blur is substantially more expensive than tint/refraction. Keep the
     // reference-app optical look, but reserve a tiny blur pass for the Fluid profile only.

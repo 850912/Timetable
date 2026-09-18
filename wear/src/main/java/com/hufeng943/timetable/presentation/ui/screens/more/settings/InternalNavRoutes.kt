@@ -11,4 +11,5 @@ object InternalNavRoutes {
     const val BACKGROUND_SELECT = "background_select"
     const val UI_MANAGEMENT = "ui_management"
     const val LIQUID_GLASS_ADVANCED = "liquid_glass_advanced"
+    const val POWER_SAVE_SELECT = "power_save_select"
 }

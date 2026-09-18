@@ -8,6 +8,7 @@ import com.hufeng943.timetable.data.TimeFormat
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
+import com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -55,12 +56,12 @@ class AppConfigViewModel @Inject constructor(
         viewModelScope.launch { preferenceStorage.setShowTopTime(enabled) }
     }
 
-    fun updateUiAnimationsEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferenceStorage.setUiAnimationsEnabled(enabled) }
+    fun updatePowerSaveMode(mode: AppPowerSaveMode) {
+        viewModelScope.launch { preferenceStorage.setPowerSaveMode(mode) }
     }
 
-    fun updateConditionalUiEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferenceStorage.setConditionalUiEnabled(enabled) }
+    fun updateUiAnimationsEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferenceStorage.setUiAnimationsEnabled(enabled) }
     }
 
     fun updateLiquidGlassEnabled(enabled: Boolean) {

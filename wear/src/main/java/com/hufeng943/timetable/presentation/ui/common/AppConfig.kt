@@ -10,6 +10,9 @@ enum class TimetableBackgroundMode { SOLID, THEME, IMAGE }
 
 enum class LiquidGlassEffect { SOFT, BALANCED, FLUID }
 
+/** Controls app-side power reductions. FOLLOW_SYSTEM uses Android PowerManager. */
+enum class AppPowerSaveMode { FOLLOW_SYSTEM, ALWAYS_ON, ALWAYS_OFF }
+
 data class AppConfig(
     val languageTag: String? = null,
     val is24HourFormat: Boolean = true,
@@ -19,10 +22,8 @@ data class AppConfig(
     val isDynamicColorEnabled: Boolean = true,
     val isShowTopTime: Boolean = false,
     val uiAnimationsEnabled: Boolean = true,
-    val conditionalUiEnabled: Boolean = true,
+    val powerSaveMode: AppPowerSaveMode = AppPowerSaveMode.FOLLOW_SYSTEM,
     val isLiquidGlassEnabled: Boolean = false,
-    val isFrostedGlassEnabled: Boolean = false,
-    val isGlobalGlassMaterialEnabled: Boolean = false,
     val glassOpacity: Float = 0.42f,
     val glassClarity: Float = 0.70f,
     val liquidGlassEffect: LiquidGlassEffect = LiquidGlassEffect.BALANCED,

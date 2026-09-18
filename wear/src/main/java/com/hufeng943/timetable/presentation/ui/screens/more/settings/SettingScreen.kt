@@ -31,8 +31,7 @@ fun SettingScreen(
 
     NavHost(
         navController = internalNavController,
-        startDestination = InternalNavRoutes.MAIN
-    ) {
+        startDestination = InternalNavRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
         composable(InternalNavRoutes.MAIN) {
             SettingPager(
                 config = config,
@@ -40,6 +39,7 @@ fun SettingScreen(
                 onLanguageSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.LANGUAGE_SELECT) },
                 onTimeFormatSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.TIME_FORMAT_SELECT) },
                 onFirstDaySelectClick = { internalNavController.navigateSingle(InternalNavRoutes.FIRST_DAY_SELECT) },
+                onPowerSaveSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.POWER_SAVE_SELECT) },
                 onExportClick = { internalNavController.navigateSingle(InternalNavRoutes.EXPORT) },
                 onImportClick = { internalNavController.navigateSingle(InternalNavRoutes.IMPORT) },
             )
@@ -56,7 +56,6 @@ fun SettingScreen(
                 onDynamicColorToggle = appConfigViewModel::updateDynamicColorEnabled,
                 onShowTopTimeToggle = appConfigViewModel::updateShowTopTime,
                 onUiAnimationsToggle = appConfigViewModel::updateUiAnimationsEnabled,
-                onConditionalUiToggle = appConfigViewModel::updateConditionalUiEnabled,
             )
         }
 
@@ -66,6 +65,14 @@ fun SettingScreen(
 
         composable(InternalNavRoutes.IMPORT) {
             ImportScreen(onNavigateBack = { internalNavController.popBackStack() })
+        }
+
+
+        composable(InternalNavRoutes.POWER_SAVE_SELECT) {
+            PowerSaveModeSelectPager(config = config) { mode ->
+                appConfigViewModel.updatePowerSaveMode(mode)
+                internalNavController.popBackStack()
+            }
         }
 
         composable(InternalNavRoutes.LIQUID_GLASS_ADVANCED) {

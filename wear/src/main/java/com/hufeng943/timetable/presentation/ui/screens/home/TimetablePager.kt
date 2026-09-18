@@ -81,6 +81,15 @@ import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.DisposableEffect
 @Composable
 fun TimetablePager(
     viewModel: TimetableViewModel = hiltViewModel(),
@@ -93,6 +102,41 @@ fun TimetablePager(
     val selectedDateEvents by viewModel.selectedDateEvents.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
+    var freshnessTick by remember { mutableLongStateOf(0L) }
+    var lastCalendarDate by remember { mutableStateOf(Clock.System.todayIn(TimeZone.currentSystemDefault())) }
+
+    // Re-evaluate time-sensitive course state immediately when the app returns to foreground,
+    // or when Android reports a clock/date/time-zone change. This avoids a stale "下课"/
+    // "即将上课" card after Wear OS has suspended the process in power saver.
+    DisposableEffect(lifecycleOwner, context, selectedDate) {
+        fun refreshForWallClockChange() {
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+            if (today != lastCalendarDate && selectedDate == lastCalendarDate) {
+                viewModel.updateSelectedDate(today)
+            }
+            lastCalendarDate = today
+            freshnessTick++
+        }
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshForWallClockChange()
+        }
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(receiverContext: Context?, intent: Intent?) = refreshForWallClockChange()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+            addAction(Intent.ACTION_DATE_CHANGED)
+        }
+        context.registerReceiver(receiver, filter)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            runCatching { context.unregisterReceiver(receiver) }
+        }
+    }
 
     LaunchedEffect(uiState) {
         if (uiState !is UiState.Success) {
@@ -135,7 +179,7 @@ fun TimetablePager(
             // keeping it inside CourseListPager made `minuteTick` inaccessible
             // here and caused the release Kotlin compilation to fail.
             var minuteTick by remember { mutableLongStateOf(0L) }
-            LaunchedEffect(coursesUi, selectedDate) {
+            LaunchedEffect(coursesUi, selectedDate, freshnessTick) {
                 while (true) {
                     val waitMillis = nextCourseStatusWakeMillis(coursesUi, selectedDate)
                     if (waitMillis == null) awaitCancellation()
@@ -143,7 +187,7 @@ fun TimetablePager(
                     minuteTick++
                 }
             }
-            val statusSummary = remember(coursesUi, selectedDate, minuteTick) {
+            val statusSummary = remember(coursesUi, selectedDate, minuteTick, freshnessTick) {
                 calculateCourseStatusSummary(coursesUi, selectedDate)
             }
 

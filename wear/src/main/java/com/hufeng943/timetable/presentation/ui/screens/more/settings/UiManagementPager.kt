@@ -5,7 +5,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Animation
 import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.ColorLens
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Tune
@@ -42,7 +41,6 @@ fun UiManagementPager(
     onDynamicColorToggle: (Boolean) -> Unit,
     onShowTopTimeToggle: (Boolean) -> Unit,
     onUiAnimationsToggle: (Boolean) -> Unit,
-    onConditionalUiToggle: (Boolean) -> Unit,
 ) {
     val state = rememberTransformingLazyColumnState()
     val transform = rememberTransformationSpec()
@@ -119,17 +117,6 @@ fun UiManagementPager(
                     icon = Icons.Rounded.Animation,
                     checked = config.uiAnimationsEnabled,
                     onCheckedChange = onUiAnimationsToggle,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
-            }
-            item {
-                OneUiSwitchCapsule(
-                    title = "条件 UI",
-                    subtitle = "自动隐藏无效选项",
-                    icon = Icons.Rounded.AutoAwesome,
-                    checked = config.conditionalUiEnabled,
-                    onCheckedChange = onConditionalUiToggle,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )

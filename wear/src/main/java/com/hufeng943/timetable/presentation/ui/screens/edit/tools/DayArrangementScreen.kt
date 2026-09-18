@@ -37,7 +37,7 @@ fun DayArrangementScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewModel(
             val today=remember{Clock.System.todayIn(TimeZone.currentSystemDefault())}
             var date by remember{mutableStateOf(today)}; var sourceDay by remember{mutableStateOf(nextDifferentDay(today.dayOfWeek))}
             val nav=rememberNavController()
-            NavHost(navController=nav,startDestination=DayRoutes.MAIN){
+            NavHost(navController=nav,startDestination=DayRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
                 composable(DayRoutes.MAIN){
                     val scroll=rememberTransformingLazyColumnState();val transform=rememberTransformationSpec()
                     ScreenScaffold(scrollState=scroll,timeText={},edgeButton={EdgeButton(enabled=sourceDay!=date.dayOfWeek,onClick={viewModel.applyDayArrangement(null,date,sourceDay)}){Icon(Icons.Rounded.Check,"确认")}}){padding->

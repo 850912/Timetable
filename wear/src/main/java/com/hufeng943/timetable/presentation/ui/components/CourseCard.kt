@@ -90,7 +90,7 @@ fun CourseCard(
         isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.46f), CourseCapsuleShape)
         else -> modifier.border(0.8.dp, Color.White.copy(alpha = 0.16f), CourseCapsuleShape)
     }
-    val glassActive = glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled || glassConfig.isGlobalGlassMaterialEnabled
+    val glassActive = glassConfig.isLiquidGlassEnabled
     val cardModifier = if (glassActive) {
         baseCardModifier.globalLiquidGlass(CourseCapsuleShape, courseColor)
     } else baseCardModifier

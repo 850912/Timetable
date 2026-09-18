@@ -39,8 +39,7 @@ fun EditTimetableScreen(
 
     NavHost(
         navController = internalNavController,
-        startDestination = InternalNavRoutes.MAIN
-    ) {
+        startDestination = InternalNavRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
         composable(InternalNavRoutes.MAIN) {
             HandleEditUiState(uiState) { timetable ->
                 DynamicSubTheme(seedColor = timetable.color) {

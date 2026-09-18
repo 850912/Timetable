@@ -78,7 +78,7 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
             val valid = a != null && b != null && table != null && (mode != CourseAdjustmentMode.SWAP || bOccurs)
             val nav = rememberNavController()
 
-            NavHost(navController = nav, startDestination = AdjustRoutes.MAIN) {
+            NavHost(navController = nav, startDestination = AdjustRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
                 composable(AdjustRoutes.MAIN) {
                     val scroll = rememberTransformingLazyColumnState(); val transform = rememberTransformationSpec()
                     ScreenScaffold(scrollState = scroll, timeText = {}, edgeButton = {

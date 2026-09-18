@@ -10,6 +10,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
+import com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -43,10 +44,8 @@ class PreferenceStorage @Inject constructor(
         val DYNAMIC_COLOR_ENABLED = booleanPreferencesKey("dynamic_color_enabled")
         val SHOW_TOP_TIME = booleanPreferencesKey("show_top_time")
         val UI_ANIMATIONS_ENABLED = booleanPreferencesKey("ui_animations_enabled")
-        val CONDITIONAL_UI_ENABLED = booleanPreferencesKey("conditional_ui_enabled")
+        val POWER_SAVE_MODE = stringPreferencesKey("power_save_mode")
         val LIQUID_GLASS_ENABLED = booleanPreferencesKey("liquid_glass_enabled")
-        val FROSTED_GLASS_ENABLED = booleanPreferencesKey("frosted_glass_enabled")
-        val GLOBAL_GLASS_MATERIAL_ENABLED = booleanPreferencesKey("global_glass_material_enabled")
         val GLASS_OPACITY = floatPreferencesKey("glass_opacity")
         val GLASS_CLARITY = floatPreferencesKey("glass_clarity")
         val LIQUID_GLASS_EFFECT = stringPreferencesKey("liquid_glass_effect")
@@ -97,10 +96,8 @@ class PreferenceStorage @Inject constructor(
             isDynamicColorEnabled = prefs[Keys.DYNAMIC_COLOR_ENABLED] ?: true,
             isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false,
             uiAnimationsEnabled = prefs[Keys.UI_ANIMATIONS_ENABLED] ?: true,
-            conditionalUiEnabled = prefs[Keys.CONDITIONAL_UI_ENABLED] ?: true,
+            powerSaveMode = runCatching { AppPowerSaveMode.valueOf(prefs[Keys.POWER_SAVE_MODE] ?: AppPowerSaveMode.FOLLOW_SYSTEM.name) }.getOrDefault(AppPowerSaveMode.FOLLOW_SYSTEM),
             isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: false,
-            isFrostedGlassEnabled = prefs[Keys.FROSTED_GLASS_ENABLED] ?: false,
-            isGlobalGlassMaterialEnabled = prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] ?: false,
             glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.42f).coerceIn(0.05f, 0.95f),
             glassClarity = (prefs[Keys.GLASS_CLARITY] ?: 0.70f).coerceIn(0f, 1f),
             liquidGlassEffect = runCatching { LiquidGlassEffect.valueOf(prefs[Keys.LIQUID_GLASS_EFFECT] ?: LiquidGlassEffect.BALANCED.name) }.getOrDefault(LiquidGlassEffect.BALANCED),
@@ -141,30 +138,16 @@ class PreferenceStorage @Inject constructor(
         context.dataStore.edit { it[Keys.SHOW_TOP_TIME] = enabled }
     }
 
+    suspend fun setPowerSaveMode(mode: AppPowerSaveMode) {
+        context.dataStore.edit { it[Keys.POWER_SAVE_MODE] = mode.name }
+    }
+
     suspend fun setUiAnimationsEnabled(enabled: Boolean) {
         context.dataStore.edit { it[Keys.UI_ANIMATIONS_ENABLED] = enabled }
     }
 
-    suspend fun setConditionalUiEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.CONDITIONAL_UI_ENABLED] = enabled }
-    }
-
     suspend fun setLiquidGlassEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            // Keep the visible liquid-glass switch authoritative; legacy global/frosted flags
-            // are migration-only and must not remain active behind it.
-            prefs[Keys.LIQUID_GLASS_ENABLED] = enabled
-            prefs[Keys.FROSTED_GLASS_ENABLED] = false
-            prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] = false
-        }
-    }
-
-    suspend fun setFrostedGlassEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.FROSTED_GLASS_ENABLED] = enabled }
-    }
-
-    suspend fun setGlobalGlassMaterialEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] = enabled }
+        context.dataStore.edit { it[Keys.LIQUID_GLASS_ENABLED] = enabled }
     }
 
     suspend fun setGlassOpacity(value: Float) {

@@ -45,6 +45,7 @@ import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
+import com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
@@ -93,17 +94,24 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         context.registerReceiver(receiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
         onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
-    // Power Saver on watches can heavily throttle CPU/GPU. Keep the same UI but avoid expensive
-    // blur/chromatic passes and nonessential motion while the system is throttling the app.
-    val config = if (isPowerSaveMode) storedConfig.copy(
+    // Resolve the user's app power policy against Android's real PowerManager state.
+    // In effective power-save mode we avoid backdrop capture/blur, chromatic passes and motion;
+    // these are GPU/CPU-heavy on Wear OS and provide no scheduling correctness benefit.
+    val effectivePowerSave = when (storedConfig.powerSaveMode) {
+        AppPowerSaveMode.FOLLOW_SYSTEM -> isPowerSaveMode
+        AppPowerSaveMode.ALWAYS_ON -> true
+        AppPowerSaveMode.ALWAYS_OFF -> false
+    }
+    val config = if (effectivePowerSave) storedConfig.copy(
         uiAnimationsEnabled = false,
+        isLiquidGlassEnabled = false,
         glassChromaticAberration = false,
         glassBlurEnabled = false,
         liquidGlassEffect = com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.SOFT,
     ) else storedConfig
     val globalGlassBackdrop = rememberLayerBackdrop()
     // Backdrop capture is shared by all glass surfaces; the renderer falls back below Android 13.
-    val useBackdropEffects = config.isLiquidGlassEnabled || config.isFrostedGlassEnabled || config.isGlobalGlassMaterialEnabled
+    val useBackdropEffects = config.isLiquidGlassEnabled
 
     AppScaffold(
         containerColor = Color.Transparent,

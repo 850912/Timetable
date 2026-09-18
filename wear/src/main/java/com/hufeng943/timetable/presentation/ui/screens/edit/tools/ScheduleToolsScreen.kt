@@ -54,7 +54,7 @@ fun ScheduleToolsScreen(
             var action by remember { mutableStateOf(BatchAction.SHIFT) }
             val nav = rememberNavController()
 
-            NavHost(navController = nav, startDestination = QuickRoutes.MAIN) {
+            NavHost(navController = nav, startDestination = QuickRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
                 composable(QuickRoutes.MAIN) {
                     val valid = (end?.let { it >= start } ?: true) &&
                         (!useWindow || we > ws) &&

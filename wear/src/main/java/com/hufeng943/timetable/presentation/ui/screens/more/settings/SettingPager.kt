@@ -3,6 +3,7 @@ package com.hufeng943.timetable.presentation.ui.screens.more.settings
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.BatterySaver
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
@@ -44,6 +45,7 @@ fun SettingPager(
     onLanguageSelectClick: () -> Unit,
     onTimeFormatSelectClick: () -> Unit,
     onFirstDaySelectClick: () -> Unit,
+    onPowerSaveSelectClick: () -> Unit,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
 ) {
@@ -91,6 +93,7 @@ fun SettingPager(
             item { SettingItemCard(Icons.Rounded.FileUpload, "导入课表", "扫描本机备份一键恢复", transformationSpec, onImportClick, true) }
             item { SettingItemCard(Icons.Rounded.Language, stringResource(R.string.settings_language), currentLanguageLabel, transformationSpec, onLanguageSelectClick) }
             item { SettingItemCard(Icons.Rounded.AccessTime, stringResource(R.string.settings_time_format), currentTimeFormatLabel, transformationSpec, onTimeFormatSelectClick) }
+            item { SettingItemCard(Icons.Rounded.BatterySaver, "省电模式", when (config.powerSaveMode) { com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.FOLLOW_SYSTEM -> "跟随系统"; com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_ON -> "始终开启"; com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_OFF -> "始终关闭" }, transformationSpec, onPowerSaveSelectClick) }
             item { SettingItemCard(Icons.Rounded.DateRange, stringResource(R.string.settings_first_day), currentFirstDayLabel, transformationSpec, onFirstDaySelectClick) }
         }
     }
