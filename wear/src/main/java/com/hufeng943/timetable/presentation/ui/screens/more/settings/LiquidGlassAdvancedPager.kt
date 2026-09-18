@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ColorLens
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
@@ -144,7 +145,7 @@ private fun IntegerAdjustPager(target: AdjustTarget, onClose: () -> Unit) {
                             .transformedHeight(this, transform)
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        style = if (isSelected) MaterialTheme.typography.displayLarge else MaterialTheme.typography.headlineMedium,
+                        style = if (isSelected) MaterialTheme.typography.displayLarge else MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (isSelected) 1f else 0.42f),
                     )
                 }
