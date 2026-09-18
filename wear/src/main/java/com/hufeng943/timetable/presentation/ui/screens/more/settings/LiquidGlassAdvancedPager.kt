@@ -119,51 +119,47 @@ private fun IntegerAdjustPager(target: AdjustTarget, onClose: () -> Unit) {
             .collect { haptics.tick() }
     }
 
-    ScreenScaffold(
-        timeText = {},
-        edgeButton = {
-            EdgeButton(
-                onClick = {
-                    haptics.confirm()
-                    target.apply(selected)
-                    onClose()
-                },
-            ) {
-                Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.check))
-            }
-        },
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
     ) {
-        androidx.compose.foundation.layout.Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = androidx.compose.ui.Alignment.Center,
-        ) {
-            Picker(
-                state = state,
-                contentDescription = { "$selected${target.suffix}" },
-                // The app can render an image/gradient behind this page. Per Picker docs,
-                // Color.Unspecified prevents opaque gradient bands on custom backgrounds.
-                gradientColor = androidx.compose.ui.graphics.Color.Unspecified,
-                modifier = Modifier.size(width = 118.dp, height = 118.dp),
-            ) { index ->
-                val value = values[index]
-                val isSelected = index == selectedOptionIndex
-                Text(
-                    text = "$value${target.suffix}",
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    style = if (isSelected) MaterialTheme.typography.displayMedium else MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (isSelected) 1f else 0.48f),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
+        Picker(
+            state = state,
+            contentDescription = { "$selected${target.suffix}" },
+            // The app can render an image/gradient behind this page. Per Picker docs,
+            // Color.Unspecified prevents opaque gradient bands on custom backgrounds.
+            gradientColor = androidx.compose.ui.graphics.Color.Unspecified,
+            modifier = Modifier.size(width = 118.dp, height = 118.dp),
+        ) { index ->
+            val value = values[index]
+            val isSelected = index == state.selectedOptionIndex
             Text(
-                text = target.title,
-                modifier = Modifier
-                    .align(androidx.compose.ui.Alignment.TopCenter)
-                    .padding(top = 8.dp),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
+                text = "$value${target.suffix}",
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                style = if (isSelected) MaterialTheme.typography.displayMedium else MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (isSelected) 1f else 0.48f),
+                modifier = Modifier.fillMaxWidth(),
             )
+        }
+
+        Text(
+            text = target.title,
+            modifier = Modifier
+                .align(androidx.compose.ui.Alignment.TopCenter)
+                .padding(top = 8.dp),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
+        )
+
+        EdgeButton(
+            onClick = {
+                haptics.confirm()
+                target.apply(selected)
+                onClose()
+            },
+            modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter),
+        ) {
+            Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.check))
         }
     }
 }
