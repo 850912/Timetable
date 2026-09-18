@@ -12,7 +12,6 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -89,7 +88,7 @@ fun ScheduleToolsScreen(
                         ) {
                             item {
                                 ListHeader(
-                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                    modifier = Modifier.fillMaxWidth()
                                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                                     transformation = SurfaceTransformation(transform),
                                 ) { Text("批量日程工具") }
@@ -99,7 +98,7 @@ fun ScheduleToolsScreen(
                                     title = "范围：全部课表",
                                     subtitle = "${current.timetables.size} 个课表 · 全部课程/课时",
                                     icon = Icons.Rounded.SelectAll,
-                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                    modifier = Modifier.fillMaxWidth()
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                                 )
                             }
@@ -110,7 +109,7 @@ fun ScheduleToolsScreen(
                                     icon = Icons.Rounded.EventBusy,
                                     emphasize = true,
                                     onClick = { nav.navigateSingle(QuickRoutes.DAYS) },
-                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                    modifier = Modifier.fillMaxWidth()
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                                 )
                             }
@@ -129,7 +128,7 @@ fun ScheduleToolsScreen(
                                     },
                                     onClick = { action = BatchAction.entries[(action.ordinal + 1) % BatchAction.entries.size] },
                                     onLongClick = { nav.navigateSingle(QuickRoutes.OFFSET) },
-                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                    modifier = Modifier.fillMaxWidth()
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                                 )
                             }
@@ -139,7 +138,7 @@ fun ScheduleToolsScreen(
                                     subtitle = if (offset < 0) "提前 ${-offset} 分钟" else "延时 $offset 分钟",
                                     icon = Icons.Rounded.Tune,
                                     onClick = { nav.navigateSingle(QuickRoutes.OFFSET) },
-                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                    modifier = Modifier.fillMaxWidth()
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                                 )
                             }
@@ -148,7 +147,7 @@ fun ScheduleToolsScreen(
                                     title = "开始：${start.toDisplayString()}",
                                     subtitle = "点按选择生效日期",
                                     onClick = { nav.navigateSingle(QuickRoutes.START) },
-                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                    modifier = Modifier.fillMaxWidth()
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                                 )
                             }
@@ -158,7 +157,7 @@ fun ScheduleToolsScreen(
                                     subtitle = "点按选择；长按永久",
                                     onClick = { nav.navigateSingle(QuickRoutes.END) },
                                     onLongClick = { end = null },
-                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                    modifier = Modifier.fillMaxWidth()
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                                 )
                             }
@@ -169,7 +168,7 @@ fun ScheduleToolsScreen(
                                     selected = useWindow,
                                     onClick = { useWindow = !useWindow },
                                     onLongClick = { useWindow = true; nav.navigateSingle(QuickRoutes.WS) },
-                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                    modifier = Modifier.fillMaxWidth()
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                                 )
                             }
@@ -178,7 +177,7 @@ fun ScheduleToolsScreen(
                                     title = "时间窗结束：${we.toDisplayString(config.is24HourFormat)}",
                                     subtitle = "点按修改",
                                     onClick = { nav.navigateSingle(QuickRoutes.WE) },
-                                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                                    modifier = Modifier.fillMaxWidth()
                                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                                 )
                             }
@@ -219,8 +218,8 @@ fun ScheduleToolsScreen(
 @Composable private fun ValuePickerPage(title:String,values:List<Int>,initial:Int,label:(Int)->String,onConfirm:(Int)->Unit){
     var selected by remember(initial){mutableIntStateOf(initial)};val state=rememberTransformingLazyColumnState(initialAnchorItemIndex=(values.indexOf(initial).coerceAtLeast(0)+1));val transform=rememberTransformationSpec()
     ScreenScaffold(scrollState=state,timeText={},edgeButton={EdgeButton(onClick={onConfirm(selected)}){Icon(Icons.Rounded.Check,"确认")}}){padding->TransformingLazyColumn(state=state,contentPadding=padding,modifier=Modifier.fillMaxSize()){
-        item{ListHeader(modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text(title)}}
-        values.forEach{v->item(key=v){OneUiCapsuleSurface(title=label(v),selected=v==selected,onClick={selected=v},modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}}
+        item{ListHeader(modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text(title)}}
+        values.forEach{v->item(key=v){OneUiCapsuleSurface(title=label(v),selected=v==selected,onClick={selected=v},modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}}
     }}
 }
 @Composable private fun DatePage(initial:LocalDate,onPicked:(LocalDate)->Unit){ScreenScaffold(timeText={}){DatePicker(initialDate=initial.toJavaLocalDate(),onDatePicked={onPicked(it.toKotlinLocalDate())})}}

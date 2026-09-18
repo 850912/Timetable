@@ -34,7 +34,6 @@ import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TextDefaults
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.DynamicSubTheme
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
@@ -65,7 +64,7 @@ fun DetailsPager(
                     ListHeader(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
+                            
                             .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
                     ) {
@@ -77,7 +76,7 @@ fun DetailsPager(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
+                            
                             .padding(horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -107,14 +106,14 @@ fun DetailsPager(
                             color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .transformedHeight(this, transformationSpec)
+                                
                                 .padding(horizontal = 8.dp, vertical = 12.dp)
                         )
                     } else {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .transformedHeight(this, transformationSpec)
+                                
                                 .minimumVerticalContentPadding(TextDefaults.minimumTopListContentPadding)
                                 .padding(horizontal = 8.dp, vertical = 12.dp), verticalAlignment = Alignment.Bottom
                         ) {
@@ -154,7 +153,7 @@ fun DetailsPager(
                             icon = Icons.Rounded.Place,
                             text = courseUi.location,
                             modifier = Modifier
-                                .transformedHeight(this, transformationSpec)
+                                
                                 .minimumVerticalContentPadding(TextDefaults.minimumTopListContentPadding)
                         )
                     }
@@ -166,7 +165,7 @@ fun DetailsPager(
                             icon = Icons.Rounded.Person,
                             text = courseUi.teacher,
                             modifier = Modifier
-                                .transformedHeight(this, transformationSpec)
+                                
                                 .minimumVerticalContentPadding(TextDefaults.minimumTopListContentPadding)
                         )
                     }
@@ -179,7 +178,7 @@ fun DetailsPager(
                             icon = Icons.AutoMirrored.Rounded.Notes,
                             text = remark,
                             modifier = Modifier
-                                .transformedHeight(this, transformationSpec)
+                                
                                 .minimumVerticalContentPadding(TextDefaults.minimumTopListContentPadding)
                         )
                     }
@@ -190,7 +189,7 @@ fun DetailsPager(
                         icon = Icons.Rounded.Sync,
                         text = courseUi.timeSlot.recurrence.toDisplayString(),
                         modifier = Modifier
-                            .transformedHeight(this, transformationSpec)
+                            
                             .minimumVerticalContentPadding(TextDefaults.minimumTopListContentPadding)
                     )
                 }
@@ -207,7 +206,7 @@ fun DetailsPager(
                         onLongClick = onCourseLongClick,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
+                            
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                     )
                 }

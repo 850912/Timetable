@@ -19,7 +19,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.theme.ThemePreset
 import kotlinx.coroutines.launch
@@ -41,7 +40,7 @@ fun ThemePresetSelectPager(currentPreset: ThemePreset, onPresetSelect: (ThemePre
         TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) { Text("主题风格") }
@@ -60,7 +59,7 @@ fun ThemePresetSelectPager(currentPreset: ThemePreset, onPresetSelect: (ThemePre
                     selected = preset == currentPreset,
                     emphasize = preset == currentPreset,
                     onClick = { onPresetSelect(preset) },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }

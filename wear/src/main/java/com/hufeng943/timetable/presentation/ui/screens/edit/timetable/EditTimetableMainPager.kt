@@ -22,7 +22,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.TimetableUi
 import com.hufeng943.timetable.presentation.ui.components.ColorPickerCard
@@ -59,7 +58,7 @@ fun EditTimetableMainPager(
         TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) {
@@ -73,7 +72,7 @@ fun EditTimetableMainPager(
                     subtitle = timetable.displayName,
                     icon = Icons.Rounded.CollectionsBookmark,
                     onClick = onNameClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
@@ -85,7 +84,7 @@ fun EditTimetableMainPager(
                     icon = Icons.Rounded.CalendarToday,
                     onClick = onStartDateClick,
                     onLongClick = onStartDateLongClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
@@ -98,7 +97,7 @@ fun EditTimetableMainPager(
                     icon = Icons.Rounded.CalendarMonth,
                     onClick = onEndDateClick,
                     onLongClick = onEndDateLongClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
@@ -110,7 +109,7 @@ fun EditTimetableMainPager(
                     onClick = onColorClick,
                     onLongClick = onColorLongClick,
                     isNull = timetable.color == Color.Unspecified,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 )
@@ -124,7 +123,7 @@ fun EditTimetableMainPager(
                         icon = Icons.Rounded.Tune,
                         emphasize = true,
                         onClick = onQuickModify,
-                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        modifier = Modifier.fillMaxWidth()
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                     )
                 }
@@ -132,7 +131,7 @@ fun EditTimetableMainPager(
                     DeleteButton(
                         label = stringResource(R.string.edit_timetable_delete),
                         onClick = onDelete,
-                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        modifier = Modifier.fillMaxWidth()
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
                     )

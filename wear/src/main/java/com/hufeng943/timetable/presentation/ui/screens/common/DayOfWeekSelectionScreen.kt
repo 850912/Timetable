@@ -20,7 +20,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
@@ -46,7 +45,7 @@ fun DayOfWeekSelectionScreen(initialDay: DayOfWeek?, onDaySelected: (DayOfWeek) 
         ) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) { Text(stringResource(R.string.selection_week)) }
@@ -57,7 +56,7 @@ fun DayOfWeekSelectionScreen(initialDay: DayOfWeek?, onDaySelected: (DayOfWeek) 
                     icon = Icons.Rounded.DateRange,
                     selected = day == initialDay,
                     onClick = { onDaySelected(day) },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }

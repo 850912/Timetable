@@ -20,7 +20,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Build
@@ -64,7 +63,7 @@ fun DeveloperOptionsScreen() {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec),
                 ) { Text(stringResource(R.string.developer_options_title)) }
@@ -80,7 +79,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -94,7 +93,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -108,7 +107,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -122,7 +121,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -136,7 +135,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -150,7 +149,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -164,7 +163,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -178,7 +177,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -192,7 +191,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -207,7 +206,7 @@ fun DeveloperOptionsScreen() {
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }

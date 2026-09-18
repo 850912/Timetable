@@ -23,7 +23,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
@@ -50,7 +49,7 @@ fun MultiDateSelectionScreen(initialDays: Set<DayOfWeek>, onConfirm: (Set<DayOfW
         TransformingLazyColumn(state = state, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transform),
                 ) { Text("选择星期（可多选）") }
@@ -63,7 +62,7 @@ fun MultiDateSelectionScreen(initialDays: Set<DayOfWeek>, onConfirm: (Set<DayOfW
                     icon = Icons.Rounded.DateRange,
                     selected = checked,
                     onClick = { selected = if (checked) selected - day else selected + day },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }

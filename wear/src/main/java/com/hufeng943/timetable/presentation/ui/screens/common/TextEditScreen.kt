@@ -34,7 +34,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleShape
 import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
@@ -67,7 +66,7 @@ fun TextEditScreen(label: String, initialText: String, onSave: (String) -> Unit)
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) { Text(label) }
@@ -75,7 +74,7 @@ fun TextEditScreen(label: String, initialText: String, onSave: (String) -> Unit)
             item {
                 Box(
                     modifier = Modifier.fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                         .clip(OneUiCapsuleShape)
                         .globalLiquidGlass(OneUiCapsuleShape, AppTheme.colors.surfaceContainer)

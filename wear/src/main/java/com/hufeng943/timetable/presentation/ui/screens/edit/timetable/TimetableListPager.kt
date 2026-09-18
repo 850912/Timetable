@@ -24,7 +24,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.TimetableUi
 import com.hufeng943.timetable.presentation.ui.components.edit.EditTimetableCard
@@ -63,7 +62,7 @@ fun TimetableListPager(
                 ListHeader(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) {
@@ -76,7 +75,7 @@ fun TimetableListPager(
                         text = stringResource(R.string.edit_timetable_empty),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
+                            
                             .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge,
@@ -91,7 +90,7 @@ fun TimetableListPager(
                         onTimetableLongClick = onTimetableLongClick,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
+                            
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
                     )
@@ -102,7 +101,7 @@ fun TimetableListPager(
                         subtitle = "批量调时、停课、恢复日程",
                         icon = Icons.Rounded.Build,
                         onClick = onScheduleToolsClick,
-                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        modifier = Modifier.fillMaxWidth()
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                     )
                 }

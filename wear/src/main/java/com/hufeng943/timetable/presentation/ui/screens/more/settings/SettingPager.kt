@@ -30,7 +30,6 @@ import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.data.FirstDayOfTheWeek
 import com.hufeng943.timetable.data.TimeFormat
@@ -83,7 +82,7 @@ fun SettingPager(
         TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) { Text(stringResource(R.string.more_menu_settings)) }
@@ -114,7 +113,7 @@ private fun TransformingLazyColumnItemScope.SettingItemCard(
         secondaryLabel = value,
         emphasize = emphasize,
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+        modifier = Modifier.fillMaxWidth()
             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
     )
 }

@@ -33,7 +33,7 @@ import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
 
-val OneUiCapsuleShape = RoundedCornerShape(26.dp)
+val OneUiCapsuleShape = RoundedCornerShape(22.dp)
 
 @Composable
 fun OneUiCapsuleSurface(
@@ -108,7 +108,7 @@ fun OneUiCapsuleSurface(
         }
 
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (icon != null) {

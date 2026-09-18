@@ -33,7 +33,6 @@ import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import kotlinx.coroutines.launch
@@ -114,7 +113,7 @@ fun ImportScreen(
                 ListHeader(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) { Text("导入课表") }
@@ -143,7 +142,7 @@ fun ImportScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
@@ -153,7 +152,7 @@ fun ImportScreen(
                     ListHeader(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec),
+                            ,
                         transformation = SurfaceTransformation(transformationSpec)
                     ) { Text("手表本地备份") }
                 }
@@ -166,7 +165,7 @@ fun ImportScreen(
                         onClick = { viewModel.importFromFile(file) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
+                            
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                     )
                 }

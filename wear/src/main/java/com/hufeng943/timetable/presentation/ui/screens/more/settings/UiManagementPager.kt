@@ -21,7 +21,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
@@ -55,7 +54,7 @@ fun UiManagementPager(
         TransformingLazyColumn(state = state, contentPadding = padding) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transform),
                 ) { Text("UI 管理") }
@@ -64,7 +63,7 @@ fun UiManagementPager(
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Tune,
                     text = "主题、背景、玻璃与动效。",
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     maxLines = 3,
                 )
@@ -75,7 +74,7 @@ fun UiManagementPager(
                     label = "主题风格",
                     secondaryLabel = currentThemePreset.title,
                     onClick = onThemeSelectClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -85,7 +84,7 @@ fun UiManagementPager(
                     label = stringResource(R.string.settings_timetable_background),
                     secondaryLabel = backgroundLabel(),
                     onClick = onBackgroundSelectClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -95,7 +94,7 @@ fun UiManagementPager(
                     label = stringResource(R.string.settings_liquid_glass),
                     secondaryLabel = if (config.isLiquidGlassEnabled) "液态 · ${config.liquidGlassEffect.name.lowercase()}" else "已关闭",
                     onClick = onLiquidGlassAdvancedClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -106,7 +105,7 @@ fun UiManagementPager(
                     icon = Icons.Rounded.ColorLens,
                     checked = config.isDynamicColorEnabled,
                     onCheckedChange = onDynamicColorToggle,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -117,7 +116,7 @@ fun UiManagementPager(
                     icon = Icons.Rounded.Animation,
                     checked = config.uiAnimationsEnabled,
                     onCheckedChange = onUiAnimationsToggle,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -128,7 +127,7 @@ fun UiManagementPager(
                     icon = Icons.Rounded.Schedule,
                     checked = config.isShowTopTime,
                     onCheckedChange = onShowTopTimeToggle,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }

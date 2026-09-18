@@ -11,7 +11,6 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
@@ -27,9 +26,9 @@ fun PowerSaveModeSelectPager(config: AppConfig, onSelect: (AppPowerSaveMode) -> 
     val transform = rememberTransformationSpec()
     ScreenScaffold(scrollState = state) { padding ->
         TransformingLazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = padding) {
-            item { ListHeader(modifier = Modifier.fillMaxWidth().transformedHeight(this, transform).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding), transformation = SurfaceTransformation(transform)) { Text("省电模式") } }
+            item { ListHeader(modifier = Modifier.fillMaxWidth().minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding), transformation = SurfaceTransformation(transform)) { Text("省电模式") } }
             items(values, key = { it.first.name }) { (mode, labels) ->
-                OneUiCapsuleSurface(title = labels.first, subtitle = labels.second, icon = Icons.Rounded.BatterySaver, selected = mode == config.powerSaveMode, onClick = { onSelect(mode) }, modifier = Modifier.fillMaxWidth().transformedHeight(this, transform).minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))
+                OneUiCapsuleSurface(title = labels.first, subtitle = labels.second, icon = Icons.Rounded.BatterySaver, selected = mode == config.powerSaveMode, onClick = { onSelect(mode) }, modifier = Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))
             }
         }
     }

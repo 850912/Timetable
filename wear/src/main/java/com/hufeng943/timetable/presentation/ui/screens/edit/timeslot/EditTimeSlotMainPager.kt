@@ -21,7 +21,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.TimeSlotUi
 import com.hufeng943.timetable.presentation.ui.components.DeleteButton
@@ -56,7 +55,7 @@ fun EditTimeSlotMainPager(
         TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) {
@@ -71,7 +70,7 @@ fun EditTimeSlotMainPager(
                     icon = Icons.Rounded.AccessTime,
                     emphasize = timeSlot.startTime == null,
                     onClick = onStartTimeClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
@@ -83,7 +82,7 @@ fun EditTimeSlotMainPager(
                     icon = Icons.Rounded.AccessTime,
                     emphasize = timeSlot.endTime == null,
                     onClick = onEndTimeClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
@@ -95,7 +94,7 @@ fun EditTimeSlotMainPager(
                     icon = Icons.Rounded.DateRange,
                     emphasize = timeSlot.selectedDays.isEmpty(),
                     onClick = onDayOfWeekClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
@@ -106,7 +105,7 @@ fun EditTimeSlotMainPager(
                     subtitle = timeSlot.recurrence.toDisplayString(),
                     icon = Icons.Rounded.Refresh,
                     onClick = onRecurrenceClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
@@ -118,7 +117,7 @@ fun EditTimeSlotMainPager(
                     icon = Icons.AutoMirrored.Rounded.Notes,
                     onClick = onRemarkClick,
                     onLongClick = onRemarkLongClick,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
@@ -128,7 +127,7 @@ fun EditTimeSlotMainPager(
                     DeleteButton(
                         label = stringResource(R.string.edit_timeslot_delete),
                         onClick = onDelete,
-                        modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                        modifier = Modifier.fillMaxWidth()
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
                     )

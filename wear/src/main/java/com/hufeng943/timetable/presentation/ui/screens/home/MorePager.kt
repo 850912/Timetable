@@ -22,7 +22,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
@@ -47,7 +46,7 @@ fun MorePager() {
                 ListHeader(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec),
                 ) {
@@ -64,7 +63,7 @@ fun MorePager() {
                     onClick = { navController.navigateSingle(NavRoutes.LIST_TIMETABLE) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -77,7 +76,7 @@ fun MorePager() {
                     onClick = { navController.navigateSingle(NavRoutes.MORE_DAY_ARRANGEMENT) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -90,7 +89,7 @@ fun MorePager() {
                     onClick = { navController.navigateSingle(NavRoutes.MORE_COURSE_ADJUSTMENT) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -103,7 +102,7 @@ fun MorePager() {
                     onClick = { navController.navigateSingle(NavRoutes.MORE_SETTINGS) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -116,7 +115,7 @@ fun MorePager() {
                     onClick = { navController.navigateSingle(NavRoutes.MORE_ABOUT) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }

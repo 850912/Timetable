@@ -17,7 +17,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.data.FirstDayOfTheWeek
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
@@ -40,7 +39,7 @@ fun FirstDaySelectPager(config: AppConfig, onFirstDaySelect: (FirstDayOfTheWeek)
         TransformingLazyColumn(state = scrollState, modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) { Text(stringResource(R.string.settings_first_day)) }
@@ -51,7 +50,7 @@ fun FirstDaySelectPager(config: AppConfig, onFirstDaySelect: (FirstDayOfTheWeek)
                     icon = Icons.Rounded.DateRange,
                     selected = value == current,
                     onClick = { onFirstDaySelect(value) },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }

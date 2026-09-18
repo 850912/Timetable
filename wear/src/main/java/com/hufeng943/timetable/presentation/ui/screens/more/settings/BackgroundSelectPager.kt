@@ -25,7 +25,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
@@ -127,7 +126,7 @@ fun BackgroundSelectPager(
         TransformingLazyColumn(state = state, contentPadding = padding) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transform),
                 ) { Text(stringResource(R.string.settings_timetable_background)) }
@@ -139,7 +138,7 @@ fun BackgroundSelectPager(
                     icon = Icons.Rounded.RadioButtonChecked,
                     selected = config.timetableBackgroundMode == TimetableBackgroundMode.SOLID,
                     onClick = { onBackgroundSelected(TimetableBackgroundMode.SOLID, null) },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -150,7 +149,7 @@ fun BackgroundSelectPager(
                     icon = Icons.Rounded.ColorLens,
                     selected = config.timetableBackgroundMode == TimetableBackgroundMode.THEME,
                     onClick = { onBackgroundSelected(TimetableBackgroundMode.THEME, null) },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -165,7 +164,7 @@ fun BackgroundSelectPager(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
                     },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }

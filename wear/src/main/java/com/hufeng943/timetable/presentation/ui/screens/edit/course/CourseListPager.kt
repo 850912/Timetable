@@ -21,7 +21,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
 import com.hufeng943.timetable.presentation.ui.components.edit.EditCourseCard
@@ -56,7 +55,7 @@ fun CourseListPager(
                 ListHeader(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) {
@@ -69,7 +68,7 @@ fun CourseListPager(
                         text = stringResource(R.string.edit_course_empty),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
+                            
                             .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge,
@@ -84,7 +83,7 @@ fun CourseListPager(
                         onLongClick = { onCourseLongClick(course.id) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
+                            
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                         transformation = SurfaceTransformation(transformationSpec)
                     )

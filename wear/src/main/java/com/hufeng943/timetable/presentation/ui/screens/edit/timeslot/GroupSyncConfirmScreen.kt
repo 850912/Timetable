@@ -18,7 +18,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 
 @Composable
@@ -39,7 +38,7 @@ fun GroupSyncConfirmScreen(
                 ) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transform),
                 ) { Text("同步时间修改？") }
@@ -51,7 +50,7 @@ fun GroupSyncConfirmScreen(
                     icon = Icons.Rounded.Link,
                     emphasize = true,
                     onClick = onSync,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
@@ -61,7 +60,7 @@ fun GroupSyncConfirmScreen(
                     subtitle = "其他日期保持原来的时间",
                     icon = Icons.Rounded.LinkOff,
                     onClick = onCurrentOnly,
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }

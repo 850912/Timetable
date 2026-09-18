@@ -18,7 +18,6 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
@@ -41,7 +40,7 @@ fun RecurrenceSelectionScreen(initialPattern: WeekPattern, onPatternSelected: (W
         ) {
             item {
                 ListHeader(
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) { Text(stringResource(R.string.recurrence_title)) }
@@ -57,7 +56,7 @@ fun RecurrenceSelectionScreen(initialPattern: WeekPattern, onPatternSelected: (W
                     subtitle = subtitle,
                     selected = pattern == initialPattern,
                     onClick = { onPatternSelected(pattern) },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec)
+                    modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }

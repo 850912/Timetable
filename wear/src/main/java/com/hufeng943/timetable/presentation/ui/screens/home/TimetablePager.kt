@@ -48,7 +48,6 @@ import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.NavRoutes.courseDetail
@@ -217,7 +216,7 @@ fun TimetablePager(
                     is24HourFormat = config.is24HourFormat,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec)
+                        
                         .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) {
@@ -389,7 +388,7 @@ private fun CourseListPager(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = if (showTopTime) 30.dp else 10.dp)
-                                .transformedHeight(this, transformationSpec)
+                                
                                 .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
                             transformation = SurfaceTransformation(transformationSpec),
                         )
@@ -404,7 +403,7 @@ private fun CourseListPager(
                             onClick = { showFinishedTimetable = !showFinishedTimetable },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .transformedHeight(this, transformationSpec)
+                                
                                 .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
                         )
                     }
@@ -422,7 +421,7 @@ private fun CourseListPager(
                                     else if (showTopTime) 30.dp
                                     else 10.dp
                                 )
-                                .transformedHeight(this, transformationSpec)
+                                
                                 .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                             transformation = SurfaceTransformation(transformationSpec)
                         ) {
@@ -474,7 +473,7 @@ private fun CourseListPager(
                         icon = Icons.Rounded.EventAvailable,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec)
+                            
                             .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
                     )
                 }
