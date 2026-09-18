@@ -68,6 +68,7 @@ class AppConfigViewModel @Inject constructor(
     }
 
     fun updateGlassOpacity(value: Float) { viewModelScope.launch { preferenceStorage.setGlassOpacity(value) } }
+    fun updateGlassClarity(value: Float) { viewModelScope.launch { preferenceStorage.setGlassClarity(value) } }
     fun updateLiquidGlassEffect(value: LiquidGlassEffect) { viewModelScope.launch { preferenceStorage.setLiquidGlassEffect(value) } }
     fun updateGlassChromaticAberration(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setGlassChromaticAberration(enabled) } }
     fun updateGlassLensDistortion(value: Float) { viewModelScope.launch { preferenceStorage.setGlassLensDistortion(value) } }

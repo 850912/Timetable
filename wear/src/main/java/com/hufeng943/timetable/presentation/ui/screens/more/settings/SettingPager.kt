@@ -86,7 +86,7 @@ fun SettingPager(
                     transformation = SurfaceTransformation(transformationSpec)
                 ) { Text(stringResource(R.string.more_menu_settings)) }
             }
-            item { SettingItemCard(Icons.Rounded.Palette, "UI 管理", "主题、背景、玻璃、动态配色与动效", transformationSpec, onUiManagementClick) }
+            item { SettingItemCard(Icons.Rounded.Palette, "UI 管理", "主题、背景、玻璃与动效", transformationSpec, onUiManagementClick) }
             item { SettingItemCard(Icons.Rounded.Share, "导出课表", "ICS / CSV / JSON 备份", transformationSpec, onExportClick, true) }
             item { SettingItemCard(Icons.Rounded.FileUpload, "导入课表", "扫描本机备份一键恢复", transformationSpec, onImportClick, true) }
             item { SettingItemCard(Icons.Rounded.Language, stringResource(R.string.settings_language), currentLanguageLabel, transformationSpec, onLanguageSelectClick) }

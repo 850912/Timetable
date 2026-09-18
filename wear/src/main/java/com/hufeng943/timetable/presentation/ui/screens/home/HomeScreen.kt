@@ -1,46 +1,47 @@
 package com.hufeng943.timetable.presentation.ui.screens.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
-import androidx.wear.compose.material3.AnimatedPage
-import androidx.wear.compose.material3.HorizontalPagerScaffold
-import androidx.wear.compose.material3.PagerScaffoldDefaults
+import androidx.wear.compose.material3.HorizontalPageIndicator
 
 @Composable
 fun HomeScreen() {
     val pagerState = rememberPagerState(pageCount = { 2 })
     var isDatePickerOpen by remember { mutableStateOf(false) }
-
-    // Official Wear Material 3 pager stack: the scaffold owns indicator/time transitions and
-    // AnimatedPage supplies the platform scaling/scrim treatment instead of a custom animation.
-    HorizontalPagerScaffold(
-        pagerState = pagerState,
-        modifier = Modifier.fillMaxSize(),
-        pageIndicator = {
-            if (!isDatePickerOpen) {
-                androidx.wear.compose.material3.HorizontalPageIndicator(pagerState = pagerState)
-            }
-        },
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         HorizontalPager(
             modifier = Modifier.fillMaxSize(),
             state = pagerState,
-            userScrollEnabled = !isDatePickerOpen,
-            flingBehavior = PagerScaffoldDefaults.snapWithSpringFlingBehavior(pagerState),
+            userScrollEnabled = !isDatePickerOpen
         ) { page ->
-            AnimatedPage(pageIndex = page, pagerState = pagerState) {
-                when (page) {
-                    0 -> TimetablePager(onOpenStateChanged = { isDatePickerOpen = it })
-                    else -> MorePager()
-                }
+            when (page) {
+                0 -> TimetablePager(onOpenStateChanged = { isDatePickerOpen = it })
+                1 -> MorePager()
             }
+        }
+        // 页面指示器
+        AnimatedVisibility(
+            visible = !isDatePickerOpen, // 当时间选择器关闭时显示
+            // Wear OS 6 / One UI Watch 8: avoid re-layout animation during page changes.
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 6.dp)
+        ) {
+            HorizontalPageIndicator(
+                pagerState = pagerState
+            )
         }
     }
 }

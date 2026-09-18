@@ -48,7 +48,7 @@ fun OneUiCapsuleButton(
             .fillMaxWidth()
             .clip(CapsuleShape)
             .globalLiquidGlass(CapsuleShape, colors.surfaceContainer)
-            .background(colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled)) 0f else 1f))
+            .background(colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled || glassConfig.isGlobalGlassMaterialEnabled)) 0f else 1f))
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
     ) {
         if (emphasize) {

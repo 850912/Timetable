@@ -95,11 +95,7 @@ fun UiManagementPager(
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.BlurOn,
                     label = stringResource(R.string.settings_liquid_glass),
-                    secondaryLabel = if (config.isLiquidGlassEnabled) {
-                        "液态 · ${config.liquidGlassEffect.name.lowercase()}"
-                    } else {
-                        "已关闭"
-                    },
+                    secondaryLabel = if (config.isLiquidGlassEnabled) "液态 · ${config.liquidGlassEffect.name.lowercase()}" else "已关闭",
                     onClick = onLiquidGlassAdvancedClick,
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, transform)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),

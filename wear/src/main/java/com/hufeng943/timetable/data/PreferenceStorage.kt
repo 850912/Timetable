@@ -48,13 +48,13 @@ class PreferenceStorage @Inject constructor(
         val FROSTED_GLASS_ENABLED = booleanPreferencesKey("frosted_glass_enabled")
         val GLOBAL_GLASS_MATERIAL_ENABLED = booleanPreferencesKey("global_glass_material_enabled")
         val GLASS_OPACITY = floatPreferencesKey("glass_opacity")
+        val GLASS_CLARITY = floatPreferencesKey("glass_clarity")
         val LIQUID_GLASS_EFFECT = stringPreferencesKey("liquid_glass_effect")
         val GLASS_CHROMATIC_ABERRATION = booleanPreferencesKey("glass_chromatic_aberration")
         val GLASS_LENS_DISTORTION = floatPreferencesKey("glass_lens_distortion")
         val GLASS_BLUR_ENABLED = booleanPreferencesKey("glass_blur_enabled")
         val GLASS_BLUR_RADIUS = floatPreferencesKey("glass_blur_radius")
         val BACKGROUND_BRIGHTNESS = floatPreferencesKey("background_brightness")
-        val BACKGROUND_BRIGHTNESS_DIRECT = booleanPreferencesKey("background_brightness_direct")
         val TIMETABLE_BACKGROUND_MODE = stringPreferencesKey("timetable_background_mode")
         val TIMETABLE_BACKGROUND_IMAGE_PATH = stringPreferencesKey("timetable_background_image_path")
     }
@@ -98,24 +98,17 @@ class PreferenceStorage @Inject constructor(
             isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false,
             uiAnimationsEnabled = prefs[Keys.UI_ANIMATIONS_ENABLED] ?: true,
             conditionalUiEnabled = prefs[Keys.CONDITIONAL_UI_ENABLED] ?: true,
-            // Treat the two retired glass flags as a one-way compatibility migration so old
-            // installs do not render glass while the visible master switch appears disabled.
-            isLiquidGlassEnabled = (prefs[Keys.LIQUID_GLASS_ENABLED] ?: false) ||
-                (prefs[Keys.FROSTED_GLASS_ENABLED] ?: false) ||
-                (prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] ?: false),
-            glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.38f).coerceIn(0.10f, 0.70f),
+            isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: false,
+            isFrostedGlassEnabled = prefs[Keys.FROSTED_GLASS_ENABLED] ?: false,
+            isGlobalGlassMaterialEnabled = prefs[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] ?: false,
+            glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.42f).coerceIn(0.05f, 0.95f),
+            glassClarity = (prefs[Keys.GLASS_CLARITY] ?: 0.70f).coerceIn(0f, 1f),
             liquidGlassEffect = runCatching { LiquidGlassEffect.valueOf(prefs[Keys.LIQUID_GLASS_EFFECT] ?: LiquidGlassEffect.BALANCED.name) }.getOrDefault(LiquidGlassEffect.BALANCED),
             glassChromaticAberration = prefs[Keys.GLASS_CHROMATIC_ABERRATION] ?: false,
-            glassLensDistortion = (prefs[Keys.GLASS_LENS_DISTORTION] ?: 0.20f).coerceIn(0f, 0.60f),
+            glassLensDistortion = (prefs[Keys.GLASS_LENS_DISTORTION] ?: 0.20f).coerceIn(0f, 1f),
             glassBlurEnabled = prefs[Keys.GLASS_BLUR_ENABLED] ?: true,
-            glassBlurRadius = (prefs[Keys.GLASS_BLUR_RADIUS] ?: 1f).coerceIn(0f, 2f),
-            backgroundBrightness = prefs[Keys.BACKGROUND_BRIGHTNESS]?.let { stored ->
-                // Values written before the unobstructed-background fix controlled a black scrim:
-                // alpha=(1-stored)*0.35. Convert those values once at read time so AppConfig and
-                // the settings UI expose the real source luminance. New writes are direct.
-                if (prefs[Keys.BACKGROUND_BRIGHTNESS_DIRECT] == true) stored
-                else 0.65f + 0.35f * stored
-            }?.coerceIn(0.10f, 1f) ?: 1f,
+            glassBlurRadius = (prefs[Keys.GLASS_BLUR_RADIUS] ?: 1f).coerceIn(0f, 8f),
+            backgroundBrightness = (prefs[Keys.BACKGROUND_BRIGHTNESS] ?: 0.82f).coerceIn(0.10f, 1f),
             timetableBackgroundMode = runCatching {
                 TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
             }.getOrDefault(TimetableBackgroundMode.THEME),
@@ -166,10 +159,20 @@ class PreferenceStorage @Inject constructor(
         }
     }
 
+    suspend fun setFrostedGlassEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.FROSTED_GLASS_ENABLED] = enabled }
+    }
 
+    suspend fun setGlobalGlassMaterialEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.GLOBAL_GLASS_MATERIAL_ENABLED] = enabled }
+    }
 
     suspend fun setGlassOpacity(value: Float) {
-        context.dataStore.edit { it[Keys.GLASS_OPACITY] = value.coerceIn(0.10f, 0.70f) }
+        context.dataStore.edit { it[Keys.GLASS_OPACITY] = value.coerceIn(0.05f, 0.95f) }
+    }
+
+    suspend fun setGlassClarity(value: Float) {
+        context.dataStore.edit { it[Keys.GLASS_CLARITY] = value.coerceIn(0f, 1f) }
     }
 
     suspend fun setLiquidGlassEffect(value: LiquidGlassEffect) {
@@ -177,15 +180,12 @@ class PreferenceStorage @Inject constructor(
     }
 
     suspend fun setGlassChromaticAberration(enabled: Boolean) { context.dataStore.edit { it[Keys.GLASS_CHROMATIC_ABERRATION] = enabled } }
-    suspend fun setGlassLensDistortion(value: Float) { context.dataStore.edit { it[Keys.GLASS_LENS_DISTORTION] = value.coerceIn(0f, 0.60f) } }
+    suspend fun setGlassLensDistortion(value: Float) { context.dataStore.edit { it[Keys.GLASS_LENS_DISTORTION] = value.coerceIn(0f, 1f) } }
     suspend fun setGlassBlurEnabled(enabled: Boolean) { context.dataStore.edit { it[Keys.GLASS_BLUR_ENABLED] = enabled } }
-    suspend fun setGlassBlurRadius(value: Float) { context.dataStore.edit { it[Keys.GLASS_BLUR_RADIUS] = value.coerceIn(0f, 2f) } }
+    suspend fun setGlassBlurRadius(value: Float) { context.dataStore.edit { it[Keys.GLASS_BLUR_RADIUS] = value.coerceIn(0f, 8f) } }
 
     suspend fun setBackgroundBrightness(value: Float) {
-        context.dataStore.edit { prefs ->
-            prefs[Keys.BACKGROUND_BRIGHTNESS] = value.coerceIn(0.10f, 1f)
-            prefs[Keys.BACKGROUND_BRIGHTNESS_DIRECT] = true
-        }
+        context.dataStore.edit { it[Keys.BACKGROUND_BRIGHTNESS] = value.coerceIn(0.10f, 1f) }
     }
 
     suspend fun setTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {

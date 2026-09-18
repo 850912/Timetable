@@ -35,6 +35,7 @@ fun OneUiSwitchCapsule(
     enabled: Boolean = true,
 ) {
     val colors = AppTheme.colors
+    val haptics = rememberWearHaptics()
     val animationsEnabled = com.hufeng943.timetable.presentation.ui.common.LocalAppConfig.current.uiAnimationsEnabled
     val travelPx = with(LocalDensity.current) { 16.dp.toPx() }
     val knobOffset by animateFloatAsState(
@@ -47,7 +48,7 @@ fun OneUiSwitchCapsule(
         subtitle = subtitle,
         icon = icon,
         selected = false,
-        onClick = if (enabled) ({ onCheckedChange(!checked) }) else null,
+        onClick = if (enabled) ({ haptics.toggle(); onCheckedChange(!checked) }) else null,
         modifier = modifier,
         trailing = {
             val track = RoundedCornerShape(12.dp)

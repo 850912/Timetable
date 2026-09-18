@@ -37,7 +37,7 @@ fun OneUiInfoCapsule(
             .fillMaxWidth()
             .clip(OneUiCapsuleShape)
             .globalLiquidGlass(OneUiCapsuleShape, colors.surfaceContainer)
-            .background(colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled)) 0f else 1f))
+            .background(colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled || glassConfig.isGlobalGlassMaterialEnabled)) 0f else 1f))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

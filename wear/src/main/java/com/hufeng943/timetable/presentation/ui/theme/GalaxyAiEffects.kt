@@ -22,21 +22,13 @@ fun GalaxyAiAmbientLayer(
     shape: Shape,
     modifier: Modifier = Modifier,
     strength: Float = 1f,
-    sourceLuminance: Float = 1f,
 ) {
-    val luminance = sourceLuminance.coerceIn(0.10f, 1f)
-    fun Color.withSourceLuminance(): Color = Color(
-        red = red * luminance,
-        green = green * luminance,
-        blue = blue * luminance,
-        alpha = alpha,
-    )
-    val primary = AppTheme.colors.primary.withSourceLuminance()
-    val secondary = AppTheme.colors.secondary.withSourceLuminance()
+    val primary = AppTheme.colors.primary
+    val secondary = AppTheme.colors.secondary
     val preset = LocalThemePreset.current
     val effectAlpha = strength.coerceIn(0f, 1f)
-    val midGlow = if (preset == ThemePreset.AMOLED_BLACK) Color(0xFF8FA9C7).withSourceLuminance() else primary
-    val endGlow = if (preset == ThemePreset.AMOLED_BLACK) Color(0xFF6E879F).withSourceLuminance() else secondary
+    val midGlow = if (preset == ThemePreset.AMOLED_BLACK) Color(0xFF8FA9C7) else primary
+    val endGlow = if (preset == ThemePreset.AMOLED_BLACK) Color(0xFF6E879F) else secondary
 
     Box(
         modifier = modifier

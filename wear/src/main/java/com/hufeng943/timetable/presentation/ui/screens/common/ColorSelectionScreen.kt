@@ -77,7 +77,7 @@ fun ColorSelectionScreen(onSave: (color: Color) -> Unit) {
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                         .clip(OneUiCapsuleShape)
                         .globalLiquidGlass(OneUiCapsuleShape, AppTheme.colors.surfaceContainer)
-                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled)) 0f else 1f))
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled || LocalAppConfig.current.isFrostedGlassEnabled || LocalAppConfig.current.isGlobalGlassMaterialEnabled)) 0f else 1f))
                         .padding(horizontal = 10.dp, vertical = 8.dp),
                 ) {
                     if (rowIndex == 0) GalaxyAiAmbientLayer(OneUiCapsuleShape, strength = 0.20f)

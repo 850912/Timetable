@@ -119,7 +119,7 @@ fun ExportScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
                         .globalLiquidGlass(RoundedCornerShape(20.dp), AppTheme.colors.surfaceContainer)
-                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled)) 0f else 1f))
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled || LocalAppConfig.current.isFrostedGlassEnabled || LocalAppConfig.current.isGlobalGlassMaterialEnabled)) 0f else 1f))
                         .padding(12.dp)
                 ) {
                     Column {

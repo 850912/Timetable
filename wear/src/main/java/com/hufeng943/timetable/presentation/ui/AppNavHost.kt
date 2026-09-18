@@ -3,6 +3,7 @@ package com.hufeng943.timetable.presentation.ui
 
 
 
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
@@ -26,11 +27,11 @@ import androidx.wear.compose.material3.TimeTextDefaults.rememberTimeSource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import android.graphics.BitmapFactory
-import android.os.Build
+import android.content.Context
+import android.os.PowerManager
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
@@ -65,14 +66,26 @@ import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.LocalSwipeToDismissBackgroundScrimColor
+import androidx.wear.compose.foundation.LocalSwipeToDismissContentScrimColor
 
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navController = rememberSwipeDismissableNavController()
-    val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
+    val storedConfig by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val powerManager = remember(context) { context.getSystemService(Context.POWER_SERVICE) as PowerManager }
+    // Power Saver on watches can heavily throttle CPU/GPU. Keep the same UI but avoid expensive
+    // blur/chromatic passes and nonessential motion while the system is throttling the app.
+    val config = if (powerManager.isPowerSaveMode) storedConfig.copy(
+        uiAnimationsEnabled = false,
+        glassChromaticAberration = false,
+        glassBlurEnabled = false,
+        liquidGlassEffect = com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.SOFT,
+    ) else storedConfig
     val globalGlassBackdrop = rememberLayerBackdrop()
     // Backdrop capture is shared by all glass surfaces; the renderer falls back below Android 13.
-    val useBackdropEffects = config.isLiquidGlassEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    val useBackdropEffects = config.isLiquidGlassEnabled || config.isFrostedGlassEnabled || config.isGlobalGlassMaterialEnabled
 
     AppScaffold(
         containerColor = Color.Transparent,
@@ -99,12 +112,14 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
             )
             Box(Modifier.fillMaxSize()) {
-                // Keep the navigation transition fully owned by Wear Compose.
-                // Custom swipe scrims caused a visible discontinuity at the end of back gestures.
-                SwipeDismissableNavHost(
-                    navController = navController,
-                    startDestination = NavRoutes.MAIN
+                CompositionLocalProvider(
+                    LocalSwipeToDismissBackgroundScrimColor provides Color.Black.copy(alpha = 0.18f),
+                    LocalSwipeToDismissContentScrimColor provides Color.Black.copy(alpha = 0.10f),
                 ) {
+                    SwipeDismissableNavHost(
+                        navController = navController,
+                        startDestination = NavRoutes.MAIN
+                    ) {
                 composable(NavRoutes.MAIN) {
                     HomeScreen()
                 }
@@ -225,6 +240,8 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 composable(NavRoutes.EDIT_TIMETABLE) {
                     EditTimetableScreen()
                 }
+
+                    }
                 }
             }
         }
@@ -238,16 +255,12 @@ private fun decodeWearBackground(path: String, maxSide: Int = 512): android.grap
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
     var sample = 1
     var largest = maxOf(bounds.outWidth, bounds.outHeight)
-    while (largest / sample > maxSide) sample *= 2
+    while (largest / sample > maxSide * 2) sample *= 2
     val options = BitmapFactory.Options().apply {
         inSampleSize = sample.coerceAtLeast(1)
         inPreferredConfig = android.graphics.Bitmap.Config.RGB_565
     }
-    return BitmapFactory.decodeFile(path, options)?.also { bitmap ->
-        // Start texture upload before the first Image draw; this avoids doing all preparation on
-        // the first visible frame when a custom background becomes active.
-        bitmap.prepareToDraw()
-    }
+    return BitmapFactory.decodeFile(path, options)
 }
 
 @Composable
@@ -273,47 +286,30 @@ private fun AppBackground(
         }
     }
 
-    // The base color sits BEHIND the selected background. Do not place a readability scrim above
-    // THEME/IMAGE: it both obscures the user's background and adds a full-screen alpha blend.
     Box(modifier.fillMaxSize().background(AppTheme.colors.background)) {
-        // AppConfig now exposes the real source luminance. Legacy scrim-era values are converted
-        // in PreferenceStorage, so rendering and the settings percentage share one meaning.
-        val sourceLuminance = config.backgroundBrightness.coerceIn(0.10f, 1f)
-        when (config.timetableBackgroundMode) {
-            TimetableBackgroundMode.SOLID -> Unit
-            TimetableBackgroundMode.THEME -> {
-                // Keep the ambient effect at full material strength. Brightness changes its source
-                // colors, not the layer opacity, so it no longer doubles as an "effect intensity".
-                GalaxyAiAmbientLayer(
-                    shape = RectangleShape,
-                    strength = 1f,
-                    sourceLuminance = sourceLuminance,
-                )
-            }
-            TimetableBackgroundMode.IMAGE -> {
-                val bitmap = backgroundBitmap
-                if (bitmap != null) {
-                    val brightnessMatrix = remember(sourceLuminance) {
-                        ColorMatrix().apply {
-                            setToScale(sourceLuminance, sourceLuminance, sourceLuminance, 1f)
-                        }
+        // Background blur is a single full-screen layer, not one blur pass per card. This keeps
+        // the optional effect predictable on Wear OS while allowing it to be disabled entirely.
+        Box(
+            Modifier
+                .fillMaxSize()
+                
+        ) {
+            when (config.timetableBackgroundMode) {
+                TimetableBackgroundMode.SOLID -> Unit
+                TimetableBackgroundMode.THEME ->
+                    GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
+                TimetableBackgroundMode.IMAGE -> {
+                    val bitmap = backgroundBitmap
+                    if (bitmap != null) {
+                        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    } else {
+                        // Never leave a black/empty page when a previously selected image becomes unreadable.
+                        GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
                     }
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        colorFilter = ColorFilter.colorMatrix(brightnessMatrix),
-                    )
-                } else {
-                    // Keep the fallback visible without adding an overlay above the backdrop.
-                    GalaxyAiAmbientLayer(
-                        shape = RectangleShape,
-                        strength = 1f,
-                        sourceLuminance = sourceLuminance,
-                    )
                 }
             }
         }
+        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.35f).coerceIn(0f, 0.35f)
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
     }
 }

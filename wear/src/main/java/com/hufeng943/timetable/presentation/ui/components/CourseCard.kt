@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -74,39 +73,26 @@ fun CourseCard(
         Brush.horizontalGradient(
             listOf(
                 Color.Transparent,
-                Color.White.copy(alpha = if (isCurrent) 0.34f else 0.20f),
-                courseColor.copy(alpha = if (isCurrent) 0.42f else 0.22f),
+                courseColor.copy(alpha = if (isCurrent) 0.90f else 0.45f),
+                Color.White.copy(alpha = 0.24f),
                 Color.Transparent,
             )
         )
     }
-    // Course colour is an accent reflected by the glass, not the material itself.
-    // Keeping the body optically neutral is what prevents the old coloured-plastic look.
-    val edgeReflectionBrush = remember(courseColor, isCurrent) {
-        Brush.verticalGradient(
-            listOf(
-                Color.White.copy(alpha = if (isCurrent) 0.62f else 0.34f),
-                courseColor.copy(alpha = if (isCurrent) 0.90f else 0.66f),
-                courseColor.copy(alpha = 0.20f),
-            )
-        )
+    val accentBrush = remember(courseColor, colors.primary, colors.secondary) {
+        galaxyAiAccentBrush(courseColor, colors.primary, colors.secondary)
     }
     val progressBrush = remember(courseColor) {
         Brush.horizontalGradient(listOf(courseColor.copy(alpha = 0.72f), courseColor))
     }
-    val glassActive = glassConfig.isLiquidGlassEnabled
-    val baseCardModifier = if (glassActive) {
-        modifier
-    } else {
-        when {
-            isCurrent -> modifier.border(0.8.dp, Color.White.copy(alpha = 0.30f), CourseCapsuleShape)
-            isNext -> modifier.border(0.65.dp, Color.White.copy(alpha = 0.20f), CourseCapsuleShape)
-            else -> modifier.border(0.5.dp, Color.White.copy(alpha = 0.11f), CourseCapsuleShape)
-        }
+    val baseCardModifier = when {
+        isCurrent -> modifier.border(2.dp, courseColor.copy(alpha = 0.98f), CourseCapsuleShape)
+        isNext -> modifier.border(1.dp, courseColor.copy(alpha = 0.46f), CourseCapsuleShape)
+        else -> modifier.border(0.8.dp, Color.White.copy(alpha = 0.16f), CourseCapsuleShape)
     }
+    val glassActive = glassConfig.isLiquidGlassEnabled || glassConfig.isFrostedGlassEnabled || glassConfig.isGlobalGlassMaterialEnabled
     val cardModifier = if (glassActive) {
-        // Kyant already renders the optical edge/highlight. Avoid a second full-card border pass.
-        baseCardModifier.globalLiquidGlass(CourseCapsuleShape, Color.Transparent)
+        baseCardModifier.globalLiquidGlass(CourseCapsuleShape, courseColor)
     } else baseCardModifier
 
     Card(
@@ -120,7 +106,7 @@ fun CourseCard(
             } else {
                 // Keep the normal mode genuinely translucent instead of pre-compositing it
                 // into an opaque surface. This preserves the glass look without a shader.
-                colors.surfaceContainer.copy(alpha = if (isCurrent) 0.78f else if (isNext) 0.66f else 0.56f)
+                courseColor.copy(alpha = if (glassConfig.isLiquidGlassEnabled) glassConfig.glassOpacity * (if (isCurrent) 0.40f else if (isNext) 0.28f else 0.20f) else if (isCurrent) 0.20f else if (isNext) 0.115f else 0.07f)
             },
             contentColor = colors.textPrimary,
         ),
@@ -132,23 +118,16 @@ fun CourseCard(
                 .heightIn(min = 72.dp)
                 .clip(CourseCapsuleShape)
         ) {
-            if (!glassActive) {
-                GalaxyAiAmbientLayer(
-                    shape = CourseCapsuleShape,
-                    strength = if (isCurrent) 0.36f else if (isNext) 0.24f else 0.14f,
-                )
-            }
-            // No full-card colour wash in glass mode: it turns refraction into coloured plastic.
-            if (!glassActive) {
-                // Non-glass fallback keeps a cheap highlight. In glass mode Kyant already draws
-                // the optical highlight, so drawing this again only adds overdraw.
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(topHighlightBrush)
-                )
-            }
+            GalaxyAiAmbientLayer(
+                shape = CourseCapsuleShape,
+                strength = if (glassActive) 0.16f else if (isCurrent) 0.58f else if (isNext) 0.36f else 0.22f,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(topHighlightBrush)
+            )
 
             Row(
                 modifier = Modifier
@@ -158,11 +137,11 @@ fun CourseCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .width(if (isCurrent) 3.dp else 2.dp)
+                        .width(5.dp)
                         .fillMaxHeight()
                         .heightIn(min = 48.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(edgeReflectionBrush)
+                        .background(accentBrush)
                 )
 
                 Spacer(Modifier.width(9.dp))
@@ -217,16 +196,6 @@ fun CourseCard(
                                 )
                             }
                         }
-                        if (!nextCourseName.isNullOrBlank() && minutesUntilNext != null) {
-                            Spacer(Modifier.height(5.dp))
-                            Text(
-                                text = stringResource(R.string.course_class_mode_next, nextCourseName, minutesUntilNext),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = colors.textSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
                     } else if (isNext) {
                         Text(
                             text = stringResource(R.string.course_next),
@@ -256,8 +225,8 @@ fun CourseCard(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(CircleShape)
-                        .background(Color.Transparent)
-                        .border(0.65.dp, Color.White.copy(alpha = if (isCurrent) 0.30f else 0.16f), CircleShape),
+                        .background(courseColor.copy(alpha = if (isCurrent) 0.26f else 0.16f))
+                        .border(0.8.dp, courseColor.copy(alpha = 0.42f), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
