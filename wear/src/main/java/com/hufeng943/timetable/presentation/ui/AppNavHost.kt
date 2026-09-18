@@ -18,6 +18,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.navigation
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -30,6 +33,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import android.graphics.BitmapFactory
 import android.content.Context
+import android.content.BroadcastReceiver
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.PowerManager
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
@@ -75,9 +81,21 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val storedConfig by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val powerManager = remember(context) { context.getSystemService(Context.POWER_SERVICE) as PowerManager }
+    var isPowerSaveMode by remember(powerManager) { mutableStateOf(powerManager.isPowerSaveMode) }
+    DisposableEffect(context, powerManager) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(receiverContext: Context?, intent: Intent?) {
+                if (intent?.action == PowerManager.ACTION_POWER_SAVE_MODE_CHANGED) {
+                    isPowerSaveMode = powerManager.isPowerSaveMode
+                }
+            }
+        }
+        context.registerReceiver(receiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
+        onDispose { runCatching { context.unregisterReceiver(receiver) } }
+    }
     // Power Saver on watches can heavily throttle CPU/GPU. Keep the same UI but avoid expensive
     // blur/chromatic passes and nonessential motion while the system is throttling the app.
-    val config = if (powerManager.isPowerSaveMode) storedConfig.copy(
+    val config = if (isPowerSaveMode) storedConfig.copy(
         uiAnimationsEnabled = false,
         glassChromaticAberration = false,
         glassBlurEnabled = false,

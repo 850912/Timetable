@@ -13,10 +13,9 @@ import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.wear.compose.navigation.SwipeDismissableNavHost
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
@@ -53,11 +52,9 @@ fun ScheduleToolsScreen(
             var ws by remember { mutableStateOf(LocalTime(8, 0)) }
             var we by remember { mutableStateOf(LocalTime(18, 0)) }
             var action by remember { mutableStateOf(BatchAction.SHIFT) }
-            val nav = rememberSwipeDismissableNavController()
-    val internalBackStackEntry by nav.currentBackStackEntryAsState()
-    val internalSwipeBackEnabled = internalBackStackEntry != null && nav.previousBackStackEntry != null
+            val nav = rememberNavController()
 
-            SwipeDismissableNavHost(navController = nav, userSwipeEnabled = internalSwipeBackEnabled, startDestination = QuickRoutes.MAIN) {
+            NavHost(navController = nav, startDestination = QuickRoutes.MAIN) {
                 composable(QuickRoutes.MAIN) {
                     val valid = (end?.let { it >= start } ?: true) &&
                         (!useWindow || we > ws) &&

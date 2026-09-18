@@ -6,10 +6,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.material3.DatePicker
 import androidx.wear.compose.material3.ScreenScaffold
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.wear.compose.navigation.SwipeDismissableNavHost
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.DynamicSubTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
@@ -33,12 +32,14 @@ fun EditTimetableScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
-    val internalNavController = rememberSwipeDismissableNavController()
-    val internalBackStackEntry by internalNavController.currentBackStackEntryAsState()
-    val internalSwipeBackEnabled = internalBackStackEntry != null && internalNavController.previousBackStackEntry != null
+    // This screen already lives inside the app-level SwipeDismissableNavHost.
+    // Keep its child pages on a plain NavHost so the parent page is not rendered
+    // as a second swipe-dismiss background (which caused the left-edge ghost frame).
+    val internalNavController = rememberNavController()
 
-    SwipeDismissableNavHost(
-        navController = internalNavController, userSwipeEnabled = internalSwipeBackEnabled, startDestination = InternalNavRoutes.MAIN
+    NavHost(
+        navController = internalNavController,
+        startDestination = InternalNavRoutes.MAIN
     ) {
         composable(InternalNavRoutes.MAIN) {
             HandleEditUiState(uiState) { timetable ->
