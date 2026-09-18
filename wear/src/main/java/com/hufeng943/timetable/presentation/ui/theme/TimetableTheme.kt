@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.wear.compose.material3.ColorScheme
 import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.MotionScheme
 import androidx.wear.compose.material3.dynamicColorScheme
 
 val AmoledBlackColorScheme = ColorScheme(
@@ -179,6 +180,10 @@ fun TimetableTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
+            // Wear Material 3 MotionScheme is the platform-recommended source of motion specs.
+            // Standard motion is appropriate for this utility-heavy app and keeps component motion
+            // coherent with Wear OS instead of mixing per-screen hard-coded durations.
+            motionScheme = MotionScheme.standard(),
             content = content
         )
     }

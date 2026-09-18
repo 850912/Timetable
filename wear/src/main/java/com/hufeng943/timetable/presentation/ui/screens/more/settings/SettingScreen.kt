@@ -6,10 +6,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.data.ThemePreference
+import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.screens.more.settings.export.ExportScreen
@@ -29,9 +29,9 @@ fun SettingScreen(
     val scope = rememberCoroutineScope()
     val currentPreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(initialValue = ThemePreset.AMOLED_BLACK)
 
-    NavHost(
+    WearInternalNavHost(
         navController = internalNavController,
-        startDestination = InternalNavRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
+        startDestination = InternalNavRoutes.MAIN) {
         composable(InternalNavRoutes.MAIN) {
             SettingPager(
                 config = config,

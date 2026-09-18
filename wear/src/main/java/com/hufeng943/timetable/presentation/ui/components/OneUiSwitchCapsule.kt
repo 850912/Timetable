@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.snap
 import androidx.compose.runtime.getValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.MaterialTheme
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 
 /** A glass-compatible switch row used instead of opaque Material SwitchButton surfaces. */
@@ -40,7 +41,7 @@ fun OneUiSwitchCapsule(
     val travelPx = with(LocalDensity.current) { 16.dp.toPx() }
     val knobOffset by animateFloatAsState(
         targetValue = if (checked) travelPx else 0f,
-        animationSpec = tween(if (animationsEnabled) 140 else 0),
+        animationSpec = if (animationsEnabled) MaterialTheme.motionScheme.fastSpatialSpec() else snap(),
         label = "switchKnob",
     )
     OneUiCapsuleSurface(

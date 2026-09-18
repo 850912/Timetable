@@ -13,15 +13,16 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.*
 import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toCourseUi
+import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.edit.EditCourseCard
 import com.hufeng943.timetable.presentation.ui.components.edit.EditTimeSlotCard
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
+import com.hufeng943.timetable.presentation.ui.components.WearDatePickerPage
 import com.hufeng943.timetable.presentation.viewmodel.edit.tools.*
 import com.hufeng943.timetable.shared.model.Course
 import com.hufeng943.timetable.shared.model.ResolvedSchedule
@@ -77,7 +78,7 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
             val valid = a != null && b != null && table != null && (mode != CourseAdjustmentMode.SWAP || bOccurs)
             val nav = rememberNavController()
 
-            NavHost(navController = nav, startDestination = AdjustRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
+            WearInternalNavHost(navController = nav, startDestination = AdjustRoutes.MAIN) {
                 composable(AdjustRoutes.MAIN) {
                     val scroll = rememberTransformingLazyColumnState(); val transform = rememberTransformationSpec()
                     ScreenScaffold(scrollState = scroll, timeText = {}, edgeButton = {
@@ -97,7 +98,7 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
                         }
                     }
                 }
-                composable(AdjustRoutes.DATE) { ScreenScaffold(timeText={}) { DatePicker(initialDate=date.toJavaLocalDate(),onDatePicked={date=it.toKotlinLocalDate();sourceSlotId=-1;sourceTableId=-1;targetCourseId=-1;nav.popSafe()}) } }
+                composable(AdjustRoutes.DATE) { WearDatePickerPage(initialDate=date.toJavaLocalDate(),onDatePicked={date=it.toKotlinLocalDate();sourceSlotId=-1;sourceTableId=-1;targetCourseId=-1;nav.popSafe()}) }
                 composable(AdjustRoutes.A_COURSES) {
                     val courses = allOccurrences.map { it.third.course }.distinctBy { it.id }
                     CourseSelectionPage("选择 A 课", courses) { browsingCourseId=it;nav.navigateSingle(AdjustRoutes.A_SLOTS) }

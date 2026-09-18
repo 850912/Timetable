@@ -12,12 +12,13 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.*
+import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
+import com.hufeng943.timetable.presentation.ui.components.WearDatePickerPage
 import com.hufeng943.timetable.presentation.viewmodel.edit.tools.*
 import kotlinx.datetime.*
 import java.time.format.TextStyle
@@ -36,7 +37,7 @@ fun DayArrangementScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewModel(
             val today=remember{Clock.System.todayIn(TimeZone.currentSystemDefault())}
             var date by remember{mutableStateOf(today)}; var sourceDay by remember{mutableStateOf(nextDifferentDay(today.dayOfWeek))}
             val nav=rememberNavController()
-            NavHost(navController=nav,startDestination=DayRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
+            WearInternalNavHost(navController=nav,startDestination=DayRoutes.MAIN) {
                 composable(DayRoutes.MAIN){
                     val scroll=rememberTransformingLazyColumnState();val transform=rememberTransformationSpec()
                     ScreenScaffold(scrollState=scroll,timeText={},edgeButton={EdgeButton(enabled=sourceDay!=date.dayOfWeek,onClick={viewModel.applyDayArrangement(null,date,sourceDay)}){Icon(Icons.Rounded.Check,"确认")}}){padding->
@@ -49,7 +50,7 @@ fun DayArrangementScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewModel(
                         }
                     }
                 }
-                composable(DayRoutes.DATE){ScreenScaffold(timeText={}){DatePicker(initialDate=date.toJavaLocalDate(),onDatePicked={date=it.toKotlinLocalDate();if(sourceDay==date.dayOfWeek)sourceDay=nextDifferentDay(sourceDay);nav.popSafe()})}}
+                composable(DayRoutes.DATE){WearDatePickerPage(initialDate=date.toJavaLocalDate(),onDatePicked={date=it.toKotlinLocalDate();if(sourceDay==date.dayOfWeek)sourceDay=nextDifferentDay(sourceDay);nav.popSafe()})}
                 composable(DayRoutes.SOURCE){DayOfWeekPicker(sourceDay,date.dayOfWeek){sourceDay=it;nav.popSafe()}}
             }
         }

@@ -3,6 +3,7 @@ package com.hufeng943.timetable.presentation.ui.screens.more.settings
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BlurOn
@@ -13,13 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
-import androidx.wear.compose.foundation.lazy.TransformingLazyColumnDefaults
-import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
@@ -28,6 +26,7 @@ import androidx.compose.material.icons.rounded.ColorLens
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
+import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.OneUiSwitchCapsule
 import com.hufeng943.timetable.presentation.ui.components.rememberWearHaptics
@@ -58,7 +57,7 @@ fun LiquidGlassAdvancedPager(
         nav.navigateSingle("adjust")
     }
 
-    NavHost(navController = nav, startDestination = "main", enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
+    WearInternalNavHost(navController = nav, startDestination = "main") {
         composable("main") {
             val state = rememberTransformingLazyColumnState()
             val transform = rememberTransformationSpec()
@@ -98,65 +97,72 @@ fun LiquidGlassAdvancedPager(
 
 @Composable
 private fun IntegerAdjustPager(target: AdjustTarget, onClose: () -> Unit) {
-    var selected by remember(target.title) { mutableIntStateOf(target.value.coerceIn(target.range)) }
     val values = remember(target.range) { target.range.toList() }
-    val initialIndex = remember(target.title, selected) { values.indexOf(selected).coerceAtLeast(0) }
-    val state = rememberTransformingLazyColumnState(initialAnchorItemIndex = initialIndex)
+    val initialIndex = remember(target.title, target.value, values) {
+        values.indexOf(target.value.coerceIn(target.range)).coerceAtLeast(0)
+    }
+    val state = rememberPickerState(
+        initialNumberOfOptions = values.size,
+        initiallySelectedIndex = initialIndex,
+        shouldRepeatOptions = false,
+    )
     val haptics = rememberWearHaptics()
+    val selectedIndex by remember(state) {
+        derivedStateOf { state.selectedOptionIndex.coerceIn(values.indices) }
+    }
+    val selected = values[selectedIndex]
 
-    LaunchedEffect(state, values) {
-        snapshotFlow { state.anchorItemIndex }
-            .map { it.coerceIn(values.indices) }
+    LaunchedEffect(state) {
+        snapshotFlow { state.selectedOptionIndex }
             .distinctUntilChanged()
             .drop(1)
-            .collect { index ->
-                selected = values[index]
-                haptics.tick()
-            }
+            .collect { haptics.tick() }
     }
 
-    val transform = rememberTransformationSpec()
     ScreenScaffold(
-        scrollState = state,
         timeText = {},
         edgeButton = {
-            EdgeButton(onClick = {
-                haptics.confirm()
-                target.apply(selected)
-                onClose()
-            }) { Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.check)) }
-        },
-    ) { padding ->
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
-            TransformingLazyColumn(
-                state = state,
-                flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(state),
-                rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(state, hapticFeedbackEnabled = true),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = padding,
-                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            EdgeButton(
+                onClick = {
+                    haptics.confirm()
+                    target.apply(selected)
+                    onClose()
+                },
             ) {
-                items(values, key = { it }) { value ->
-                    val isSelected = value == selected
-                    Text(
-                        text = "$value${target.suffix}",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .transformedHeight(this, transform)
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        style = if (isSelected) MaterialTheme.typography.displayLarge else MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (isSelected) 1f else 0.42f),
-                    )
-                }
+                Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.check))
             }
+        },
+    ) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center,
+        ) {
+            Picker(
+                state = state,
+                contentDescription = { "$selected${target.suffix}" },
+                // The app can render an image/gradient behind this page. Per Picker docs,
+                // Color.Unspecified prevents opaque gradient bands on custom backgrounds.
+                gradientColor = androidx.compose.ui.graphics.Color.Unspecified,
+                modifier = Modifier.size(width = 118.dp, height = 118.dp),
+            ) { index ->
+                val value = values[index]
+                val isSelected = index == selectedOptionIndex
+                Text(
+                    text = "$value${target.suffix}",
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    style = if (isSelected) MaterialTheme.typography.displayMedium else MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (isSelected) 1f else 0.48f),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             Text(
                 text = target.title,
                 modifier = Modifier
                     .align(androidx.compose.ui.Alignment.TopCenter)
-                    .padding(top = 6.dp),
+                    .padding(top = 8.dp),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
             )
         }
     }

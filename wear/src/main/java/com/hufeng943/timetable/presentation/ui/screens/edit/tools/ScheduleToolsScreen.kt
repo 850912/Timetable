@@ -12,15 +12,17 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.popSafe
+import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
+import com.hufeng943.timetable.presentation.ui.components.WearDatePickerPage
+import com.hufeng943.timetable.presentation.ui.components.WearTimePickerPage
 import com.hufeng943.timetable.presentation.viewmodel.edit.tools.*
 import kotlinx.datetime.*
 import kotlin.time.Clock
@@ -53,7 +55,7 @@ fun ScheduleToolsScreen(
             var action by remember { mutableStateOf(BatchAction.SHIFT) }
             val nav = rememberNavController()
 
-            NavHost(navController = nav, startDestination = QuickRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
+            WearInternalNavHost(navController = nav, startDestination = QuickRoutes.MAIN) {
                 composable(QuickRoutes.MAIN) {
                     val valid = (end?.let { it >= start } ?: true) &&
                         (!useWindow || we > ws) &&
@@ -222,5 +224,5 @@ fun ScheduleToolsScreen(
         values.forEach{v->item(key=v){OneUiCapsuleSurface(title=label(v),selected=v==selected,onClick={selected=v},modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}}
     }}
 }
-@Composable private fun DatePage(initial:LocalDate,onPicked:(LocalDate)->Unit){ScreenScaffold(timeText={}){DatePicker(initialDate=initial.toJavaLocalDate(),onDatePicked={onPicked(it.toKotlinLocalDate())})}}
-@Composable private fun TimePage(initial:LocalTime,is24:Boolean,onPicked:(LocalTime)->Unit){ScreenScaffold(timeText={}){TimePicker(initialTime=initial.toJavaLocalTime(),onTimePicked={onPicked(it.toKotlinLocalTime())},timePickerType=if(is24)TimePickerType.HoursMinutes24H else TimePickerType.HoursMinutesAmPm12H)}}
+@Composable private fun DatePage(initial:LocalDate,onPicked:(LocalDate)->Unit){WearDatePickerPage(initialDate=initial.toJavaLocalDate(),onDatePicked={onPicked(it.toKotlinLocalDate())})}
+@Composable private fun TimePage(initial:LocalTime,is24:Boolean,onPicked:(LocalTime)->Unit){WearTimePickerPage(initialTime=initial.toJavaLocalTime(),onTimePicked={onPicked(it.toKotlinLocalTime())},timePickerType=if(is24)TimePickerType.HoursMinutes24H else TimePickerType.HoursMinutesAmPm12H)}

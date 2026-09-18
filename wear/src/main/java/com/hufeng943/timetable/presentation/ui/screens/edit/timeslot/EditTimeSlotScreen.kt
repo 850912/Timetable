@@ -6,10 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.material3.ScreenScaffold
-import androidx.wear.compose.material3.TimePicker
 import androidx.wear.compose.material3.TimePickerType
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.R
@@ -18,7 +15,9 @@ import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.popSafe
+import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
+import com.hufeng943.timetable.presentation.ui.components.WearTimePickerPage
 import com.hufeng943.timetable.presentation.ui.screens.common.DayOfWeekSelectionScreen
 import com.hufeng943.timetable.presentation.ui.screens.common.DeleteConfirmScreen
 import com.hufeng943.timetable.presentation.ui.screens.common.RecurrenceSelectionScreen
@@ -46,9 +45,9 @@ fun EditTimeSlotScreen(
         viewModel.completed.collect { navController.popSafe() }
     }
 
-    NavHost(
+    WearInternalNavHost(
         navController = internalNavController,
-        startDestination = InternalNavRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
+        startDestination = InternalNavRoutes.MAIN) {
         composable(InternalNavRoutes.MAIN) {
             HandleEditUiState(uiState) { timeSlot ->
                 DynamicSubTheme(seedColor = timeSlot.color) {
@@ -79,18 +78,16 @@ fun EditTimeSlotScreen(
         composable(InternalNavRoutes.START_TIME) {
             HandleEditUiState(uiState) { timeSlot ->
                 DynamicSubTheme(seedColor = timeSlot.color) {
-                    ScreenScaffold(timeText = {}) {
-                        TimePicker(
-                            initialTime = (timeSlot.startTime ?: Clock.System.now().toLocalDateTime(
-                                TimeZone.currentSystemDefault()
-                            ).time).toJavaLocalTime(),
-                            onTimePicked = { newTime ->
-                                viewModel.onAction(EditTimeSlotAction.UpdateStartTime(newTime.toKotlinLocalTime()))
-                                internalNavController.popSafe()
-                            },
-                            timePickerType = if (config.is24HourFormat) TimePickerType.HoursMinutes24H else TimePickerType.HoursMinutesAmPm12H
-                        )
-                    }
+                    WearTimePickerPage(
+                        initialTime = (timeSlot.startTime ?: Clock.System.now().toLocalDateTime(
+                            TimeZone.currentSystemDefault()
+                        ).time).toJavaLocalTime(),
+                        onTimePicked = { newTime ->
+                            viewModel.onAction(EditTimeSlotAction.UpdateStartTime(newTime.toKotlinLocalTime()))
+                            internalNavController.popSafe()
+                        },
+                        timePickerType = if (config.is24HourFormat) TimePickerType.HoursMinutes24H else TimePickerType.HoursMinutesAmPm12H,
+                    )
                 }
             }
         }
@@ -98,18 +95,16 @@ fun EditTimeSlotScreen(
         composable(InternalNavRoutes.END_TIME) {
             HandleEditUiState(uiState) { timeSlot ->
                 DynamicSubTheme(seedColor = timeSlot.color) {
-                    ScreenScaffold(timeText = {}) {
-                        TimePicker(
-                            initialTime = (timeSlot.endTime ?: Clock.System.now().toLocalDateTime(
-                                TimeZone.currentSystemDefault()
-                            ).time).toJavaLocalTime(),
-                            onTimePicked = { newTime ->
-                                viewModel.onAction(EditTimeSlotAction.UpdateEndTime(newTime.toKotlinLocalTime()))
-                                internalNavController.popSafe()
-                            },
-                            timePickerType = if (config.is24HourFormat) TimePickerType.HoursMinutes24H else TimePickerType.HoursMinutesAmPm12H
-                        )
-                    }
+                    WearTimePickerPage(
+                        initialTime = (timeSlot.endTime ?: Clock.System.now().toLocalDateTime(
+                            TimeZone.currentSystemDefault()
+                        ).time).toJavaLocalTime(),
+                        onTimePicked = { newTime ->
+                            viewModel.onAction(EditTimeSlotAction.UpdateEndTime(newTime.toKotlinLocalTime()))
+                            internalNavController.popSafe()
+                        },
+                        timePickerType = if (config.is24HourFormat) TimePickerType.HoursMinutes24H else TimePickerType.HoursMinutesAmPm12H,
+                    )
                 }
             }
         }

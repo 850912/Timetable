@@ -1,7 +1,8 @@
 package com.hufeng943.timetable.presentation.ui.components
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -42,7 +43,10 @@ class PullToDatePickerState(
         settleJob = coroutineScope.launch {
             Animatable(startValue).animateTo(
                 targetValue = targetValue,
-                animationSpec = tween(durationMillis = 300),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow,
+                ),
             ) {
                 dragOffset = value
             }

@@ -4,9 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.wear.compose.material3.DatePicker
-import androidx.wear.compose.material3.ScreenScaffold
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.R
@@ -14,7 +11,9 @@ import com.hufeng943.timetable.presentation.ui.common.DynamicSubTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.popSafe
+import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
+import com.hufeng943.timetable.presentation.ui.components.WearDatePickerPage
 import com.hufeng943.timetable.presentation.ui.screens.common.ColorSelectionScreen
 import com.hufeng943.timetable.presentation.ui.screens.common.DeleteConfirmScreen
 import com.hufeng943.timetable.presentation.ui.screens.common.TextEditScreen
@@ -33,13 +32,13 @@ fun EditTimetableScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     // This screen already lives inside the app-level SwipeDismissableNavHost.
-    // Keep its child pages on a plain NavHost so the parent page is not rendered
-    // as a second swipe-dismiss background (which caused the left-edge ghost frame).
+    // Keep child pages on the centralized non-swipe internal host so the parent page is not
+    // rendered as a second swipe-dismiss background (which caused the left-edge ghost frame).
     val internalNavController = rememberNavController()
 
-    NavHost(
+    WearInternalNavHost(
         navController = internalNavController,
-        startDestination = InternalNavRoutes.MAIN, enterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, exitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}, popEnterTransition={androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140))}, popExitTransition={androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100))}) {
+        startDestination = InternalNavRoutes.MAIN) {
         composable(InternalNavRoutes.MAIN) {
             HandleEditUiState(uiState) { timetable ->
                 DynamicSubTheme(seedColor = timetable.color) {
@@ -67,19 +66,15 @@ fun EditTimetableScreen(
         composable(InternalNavRoutes.START_DATE) {
             HandleEditUiState(uiState) { timetable ->
                 DynamicSubTheme(seedColor = timetable.color) {
-                    ScreenScaffold(timeText = {}) {
-                        DatePicker(
-                            onDatePicked = { newDate ->
-                                viewModel.onAction(
-                                    EditTimetableAction.UpdateStartDate(
-                                        newDate.toKotlinLocalDate()
-                                    )
-                                )
-                                internalNavController.popSafe()
-                            },
-                            initialDate = timetable.semesterStart.toJavaLocalDate(),
-                        )
-                    }
+                    WearDatePickerPage(
+                        initialDate = timetable.semesterStart.toJavaLocalDate(),
+                        onDatePicked = { newDate ->
+                            viewModel.onAction(
+                                EditTimetableAction.UpdateStartDate(newDate.toKotlinLocalDate())
+                            )
+                            internalNavController.popSafe()
+                        },
+                    )
                 }
             }
         }
@@ -88,20 +83,15 @@ fun EditTimetableScreen(
         composable(InternalNavRoutes.END_DATE) {
             HandleEditUiState(uiState) { timetable ->
                 DynamicSubTheme(seedColor = timetable.color) {
-                    ScreenScaffold(timeText = {}) {
-                        DatePicker(
-                            onDatePicked = { newDate ->
-                                viewModel.onAction(
-                                    EditTimetableAction.UpdateEndDate(
-                                        newDate.toKotlinLocalDate()
-                                    )
-                                )
-                                internalNavController.popSafe()
-                            },
-                            initialDate = (timetable.semesterEnd
-                                ?: timetable.semesterStart).toJavaLocalDate()
-                        )
-                    }
+                    WearDatePickerPage(
+                        initialDate = (timetable.semesterEnd ?: timetable.semesterStart).toJavaLocalDate(),
+                        onDatePicked = { newDate ->
+                            viewModel.onAction(
+                                EditTimetableAction.UpdateEndDate(newDate.toKotlinLocalDate())
+                            )
+                            internalNavController.popSafe()
+                        },
+                    )
                 }
             }
         }
