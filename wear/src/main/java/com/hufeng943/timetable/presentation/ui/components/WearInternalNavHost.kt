@@ -1,36 +1,50 @@
 package com.hufeng943.timetable.presentation.ui.components
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.wear.compose.navigation.SwipeDismissableNavHost
+import androidx.navigation.compose.NavHost
 
 /**
- * Navigation host for child flows that already live inside the app-level
- * [SwipeDismissableNavHost].
+ * Navigation host for a child flow that already lives inside the app-level
+ * [androidx.wear.compose.navigation.SwipeDismissableNavHost].
  *
- * Use the same Wear navigation implementation at every navigation depth so
- * programmatic forward/back transitions have one motion language. The nested
- * host only owns swipe-to-dismiss while it actually has an internal page to
- * pop; at its start destination the gesture is handed back to the outer host.
- * This avoids gesture competition without replacing Wear navigation motion
- * with a different fade animation.
+ * There must be only one owner for full-screen Wear navigation motion. The app-level Wear host
+ * owns that motion. Child flows keep their own back stacks (which preserves the existing routes,
+ * Hilt ViewModel scopes and state restoration), but deliberately perform no second full-screen
+ * enter/exit animation. Running a copied Wear slide/scale/fade transition here while the parent
+ * destination is still active can expose an intermediate/ghost frame at the end of navigation.
+ *
+ * Predictive back is opted out at application level. The innermost enabled BackHandler consumes
+ * Back while a child flow has history; once the child reaches its start destination, Back falls
+ * through to the app-level handler.
  */
 @Composable
 fun WearInternalNavHost(
     navController: NavHostController,
     startDestination: String,
+    modifier: Modifier = Modifier,
     builder: NavGraphBuilder.() -> Unit,
 ) {
-    val currentEntry by navController.currentBackStackEntryAsState()
-    val canPopInternally = currentEntry != null && navController.previousBackStackEntry != null
+    BackHandler(enabled = navController.previousBackStackEntry != null) {
+        navController.popBackStack()
+    }
 
-    SwipeDismissableNavHost(
+    NavHost(
         navController = navController,
         startDestination = startDestination,
-        userSwipeEnabled = canPopInternally,
+        modifier = modifier.fillMaxSize(),
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
+        predictivePopEnterTransition = { EnterTransition.None },
+        predictivePopExitTransition = { ExitTransition.None },
         builder = builder,
     )
 }

@@ -13,8 +13,8 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.*
 import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toCourseUi
 import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
@@ -76,7 +76,7 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewMode
             }
             val bOccurs = b?.let { bc -> tableOccurrences.any { it.course.id == bc.id } } == true
             val valid = a != null && b != null && table != null && (mode != CourseAdjustmentMode.SWAP || bOccurs)
-            val nav = rememberSwipeDismissableNavController()
+            val nav = rememberNavController()
 
             WearInternalNavHost(navController = nav, startDestination = AdjustRoutes.MAIN) {
                 composable(AdjustRoutes.MAIN) {

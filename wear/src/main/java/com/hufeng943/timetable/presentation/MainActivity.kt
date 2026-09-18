@@ -2,6 +2,9 @@ package com.hufeng943.timetable.presentation
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Build
+import android.os.LocaleList
+import android.app.LocaleManager
 import android.os.Bundle
 import android.view.Window
 import androidx.activity.ComponentActivity
@@ -30,8 +33,14 @@ class MainActivity : ComponentActivity() {
     lateinit var themePreference: com.hufeng943.timetable.data.ThemePreference
 
     override fun attachBaseContext(newBase: Context) {
-        // Never block Activity cold start on DataStore. The locale is mirrored by
-        // PreferenceStorage.setLanguage() into a tiny synchronous preference.
+        // Android 13+ owns per-app locales through LocaleManager. Keep the old
+        // synchronous mirror only for API 32 and below. This removes the custom
+        // locale context layer that used to race Activity recreation.
+        if (Build.VERSION.SDK_INT >= 33) {
+            super.attachBaseContext(newBase)
+            return
+        }
+
         val languageTag = PreferenceStorage.peekLanguageTag(newBase)
         val context = if (languageTag != null) {
             val locale = Locale.forLanguageTag(languageTag)
@@ -47,6 +56,17 @@ class MainActivity : ComponentActivity() {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // One-time migration for installations that used the previous mirror-based
+        // language implementation. LocaleManager persists the value afterwards.
+        if (Build.VERSION.SDK_INT >= 33) {
+            val mirroredTag = PreferenceStorage.peekLanguageTag(this)
+            val localeManager = getSystemService(LocaleManager::class.java)
+            if (localeManager.applicationLocales.isEmpty && mirroredTag != null) {
+                localeManager.applicationLocales = LocaleList.forLanguageTags(mirroredTag)
+            }
+        }
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 appConfigViewModel.localeRecreateEvent.collect {

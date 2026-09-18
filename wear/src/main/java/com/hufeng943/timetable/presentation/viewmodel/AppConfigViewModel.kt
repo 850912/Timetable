@@ -1,5 +1,9 @@
 package com.hufeng943.timetable.presentation.viewmodel
 
+import android.content.Context
+import android.os.Build
+import android.os.LocaleList
+import android.app.LocaleManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hufeng943.timetable.data.FirstDayOfTheWeek
@@ -17,11 +21,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 @HiltViewModel
 class AppConfigViewModel @Inject constructor(
-    private val preferenceStorage: PreferenceStorage
+    private val preferenceStorage: PreferenceStorage,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     val appConfig: StateFlow<AppConfig> = preferenceStorage.appConfigFlow.stateIn(
@@ -36,8 +42,21 @@ class AppConfigViewModel @Inject constructor(
     fun updateLanguage(languageTag: String?) {
         if (appConfig.value.languageTag == languageTag) return
         viewModelScope.launch {
+            // Keep the persistent preference as the single source of truth.
+            // Android 13+ applies app locales through the framework and performs the
+            // required configuration/lifecycle transition itself, so do not call recreate().
             preferenceStorage.setLanguage(languageTag)
-            _localeRecreateEvent.emit(Unit)
+            if (Build.VERSION.SDK_INT >= 33) {
+                val localeManager = appContext.getSystemService(LocaleManager::class.java)
+                localeManager.applicationLocales = if (languageTag.isNullOrBlank()) {
+                    LocaleList.getEmptyLocaleList()
+                } else {
+                    LocaleList.forLanguageTags(languageTag)
+                }
+            } else {
+                // API 32 and below still use the synchronous mirror + attachBaseContext path.
+                _localeRecreateEvent.emit(Unit)
+            }
         }
     }
 

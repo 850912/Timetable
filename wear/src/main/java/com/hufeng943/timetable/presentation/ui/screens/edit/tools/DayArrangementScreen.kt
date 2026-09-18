@@ -12,8 +12,8 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.*
 import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
@@ -36,7 +36,7 @@ fun DayArrangementScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewModel(
         is ScheduleAdjustmentState.Ready -> {
             val today=remember{Clock.System.todayIn(TimeZone.currentSystemDefault())}
             var date by remember{mutableStateOf(today)}; var sourceDay by remember{mutableStateOf(nextDifferentDay(today.dayOfWeek))}
-            val nav=rememberSwipeDismissableNavController()
+            val nav=rememberNavController()
             WearInternalNavHost(navController=nav,startDestination=DayRoutes.MAIN) {
                 composable(DayRoutes.MAIN){
                     val scroll=rememberTransformingLazyColumnState();val transform=rememberTransformationSpec()

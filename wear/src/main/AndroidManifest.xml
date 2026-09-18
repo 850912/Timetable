@@ -15,7 +15,7 @@
         </intent>
     </queries>
 
-    <application android:name=".TimetableApp" android:allowBackup="true" android:dataExtractionRules="@xml/data_extraction_rules" android:fullBackupContent="@xml/backup_rules" android:icon="@mipmap/ic_launcher" android:label="@string/app_name" android:supportsRtl="true" android:enableOnBackInvokedCallback="true" android:theme="@android:style/Theme.DeviceDefault" tools:targetApi="33">
+    <application android:name=".TimetableApp" android:allowBackup="true" android:dataExtractionRules="@xml/data_extraction_rules" android:fullBackupContent="@xml/backup_rules" android:icon="@mipmap/ic_launcher" android:label="@string/app_name" android:localeConfig="@xml/locale_config" android:supportsRtl="true" android:enableOnBackInvokedCallback="false" android:theme="@android:style/Theme.DeviceDefault" tools:targetApi="33">
         <service android:name=".complication.MainComplicationService" android:enabled="true" android:exported="true" android:label="@string/complication_label" android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
             <intent-filter>
                 <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />

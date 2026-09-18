@@ -3,11 +3,9 @@ package com.hufeng943.timetable.presentation.ui.screens.more.settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.data.ThemePreference
 import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
@@ -21,10 +19,10 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun SettingScreen(
-    appConfigViewModel: AppConfigViewModel = hiltViewModel(LocalContext.current as ViewModelStoreOwner),
+    appConfigViewModel: AppConfigViewModel = hiltViewModel(),
     themePreference: ThemePreference = hiltViewModel<ThemePrefViewModel>().themePreference
 ) {
-    val internalNavController = rememberSwipeDismissableNavController()
+    val internalNavController = rememberNavController()
     val config = LocalAppConfig.current
     val scope = rememberCoroutineScope()
     val currentPreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(initialValue = ThemePreset.AMOLED_BLACK)

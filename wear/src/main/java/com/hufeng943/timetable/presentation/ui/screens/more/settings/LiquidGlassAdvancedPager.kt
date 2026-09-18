@@ -18,8 +18,8 @@ import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ColorLens
@@ -49,7 +49,7 @@ fun LiquidGlassAdvancedPager(
     onBlurEnabledChange: (Boolean) -> Unit,
     onBlurRadiusChange: (Float) -> Unit,
 ) {
-    val nav = rememberSwipeDismissableNavController()
+    val nav = rememberNavController()
     var adjust by remember { mutableStateOf<AdjustTarget?>(null) }
 
     fun openAdjust(target: AdjustTarget) {
