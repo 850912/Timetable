@@ -34,6 +34,7 @@ class AppConfigViewModel @Inject constructor(
     val localeRecreateEvent: SharedFlow<Unit> = _localeRecreateEvent.asSharedFlow()
 
     fun updateLanguage(languageTag: String?) {
+        if (appConfig.value.languageTag == languageTag) return
         viewModelScope.launch {
             preferenceStorage.setLanguage(languageTag)
             _localeRecreateEvent.emit(Unit)

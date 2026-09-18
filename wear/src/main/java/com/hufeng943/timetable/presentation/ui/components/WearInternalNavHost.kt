@@ -1,22 +1,22 @@
 package com.hufeng943.timetable.presentation.ui.components
 
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.wear.compose.material3.MaterialTheme
-import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.wear.compose.navigation.SwipeDismissableNavHost
 
 /**
- * Navigation host for child flows that already live inside the app-level SwipeDismissableNavHost.
+ * Navigation host for child flows that already live inside the app-level
+ * [SwipeDismissableNavHost].
  *
- * Child hosts must not implement a second swipe-dismiss surface. For their programmatic page
- * changes we use Wear Material 3's MotionScheme effects spec (alpha only), avoiding spatial page
- * translation that can reveal the previous destination at the circular screen edge.
+ * Use the same Wear navigation implementation at every navigation depth so
+ * programmatic forward/back transitions have one motion language. The nested
+ * host only owns swipe-to-dismiss while it actually has an internal page to
+ * pop; at its start destination the gesture is handed back to the outer host.
+ * This avoids gesture competition without replacing Wear navigation motion
+ * with a different fade animation.
  */
 @Composable
 fun WearInternalNavHost(
@@ -24,24 +24,13 @@ fun WearInternalNavHost(
     startDestination: String,
     builder: NavGraphBuilder.() -> Unit,
 ) {
-    val animationsEnabled = LocalAppConfig.current.uiAnimationsEnabled
-    val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val currentEntry by navController.currentBackStackEntryAsState()
+    val canPopInternally = currentEntry != null && navController.previousBackStackEntry != null
 
-    NavHost(
+    SwipeDismissableNavHost(
         navController = navController,
         startDestination = startDestination,
-        enterTransition = {
-            if (animationsEnabled) fadeIn(effectsSpec) else EnterTransition.None
-        },
-        exitTransition = {
-            if (animationsEnabled) fadeOut(effectsSpec) else ExitTransition.None
-        },
-        popEnterTransition = {
-            if (animationsEnabled) fadeIn(effectsSpec) else EnterTransition.None
-        },
-        popExitTransition = {
-            if (animationsEnabled) fadeOut(effectsSpec) else ExitTransition.None
-        },
+        userSwipeEnabled = canPopInternally,
         builder = builder,
     )
 }

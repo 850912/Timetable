@@ -7,8 +7,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material3.TimePickerType
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.DynamicSubTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
@@ -38,7 +38,7 @@ fun EditTimeSlotScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val groupSyncPrompt by viewModel.groupSyncPrompt.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
-    val internalNavController = rememberNavController()
+    val internalNavController = rememberSwipeDismissableNavController()
     val config = LocalAppConfig.current
 
     LaunchedEffect(viewModel) {

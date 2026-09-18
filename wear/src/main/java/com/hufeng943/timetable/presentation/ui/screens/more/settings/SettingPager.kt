@@ -11,11 +11,9 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
@@ -51,13 +49,10 @@ fun SettingPager(
     val scrollState = rememberTransformingLazyColumnState()
     val transformationSpec = rememberTransformationSpec()
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-
-    val currentLanguageLabel = remember(config.languageTag) {
-        val values = context.resources.getStringArray(R.array.language_values).toList()
-        val labels = context.resources.getStringArray(R.array.language_labels).toList()
-        val index = values.indexOfFirst { raw -> (if (raw == "@null") null else raw) == config.languageTag }
-        if (index >= 0) labels[index] else labels[0]
+    val currentLanguageLabel = when (config.languageTag) {
+        "zh-CN" -> stringResource(R.string.language_simplified_chinese)
+        "en" -> stringResource(R.string.language_english)
+        else -> stringResource(R.string.language_follow_system)
     }
     val currentTimeFormatLabel = when (config.timeFormatSetting) {
         TimeFormat.SYSTEM -> stringResource(R.string.settings_time_format_system)

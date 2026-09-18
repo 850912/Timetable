@@ -7,7 +7,6 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
@@ -23,37 +22,49 @@ import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 
+private data class LanguageOption(
+    val stableKey: String,
+    val tag: String?,
+    val labelRes: Int,
+)
+
+private val LANGUAGE_OPTIONS = listOf(
+    LanguageOption("system", null, R.string.language_follow_system),
+    LanguageOption("zh-CN", "zh-CN", R.string.language_simplified_chinese),
+    LanguageOption("en", "en", R.string.language_english),
+)
+
 @Composable
 fun LanguageSelectPager(config: AppConfig, onLanguageSelect: (String?) -> Unit) {
-    val context = LocalContext.current
-    val languageValues = context.resources.getStringArray(R.array.language_values).toList()
-    val languageLabels = context.resources.getStringArray(R.array.language_labels).toList()
     val currentTag = config.languageTag
-    val initialIndex = remember(languageValues, currentTag) {
-        val index = languageValues.indexOfFirst { raw -> (if (raw == "@null") null else raw) == currentTag }
-        if (index >= 0) index + 1 else 1
+    val initialIndex = remember(currentTag) {
+        val index = LANGUAGE_OPTIONS.indexOfFirst { it.tag == currentTag }
+        if (index >= 0) index + 1 else 1 // +1 for the header item
     }
     val scrollState = rememberTransformingLazyColumnState(initialAnchorItemIndex = initialIndex)
     val transformationSpec = rememberTransformationSpec()
 
     ScreenScaffold(scrollState = scrollState) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
-            item {
+        TransformingLazyColumn(
+            state = scrollState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
+        ) {
+            item(key = "language_header") {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec)
+                    transformation = SurfaceTransformation(transformationSpec),
                 ) { Text(stringResource(R.string.settings_language)) }
             }
-            items(languageValues.indices.toList(), key = { languageValues[it] }) { index ->
-                val tag = languageValues[index].let { if (it == "@null") null else it }
+            items(LANGUAGE_OPTIONS, key = { it.stableKey }) { option ->
                 OneUiCapsuleSurface(
-                    title = languageLabels[index],
+                    title = stringResource(option.labelRes),
                     icon = Icons.Rounded.Language,
-                    selected = tag == currentTag,
-                    onClick = { onLanguageSelect(tag) },
+                    selected = option.tag == currentTag,
+                    onClick = { onLanguageSelect(option.tag) },
                     modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
         }

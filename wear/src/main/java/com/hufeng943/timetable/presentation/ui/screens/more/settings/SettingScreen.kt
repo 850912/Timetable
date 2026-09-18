@@ -6,8 +6,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hufeng943.timetable.data.ThemePreference
 import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
@@ -24,7 +24,7 @@ fun SettingScreen(
     appConfigViewModel: AppConfigViewModel = hiltViewModel(LocalContext.current as ViewModelStoreOwner),
     themePreference: ThemePreference = hiltViewModel<ThemePrefViewModel>().themePreference
 ) {
-    val internalNavController = rememberNavController()
+    val internalNavController = rememberSwipeDismissableNavController()
     val config = LocalAppConfig.current
     val scope = rememberCoroutineScope()
     val currentPreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(initialValue = ThemePreset.AMOLED_BLACK)
@@ -115,10 +115,7 @@ fun SettingScreen(
         composable(InternalNavRoutes.LANGUAGE_SELECT) {
             LanguageSelectPager(
                 config = config,
-                onLanguageSelect = {
-                    appConfigViewModel.updateLanguage(it)
-                    internalNavController.popBackStack()
-                }
+                onLanguageSelect = appConfigViewModel::updateLanguage
             )
         }
 

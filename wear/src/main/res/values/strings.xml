@@ -208,17 +208,10 @@
     <string name="settings_dynamic_color">Material You dynamic color</string>
     <string name="settings_dynamic_color_summary">Use colors derived from the current Wear OS watch face; course cards can also use course-color accents</string>
     <!-- Language -->
-    <string-array name="language_values" translatable="false">
-        <item>@null</item>
-        <item>zh-CN</item>
-        <item>en</item>
-    </string-array>
-    <string-array name="language_labels">
-        <item>Follow system</item>
-        <item>Simplified Chinese</item>
-        <item>English</item>
-    </string-array>
-    <string name="home_no_course_today">No courses today</string>
+<string name="language_follow_system">Follow system</string>
+    <string name="language_simplified_chinese">Simplified Chinese</string>
+    <string name="language_english">English</string>
+<string name="home_no_course_today">No courses today</string>
     <string name="course_in_progress">%1$d min left</string>
     <string name="course_next">Next</string>
     <string name="course_class_mode_next">Next · %1$s · in %2$d min</string>
