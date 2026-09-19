@@ -32,7 +32,7 @@ fun GroupSyncConfirmScreen(
         TransformingLazyColumn(
                     state = state,
                     flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(state),
-                    rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(state),
+                    rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(state, hapticFeedbackEnabled = false),
                     contentPadding = padding,
                     modifier = Modifier.fillMaxSize(),
                 ) {

@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import com.hufeng943.timetable.R
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
@@ -23,6 +22,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.theme.ThemePreset
+import com.hufeng943.timetable.R
 import kotlinx.coroutines.launch
 
 @Composable
@@ -39,7 +39,7 @@ fun ThemePresetSelectPager(currentPreset: ThemePreset, onPresetSelect: (ThemePre
             }
         }
     ) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
+        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false)) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
@@ -49,14 +49,14 @@ fun ThemePresetSelectPager(currentPreset: ThemePreset, onPresetSelect: (ThemePre
             }
             items(ThemePreset.entries, key = { it.name }) { preset ->
                 OneUiCapsuleSurface(
-                    title = themePresetLabel(preset),
-                    subtitle = stringResource(when (preset) {
-                        ThemePreset.AMOLED_BLACK -> R.string.theme_summary_amoled
-                        ThemePreset.SYSTEM_DYNAMIC -> R.string.theme_summary_dynamic
-                        ThemePreset.GRAPHITE -> R.string.theme_summary_graphite
-                        ThemePreset.AURORA -> R.string.theme_summary_aurora
-                        else -> R.string.theme_summary_default
-                    }),
+                    title = stringResource(preset.titleRes),
+                    subtitle = when (preset) {
+                        ThemePreset.AMOLED_BLACK -> stringResource(R.string.theme_summary_amoled)
+                        ThemePreset.SYSTEM_DYNAMIC -> stringResource(R.string.theme_summary_dynamic)
+                        ThemePreset.GRAPHITE -> stringResource(R.string.theme_summary_graphite)
+                        ThemePreset.AURORA -> stringResource(R.string.theme_summary_aurora)
+                        else -> stringResource(R.string.theme_summary_color)
+                    },
                     icon = Icons.Rounded.Palette,
                     selected = preset == currentPreset,
                     emphasize = preset == currentPreset,
@@ -68,16 +68,3 @@ fun ThemePresetSelectPager(currentPreset: ThemePreset, onPresetSelect: (ThemePre
         }
     }
 }
-
-@Composable
-fun themePresetLabel(preset: ThemePreset): String = stringResource(when (preset) {
-    ThemePreset.AMOLED_BLACK -> R.string.theme_amoled_black
-    ThemePreset.DEEP_BLUE -> R.string.theme_deep_blue
-    ThemePreset.CYAN_TEAL -> R.string.theme_cyan_teal
-    ThemePreset.ROYAL_PURPLE -> R.string.theme_royal_purple
-    ThemePreset.SUNSET_ORANGE -> R.string.theme_sunset_orange
-    ThemePreset.SAKURA_PINK -> R.string.theme_sakura_pink
-    ThemePreset.GRAPHITE -> R.string.theme_graphite
-    ThemePreset.AURORA -> R.string.theme_aurora
-    ThemePreset.SYSTEM_DYNAMIC -> R.string.theme_system_dynamic
-})

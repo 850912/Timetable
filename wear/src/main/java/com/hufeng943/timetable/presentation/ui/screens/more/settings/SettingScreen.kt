@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.data.ThemePreference
 import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
@@ -22,7 +22,7 @@ fun SettingScreen(
     appConfigViewModel: AppConfigViewModel = hiltViewModel(),
     themePreference: ThemePreference = hiltViewModel<ThemePrefViewModel>().themePreference
 ) {
-    val internalNavController = rememberSwipeDismissableNavController()
+    val internalNavController = rememberNavController()
     val config = LocalAppConfig.current
     val scope = rememberCoroutineScope()
     val currentPreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(initialValue = ThemePreset.AMOLED_BLACK)
@@ -54,6 +54,8 @@ fun SettingScreen(
                 onDynamicColorToggle = appConfigViewModel::updateDynamicColorEnabled,
                 onShowTopTimeToggle = appConfigViewModel::updateShowTopTime,
                 onUiAnimationsToggle = appConfigViewModel::updateUiAnimationsEnabled,
+                onImageBlurToggle = appConfigViewModel::updateImageBackgroundBlurEnabled,
+                onImageFluidToggle = appConfigViewModel::updateImageBackgroundFluidEnabled,
             )
         }
 
@@ -93,12 +95,8 @@ fun SettingScreen(
                 config = config,
                 onBackgroundSelected = { mode, path ->
                     appConfigViewModel.updateTimetableBackground(mode, path)
-                    if (mode != com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode.IMAGE || path == null) {
-                        internalNavController.popBackStack()
-                    }
-                },
-                onImageBlurToggle = appConfigViewModel::updateBackgroundImageBlurEnabled,
-                onImageFluidToggle = appConfigViewModel::updateBackgroundImageFluidEnabled,
+                    internalNavController.popBackStack()
+                }
             )
         }
 

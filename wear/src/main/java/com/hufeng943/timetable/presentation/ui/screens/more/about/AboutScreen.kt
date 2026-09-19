@@ -86,6 +86,7 @@ fun AboutScreen() {
     ) { contentPadding ->
         TransformingLazyColumn(
             state = scrollState,
+            rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false),
             contentPadding = contentPadding,
             verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {

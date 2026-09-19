@@ -52,7 +52,7 @@ fun EditTimeSlotMainPager(
             }
         }
     ) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
+        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false)) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()

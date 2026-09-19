@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="tile_label">今日课程</string>
+    <string name="complication_label">课程表</string>
     <string name="about_license_title">开源许可证</string>
     <string name="about_license_subtitle">查看 AndroidX、Horologist、KotlinX 等依赖许可证</string>
     <!-- Home -->
@@ -123,16 +125,16 @@
     <string name="about_features_schedule">课程：多课表、日期例外、今日调课、手机 ↔ 手表同步。</string>
     <string name="about_features_wear">Wear：首页状态优先、Tile 时间线、当前课进度与下一节倒计时复杂功能。</string>
     <string name="about_features_tools">工具：学业待办与提醒、本周课表分享、ICS / CSV / JSON、系统日历同步。</string>
-    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.5.0。</string>
+    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护 · 版本 3.4.1。</string>
     <string name="about_declaration_development">维护：黑白君 (HeiBaiJun)；部分开发借助生成式 AI。连续点击版本号 7 次进入开发者选项。</string>
-    <string name="about_open_source_wear">Wear UI：Wear Compose 1.6.2 · Horologist 0.7.15</string>
+    <string name="about_open_source_wear">界面：Wear Compose 1.6.2 · Navigation 2.9.8 · Backdrop 2.0.1 · MaterialKolor 4.1.1</string>
     <string name="about_open_source_data">数据：Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
-    <string name="about_open_source_ui">工具：Coroutines 1.11.0 · AboutLibraries 15.0.3 · MaterialKolor 4.1.1。完整许可证见下方入口。</string>
-    <string name="about_changelog_part1">3.5.0：多日期创建并入编辑课时；新增调休与换课/占课；重做快捷批量调整、Galaxy Watch 卡片与动态取色，并精简测试模块、优化旋转表圈体验与耗电。</string>
-    <string name="about_changelog_part2">课表视觉升级：当前课程加入实时进度条；手机端新增今日课表层级与课程色卡片，同时保留原有全部课程管理。</string>
+    <string name="about_open_source_ui">工具：Horologist 0.7.15 · Coroutines 1.11.0 · AboutLibraries 15.0.3。完整声明见下方。</string>
+    <string name="about_changelog_part1">3.4.1：修复小米 Watch 5 启动崩溃、子页面动效和语言即时更新。</string>
+    <string name="about_changelog_part2">自定义图片新增独立模糊与流体开关，并精简手表文案、统一外观设置。</string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
-        " · 当前版本采用语义化版本号 3.5.0\n"
+        " · 当前版本采用语义化版本号 3.4.1\n"
         " · 原项目：HuFeng943 / Timetable\n"
         " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
         " · 当前版本在原项目基础上持续维护与扩展\n"
@@ -143,8 +145,8 @@
     <string name="about_library_open_source">✔ 开源协议</string>
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
-    <string name="about_open_source_stack">核心开源组件：Wear Compose 1.6.2、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX Serialization 1.11.0 / Datetime 0.8.0、Coroutines 1.11.0、AboutLibraries 15.0.3、MaterialKolor 4.1.1。开源许可证页面由 AboutLibraries 根据实际构建依赖生成。</string>
-    <string name="about_changelog_title">3.5.0 更新</string>
+    <string name="about_open_source_stack">核心组件：Wear Compose 1.6.2、Navigation 2.9.8、Backdrop 2.0.1、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX、Coroutines、AboutLibraries 与 MaterialKolor。许可证页面由实际构建依赖生成。</string>
+    <string name="about_changelog_title">3.4.1 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
         " · 冷启动不再主动触发 Tile 数据读取，减少首次打开竞争\n"
@@ -175,8 +177,8 @@
     <string name="developer_complication_subtitle">当前课进度 + 下一节倒计时 · 系统时间驱动</string>
     <string name="developer_home_title">首页调度策略</string>
     <string name="developer_home_subtitle">当前课程优先定位 · 下一节倒计时按分钟边界刷新 · 课后进入静态提示</string>
-    <string name="developer_effects_title">Galaxy AI 光效</string>
-    <string name="developer_effects_subtitle">轻量环境渐变 · 当前/下一课程使用静态强调，避免持续动画与后台耗电</string>
+    <string name="developer_effects_title">视觉效果</string>
+    <string name="developer_effects_subtitle">共享玻璃背景 · 图片模糊与流体动效可独立开关 · 省电自动降级</string>
     <!-- Common -->
     <string name="today">今日</string>
     <string name="delete_confirm">确定删除吗？</string>
@@ -227,6 +229,10 @@
     <string name="settings_background_theme_summary">根据当前主题色生成静态光晕，推荐搭配液态玻璃。</string>
     <string name="settings_background_image">自定义图片</string>
     <string name="settings_background_image_summary">选择图片后会缩放并保存在本机，避免手表运行时反复处理原图。</string>
+    <string name="settings_image_background_blur">模糊背景</string>
+    <string name="settings_image_background_blur_summary">仅模糊自定义图片。</string>
+    <string name="settings_image_background_fluid">流体背景</string>
+    <string name="settings_image_background_fluid_summary">缓慢流动；省电时暂停。</string>
 
     <string name="settings_liquid_glass_advanced">液态玻璃高级设置</string>
     <string name="settings_liquid_glass_on">已开启 · 点按进入高级设置</string>
@@ -241,20 +247,29 @@
     <string name="settings_background_brightness_value">亮度 %1$d%% · 点按调节</string>
     <string name="settings_glass_readability">可读性保护</string>
     <string name="settings_glass_readability_summary">自动叠加对比度遮罩；照片或亮色背景影响文字时，可继续降低背景亮度。</string>
-
-    <string name="settings_background_image_blur">模糊背景</string>
-    <string name="settings_background_image_blur_summary">柔化图片，提升文字可读性</string>
-    <string name="settings_background_image_fluid">流体背景</string>
-    <string name="settings_background_image_fluid_summary">在图片上叠加轻量主题流光</string>
     <string name="settings_ui_management">外观</string>
     <string name="settings_ui_management_summary">主题、背景、玻璃与动效</string>
+    <string name="settings_export">导出课表</string>
+    <string name="settings_export_summary">ICS、CSV 或 JSON 备份</string>
+    <string name="settings_import">导入课表</string>
+    <string name="settings_import_summary">恢复本地备份</string>
+    <string name="settings_power_save">省电模式</string>
+    <string name="settings_power_follow_system">跟随系统</string>
+    <string name="settings_power_always_on">始终降低特效</string>
+    <string name="settings_power_always_off">从不降低特效</string>
     <string name="settings_theme_style">主题风格</string>
     <string name="settings_ui_animations">界面动效</string>
-    <string name="settings_ui_animations_summary">按压与页面切换动效</string>
+    <string name="settings_ui_animations_summary">按压与页面动画</string>
     <string name="settings_top_time">顶部时间</string>
     <string name="settings_top_time_summary">显示应用内时间</string>
-    <string name="settings_enabled">已开启</string>
+    <string name="settings_background_solid_short">纯色</string>
+    <string name="settings_background_theme_short">主题光晕</string>
+    <string name="settings_background_image_short">自定义图片</string>
+    <string name="settings_liquid_enabled">已开启 · %1$s</string>
     <string name="settings_disabled">已关闭</string>
+    <string name="settings_effect_soft">柔和</string>
+    <string name="settings_effect_balanced">均衡</string>
+    <string name="settings_effect_fluid">流体</string>
     <string name="theme_amoled_black">曜石黑</string>
     <string name="theme_deep_blue">Galaxy 蓝</string>
     <string name="theme_cyan_teal">薄荷青</string>
@@ -264,26 +279,74 @@
     <string name="theme_graphite">钛金灰</string>
     <string name="theme_aurora">极光</string>
     <string name="theme_system_dynamic">系统动态色</string>
-
-    <string name="settings_glass_live_summary">折射、模糊与高光</string>
-    <string name="settings_glass_performance">效果档位</string>
-    <string name="settings_glass_performance_summary">点按切换渲染档位</string>
-    <string name="settings_glass_tint">玻璃底色</string>
-    <string name="settings_glass_clarity">玻璃清透度</string>
-    <string name="settings_glass_chromatic">色散效果</string>
-    <string name="settings_glass_chromatic_summary">流体档可用</string>
-    <string name="settings_glass_distortion">镜头畸变</string>
-    <string name="settings_glass_blur">玻璃模糊</string>
-    <string name="settings_glass_blur_strength">模糊强度</string>
-
     <string name="theme_summary_amoled">省电极黑 · 高对比度</string>
-    <string name="theme_summary_dynamic">跟随系统配色 · 保留课程强调色</string>
-    <string name="theme_summary_graphite">低饱和钛金 · 夜间舒适</string>
+    <string name="theme_summary_dynamic">跟随系统色 · 保留课程强调色</string>
+    <string name="theme_summary_graphite">低饱和金属质感 · 夜间舒适</string>
     <string name="theme_summary_aurora">青紫柔光</string>
-    <string name="theme_summary_default">AMOLED 风格 · 保留课程强调色</string>
-
-    <string name="settings_export">导出课表</string><string name="settings_export_summary">ICS / CSV / JSON 备份</string>
-    <string name="settings_import">导入课表</string><string name="settings_import_summary">恢复本机备份</string>
-    <string name="settings_power_save">省电模式</string><string name="settings_power_follow">跟随系统</string><string name="settings_power_on">始终开启</string><string name="settings_power_off">始终关闭</string>
-    <string name="settings_power_follow_summary">跟随手表省电模式</string><string name="settings_power_on_summary">降低动效与 GPU 特效</string><string name="settings_power_off_summary">保留完整界面效果</string>
+    <string name="theme_summary_color">AMOLED 胶囊 · 独立课程强调色</string>
+    <string name="more_edit_summary">课程、时间与学期</string>
+    <string name="more_day_arrangement">调休</string>
+    <string name="more_day_arrangement_summary">改上另一星期的课程</string>
+    <string name="more_course_adjustment">课程调节</string>
+    <string name="more_course_adjustment_summary">换课或占课 · 今天或永久</string>
+    <string name="more_settings_summary">传输、主题与显示</string>
+    <string name="about_version_summary">Timetable %1$s</string>
+    <string name="settings_glass_summary_short">折射、模糊与高光</string>
+    <string name="settings_glass_profile">档位：%1$s</string>
+    <string name="settings_profile_soft">轻量</string>
+    <string name="settings_profile_balanced">均衡</string>
+    <string name="settings_profile_fluid">增强</string>
+    <string name="settings_tap_to_change">点按切换</string>
+    <string name="settings_glass_tint">玻璃底色</string>
+    <string name="settings_glass_tint_value">%1$d%% · 越低越通透</string>
+    <string name="settings_glass_clarity">玻璃清透度</string>
+    <string name="settings_glass_clarity_value">%1$d%% · 光学清晰度</string>
+    <string name="settings_glass_aberration">色散效果</string>
+    <string name="settings_glass_aberration_summary">仅增强档可用</string>
+    <string name="settings_glass_lens">镜头畸变</string>
+    <string name="settings_glass_lens_value">%1$d%% · 0%% 关闭折射</string>
+    <string name="settings_glass_blur">玻璃模糊</string>
+    <string name="settings_glass_blur_on">玻璃内 %1$d dp</string>
+    <string name="settings_glass_blur_strength">模糊强度</string>
+    <string name="settings_value_adjust">%1$s · 点按调节</string>
+    <string name="settings_glass_wear_optimized">已针对 Wear OS 优化。</string>
+    <string name="settings_power_follow_summary">跟随手表省电状态</string>
+    <string name="settings_power_on_summary">降低动效与 GPU 特效</string>
+    <string name="settings_power_off_summary">保留所选界面效果</string>
+    <string name="export_title">导出到手机</string>
+    <string name="export_direct">直接发送到手机 Timetable</string>
+    <string name="export_loading">正在读取…</string>
+    <string name="export_choose_then_send">先选格式，再发送</string>
+    <string name="export_courses">课程</string>
+    <string name="export_course_count">%1$d 门</string>
+    <string name="export_sessions">总节次</string>
+    <string name="export_session_count">%1$d 节</string>
+    <string name="export_recurrence">单双周</string>
+    <string name="export_recurrence_derived">✓ 已推导</string>
+    <string name="export_recurrence_weekly">每周</string>
+    <string name="export_ics">日历 (.ics)</string>
+    <string name="export_ics_summary">可导入系统日历</string>
+    <string name="export_csv">表格 (.csv)</string>
+    <string name="export_csv_summary">适合 Excel 或 Numbers</string>
+    <string name="export_json">完整备份 (.json)</string>
+    <string name="export_json_summary">完整课表备份</string>
+    <string name="export_current">当前学期</string>
+    <string name="export_current_summary">仅当前活跃学期 · 点按切换</string>
+    <string name="export_all">全部学期</string>
+    <string name="export_all_summary">包含历史学期 · 点按切换</string>
+    <string name="export_sending">正在发送…</string>
+    <string name="export_send">发送到手机</string>
+    <string name="export_sending_summary">保持手机连接</string>
+    <string name="export_send_summary">手机自动接收所选格式</string>
+    <string name="export_done">已发送导出文件</string>
+    <string name="export_failed">导出失败</string>
+    <string name="import_title">导入课表</string>
+    <string name="importing">正在导入…</string>
+    <string name="import_from_phone">从手机选择</string>
+    <string name="import_from_phone_summary">选取文件并发送到手表</string>
+    <string name="import_phone_unavailable">无法连接手机，请确认已安装 Timetable。</string>
+    <string name="import_local_backups">手表本地备份</string>
+    <string name="import_phone_success">已导入手机课表</string>
+    <string name="import_success">已导入 %1$d 门课程</string>
+    <string name="import_failed">导入失败</string>
 </resources>

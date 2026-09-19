@@ -46,7 +46,7 @@ fun MultiDateSelectionScreen(initialDays: Set<DayOfWeek>, onConfirm: (Set<DayOfW
             }
         }
     ) { padding ->
-        TransformingLazyColumn(state = state, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
+        TransformingLazyColumn(state = state, contentPadding = padding, modifier = Modifier.fillMaxSize(), rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(state, hapticFeedbackEnabled = false)) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()

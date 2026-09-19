@@ -40,18 +40,25 @@ fun UiManagementPager(
     onDynamicColorToggle: (Boolean) -> Unit,
     onShowTopTimeToggle: (Boolean) -> Unit,
     onUiAnimationsToggle: (Boolean) -> Unit,
+    onImageBlurToggle: (Boolean) -> Unit,
+    onImageFluidToggle: (Boolean) -> Unit,
 ) {
     val state = rememberTransformingLazyColumnState()
     val transform = rememberTransformationSpec()
 
-    @Composable fun backgroundLabel(): String = when (config.timetableBackgroundMode) {
-        TimetableBackgroundMode.SOLID -> stringResource(R.string.settings_background_solid)
-        TimetableBackgroundMode.THEME -> stringResource(R.string.settings_background_theme)
-        TimetableBackgroundMode.IMAGE -> stringResource(R.string.settings_background_image)
+    val backgroundLabel = when (config.timetableBackgroundMode) {
+        TimetableBackgroundMode.SOLID -> stringResource(R.string.settings_background_solid_short)
+        TimetableBackgroundMode.THEME -> stringResource(R.string.settings_background_theme_short)
+        TimetableBackgroundMode.IMAGE -> stringResource(R.string.settings_background_image_short)
+    }
+    val liquidEffectLabel = when (config.liquidGlassEffect) {
+        com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.SOFT -> stringResource(R.string.settings_effect_soft)
+        com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.BALANCED -> stringResource(R.string.settings_effect_balanced)
+        com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.FLUID -> stringResource(R.string.settings_effect_fluid)
     }
 
     ScreenScaffold(scrollState = state) { padding ->
-        TransformingLazyColumn(state = state, contentPadding = padding) {
+        TransformingLazyColumn(state = state, contentPadding = padding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(state, hapticFeedbackEnabled = false)) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
@@ -72,7 +79,7 @@ fun UiManagementPager(
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.Palette,
                     label = stringResource(R.string.settings_theme_style),
-                    secondaryLabel = themePresetLabel(currentThemePreset),
+                    secondaryLabel = stringResource(currentThemePreset.titleRes),
                     onClick = onThemeSelectClick,
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
@@ -82,17 +89,43 @@ fun UiManagementPager(
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.Wallpaper,
                     label = stringResource(R.string.settings_timetable_background),
-                    secondaryLabel = backgroundLabel(),
+                    secondaryLabel = backgroundLabel,
                     onClick = onBackgroundSelectClick,
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
+            if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE) {
+                item {
+                    OneUiSwitchCapsule(
+                        title = stringResource(R.string.settings_image_background_blur),
+                        subtitle = stringResource(R.string.settings_image_background_blur_summary),
+                        icon = Icons.Rounded.BlurOn,
+                        checked = config.imageBackgroundBlurEnabled,
+                        onCheckedChange = onImageBlurToggle,
+                        modifier = Modifier.fillMaxWidth()
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                    )
+                }
+                item {
+                    OneUiSwitchCapsule(
+                        title = stringResource(R.string.settings_image_background_fluid),
+                        subtitle = stringResource(R.string.settings_image_background_fluid_summary),
+                        icon = Icons.Rounded.Animation,
+                        checked = config.imageBackgroundFluidEnabled,
+                        onCheckedChange = onImageFluidToggle,
+                        modifier = Modifier.fillMaxWidth()
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                    )
+                }
+            }
             item {
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.BlurOn,
                     label = stringResource(R.string.settings_liquid_glass),
-                    secondaryLabel = if (config.isLiquidGlassEnabled) stringResource(R.string.settings_enabled) else stringResource(R.string.settings_disabled),
+                    secondaryLabel = if (config.isLiquidGlassEnabled) {
+                        stringResource(R.string.settings_liquid_enabled, liquidEffectLabel)
+                    } else stringResource(R.string.settings_disabled),
                     onClick = onLiquidGlassAdvancedClick,
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),

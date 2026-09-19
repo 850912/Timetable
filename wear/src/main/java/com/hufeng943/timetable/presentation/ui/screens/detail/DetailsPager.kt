@@ -56,6 +56,7 @@ fun DetailsPager(
         ) { contentPadding ->
             TransformingLazyColumn(
                 state = scrollState,
+                rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = contentPadding,
                 horizontalAlignment = Alignment.CenterHorizontally

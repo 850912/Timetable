@@ -178,7 +178,8 @@ fun HorizontalDatePicker(
             .rotaryScrollable(
                 behavior = RotaryScrollableDefaults.snapBehavior(
                     scrollableState = listState,
-                    layoutInfoProvider = snapLayoutInfoProvider
+                    layoutInfoProvider = snapLayoutInfoProvider,
+                    hapticFeedbackEnabled = false,
                 ), focusRequester = focusRequester
             ),
         horizontalArrangement = Arrangement.spacedBy(8.dp),

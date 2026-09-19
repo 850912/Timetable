@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
@@ -36,15 +37,17 @@ private val LANGUAGE_OPTIONS = listOf(
 @Composable
 fun LanguageSelectPager(config: AppConfig, onLanguageSelect: (String?) -> Unit) {
     val currentTag = config.languageTag
-    // There are only three choices; keep the list state ordinary and let the
-    // current choice be indicated by selection. This avoids restoring an
-    // anchor against a just-recreated locale/configuration.
-    val scrollState = rememberTransformingLazyColumnState()
+    val initialIndex = remember(currentTag) {
+        val index = LANGUAGE_OPTIONS.indexOfFirst { it.tag == currentTag }
+        if (index >= 0) index + 1 else 1 // +1 for the header item
+    }
+    val scrollState = rememberTransformingLazyColumnState(initialAnchorItemIndex = initialIndex)
     val transformationSpec = rememberTransformationSpec()
 
     ScreenScaffold(scrollState = scrollState) { contentPadding ->
         TransformingLazyColumn(
             state = scrollState,
+            rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false),
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {

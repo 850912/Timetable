@@ -12,8 +12,8 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
@@ -53,7 +53,7 @@ fun ScheduleToolsScreen(
             var ws by remember { mutableStateOf(LocalTime(8, 0)) }
             var we by remember { mutableStateOf(LocalTime(18, 0)) }
             var action by remember { mutableStateOf(BatchAction.SHIFT) }
-            val nav = rememberSwipeDismissableNavController()
+            val nav = rememberNavController()
 
             WearInternalNavHost(navController = nav, startDestination = QuickRoutes.MAIN) {
                 composable(QuickRoutes.MAIN) {
@@ -85,6 +85,7 @@ fun ScheduleToolsScreen(
                     ) { padding ->
                         TransformingLazyColumn(
                             state = scroll,
+                            rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scroll, hapticFeedbackEnabled = false),
                             contentPadding = padding,
                             modifier = Modifier.fillMaxSize(),
                         ) {
@@ -219,7 +220,7 @@ fun ScheduleToolsScreen(
 
 @Composable private fun ValuePickerPage(title:String,values:List<Int>,initial:Int,label:(Int)->String,onConfirm:(Int)->Unit){
     var selected by remember(initial){mutableIntStateOf(initial)};val state=rememberTransformingLazyColumnState(initialAnchorItemIndex=(values.indexOf(initial).coerceAtLeast(0)+1));val transform=rememberTransformationSpec()
-    ScreenScaffold(scrollState=state,timeText={},edgeButton={EdgeButton(onClick={onConfirm(selected)}){Icon(Icons.Rounded.Check,"确认")}}){padding->TransformingLazyColumn(state=state,contentPadding=padding,modifier=Modifier.fillMaxSize()){
+    ScreenScaffold(scrollState=state,timeText={},edgeButton={EdgeButton(onClick={onConfirm(selected)}){Icon(Icons.Rounded.Check,"确认")}}){padding->TransformingLazyColumn(state=state,contentPadding=padding,modifier=Modifier.fillMaxSize(),rotaryScrollableBehavior=androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(state,hapticFeedbackEnabled=false)){
         item{ListHeader(modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text(title)}}
         values.forEach{v->item(key=v){OneUiCapsuleSurface(title=label(v),selected=v==selected,onClick={selected=v},modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}}
     }}

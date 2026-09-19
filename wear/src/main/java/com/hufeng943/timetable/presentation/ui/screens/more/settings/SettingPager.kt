@@ -74,7 +74,7 @@ fun SettingPager(
             }
         }
     ) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
+        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false)) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
@@ -87,7 +87,7 @@ fun SettingPager(
             item { SettingItemCard(Icons.Rounded.FileUpload, stringResource(R.string.settings_import), stringResource(R.string.settings_import_summary), transformationSpec, onImportClick, true) }
             item { SettingItemCard(Icons.Rounded.Language, stringResource(R.string.settings_language), currentLanguageLabel, transformationSpec, onLanguageSelectClick) }
             item { SettingItemCard(Icons.Rounded.AccessTime, stringResource(R.string.settings_time_format), currentTimeFormatLabel, transformationSpec, onTimeFormatSelectClick) }
-            item { SettingItemCard(Icons.Rounded.BatterySaver, stringResource(R.string.settings_power_save), when (config.powerSaveMode) { com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.FOLLOW_SYSTEM -> stringResource(R.string.settings_power_follow); com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_ON -> stringResource(R.string.settings_power_on); com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_OFF -> stringResource(R.string.settings_power_off) }, transformationSpec, onPowerSaveSelectClick) }
+            item { SettingItemCard(Icons.Rounded.BatterySaver, stringResource(R.string.settings_power_save), when (config.powerSaveMode) { com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.FOLLOW_SYSTEM -> stringResource(R.string.settings_power_follow_system); com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_ON -> stringResource(R.string.settings_power_always_on); com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_OFF -> stringResource(R.string.settings_power_always_off) }, transformationSpec, onPowerSaveSelectClick) }
             item { SettingItemCard(Icons.Rounded.DateRange, stringResource(R.string.settings_first_day), currentFirstDayLabel, transformationSpec, onFirstDaySelectClick) }
         }
     }

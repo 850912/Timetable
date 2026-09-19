@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,6 +50,7 @@ import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
+import com.hufeng943.timetable.R
 import kotlinx.coroutines.launch
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -64,6 +66,8 @@ fun ExportScreen(
     val config = LocalAppConfig.current
     val exportState by viewModel.state.collectAsStateWithLifecycle()
     val previewStats by viewModel.previewStats.collectAsStateWithLifecycle()
+    val exportDone = stringResource(R.string.export_done)
+    val exportFailed = stringResource(R.string.export_failed)
 
     var selectedFormat by remember { mutableStateOf(ExportFormat.ICS) }
     var selectedScope by remember { mutableStateOf(ExportScope.CURRENT) }
@@ -72,11 +76,11 @@ fun ExportScreen(
     LaunchedEffect(exportState) {
         when (val s = exportState) {
             is ExportState.Success -> {
-                Toast.makeText(context, s.fileName, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, exportDone, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
             }
             is ExportState.Error -> {
-                Toast.makeText(context, s.message, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, exportFailed, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
             }
             else -> Unit
@@ -98,7 +102,8 @@ fun ExportScreen(
     ) { contentPadding ->
         TransformingLazyColumn(
             state = scrollState,
-            contentPadding = contentPadding
+            contentPadding = contentPadding,
+            rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false),
         ) {
             item {
                 ListHeader(
@@ -108,7 +113,7 @@ fun ExportScreen(
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
                 ) {
-                    Text("导出到手机")
+                    Text(stringResource(R.string.export_title))
                 }
             }
 
@@ -123,14 +128,15 @@ fun ExportScreen(
                 ) {
                     Column {
                         Text(
-                            text = "直接发送到手机 Timetable",
+                            text = stringResource(R.string.export_direct),
                             color = AppTheme.colors.primary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(3.dp))
                         Text(
-                            text = (previewStats?.semesterName ?: "正在读取...") + " · 先选格式，再发送",
+                            text = (previewStats?.semesterName ?: stringResource(R.string.export_loading)) +
+                                " · " + stringResource(R.string.export_choose_then_send),
                             color = AppTheme.colors.textPrimary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.ExtraBold
@@ -142,17 +148,17 @@ fun ExportScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("课程", color = AppTheme.colors.textSecondary, fontSize = 10.sp)
-                                Text("${previewStats?.totalCourses ?: 0} 门", color = AppTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.export_courses), color = AppTheme.colors.textSecondary, fontSize = 10.sp)
+                                Text(stringResource(R.string.export_course_count, previewStats?.totalCourses ?: 0), color = AppTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                             Column {
-                                Text("总节次", color = AppTheme.colors.textSecondary, fontSize = 10.sp)
-                                Text("${previewStats?.totalInstances ?: 0} 节", color = AppTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.export_sessions), color = AppTheme.colors.textSecondary, fontSize = 10.sp)
+                                Text(stringResource(R.string.export_session_count, previewStats?.totalInstances ?: 0), color = AppTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                             Column {
-                                Text("单双周", color = AppTheme.colors.textSecondary, fontSize = 10.sp)
+                                Text(stringResource(R.string.export_recurrence), color = AppTheme.colors.textSecondary, fontSize = 10.sp)
                                 Text(
-                                    if (previewStats?.hasRecurrenceRules == true) "✓ 已推导" else "每周",
+                                    if (previewStats?.hasRecurrenceRules == true) stringResource(R.string.export_recurrence_derived) else stringResource(R.string.export_recurrence_weekly),
                                     color = if (previewStats?.hasRecurrenceRules == true) AppTheme.colors.badgeActive else AppTheme.colors.textSecondary,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
@@ -165,8 +171,8 @@ fun ExportScreen(
 
             item {
                 OneUiCapsuleSurface(
-                    title = "日历 (.ics)",
-                    subtitle = "可导入系统日历",
+                    title = stringResource(R.string.export_ics),
+                    subtitle = stringResource(R.string.export_ics_summary),
                     selected = selectedFormat == ExportFormat.ICS,
                     emphasize = selectedFormat == ExportFormat.ICS,
                     onClick = { selectedFormat = ExportFormat.ICS },
@@ -179,8 +185,8 @@ fun ExportScreen(
 
             item {
                 OneUiCapsuleSurface(
-                    title = "表格 (.csv)",
-                    subtitle = "适合 Excel / Numbers",
+                    title = stringResource(R.string.export_csv),
+                    subtitle = stringResource(R.string.export_csv_summary),
                     selected = selectedFormat == ExportFormat.CSV,
                     onClick = { selectedFormat = ExportFormat.CSV },
                     modifier = Modifier
@@ -192,8 +198,8 @@ fun ExportScreen(
 
             item {
                 OneUiCapsuleSurface(
-                    title = "完整备份 (.json)",
-                    subtitle = "完整课表备份",
+                    title = stringResource(R.string.export_json),
+                    subtitle = stringResource(R.string.export_json_summary),
                     selected = selectedFormat == ExportFormat.JSON_BACKUP,
                     onClick = { selectedFormat = ExportFormat.JSON_BACKUP },
                     modifier = Modifier
@@ -205,8 +211,8 @@ fun ExportScreen(
 
             item {
                 OneUiCapsuleSurface(
-                    title = if (selectedScope == ExportScope.CURRENT) "当前学期" else "全部学期",
-                    subtitle = if (selectedScope == ExportScope.CURRENT) "仅导出当前活跃学期 · 点击切换" else "包含所有历史学期 · 点击切换",
+                    title = if (selectedScope == ExportScope.CURRENT) stringResource(R.string.export_current) else stringResource(R.string.export_all),
+                    subtitle = if (selectedScope == ExportScope.CURRENT) stringResource(R.string.export_current_summary) else stringResource(R.string.export_all_summary),
                     selected = selectedScope == ExportScope.ALL,
                     onClick = {
                         val newScope = if (selectedScope == ExportScope.CURRENT) ExportScope.ALL else ExportScope.CURRENT
@@ -222,8 +228,8 @@ fun ExportScreen(
 
             item {
                 OneUiCapsuleSurface(
-                    title = if (exportState is ExportState.Exporting) "正在发送到手机…" else "导出到手机 App",
-                    subtitle = if (exportState is ExportState.Exporting) "保持手表与手机连接即可" else "手机端自动接收；所选格式仍保留。兼容旧 Wear 通信链路",
+                    title = if (exportState is ExportState.Exporting) stringResource(R.string.export_sending) else stringResource(R.string.export_send),
+                    subtitle = if (exportState is ExportState.Exporting) stringResource(R.string.export_sending_summary) else stringResource(R.string.export_send_summary),
                     icon = Icons.Rounded.FileDownload,
                     emphasize = true,
                     onClick = if (exportState is ExportState.Exporting) null else ({

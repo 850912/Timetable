@@ -34,9 +34,8 @@ data class AppConfig(
     val backgroundBrightness: Float = 0.82f,
     val timetableBackgroundMode: TimetableBackgroundMode = TimetableBackgroundMode.THEME,
     val timetableBackgroundImagePath: String? = null,
-    val backgroundImageBlurEnabled: Boolean = false,
-    val backgroundImageBlurRadius: Float = 6f,
-    val backgroundImageFluidEnabled: Boolean = false
+    val imageBackgroundBlurEnabled: Boolean = false,
+    val imageBackgroundFluidEnabled: Boolean = false,
 )
 
 val LocalAppConfig = staticCompositionLocalOf { AppConfig() }

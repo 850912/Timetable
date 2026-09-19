@@ -11,8 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ColorLens
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.RadioButtonChecked
-import androidx.compose.material.icons.rounded.BlurOn
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -31,7 +29,6 @@ import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
-import com.hufeng943.timetable.presentation.ui.components.OneUiSwitchCapsule
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -44,8 +41,6 @@ private const val BACKGROUND_MAX_SIDE_PX = 720
 fun BackgroundSelectPager(
     config: AppConfig,
     onBackgroundSelected: (TimetableBackgroundMode, String?) -> Unit,
-    onImageBlurToggle: (Boolean) -> Unit,
-    onImageFluidToggle: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -128,7 +123,7 @@ fun BackgroundSelectPager(
     }
 
     ScreenScaffold(scrollState = state) { padding ->
-        TransformingLazyColumn(state = state, contentPadding = padding) {
+        TransformingLazyColumn(state = state, contentPadding = padding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(state, hapticFeedbackEnabled = false)) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
@@ -172,28 +167,6 @@ fun BackgroundSelectPager(
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
-            }
-            if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE && !config.timetableBackgroundImagePath.isNullOrBlank()) {
-                item {
-                    OneUiSwitchCapsule(
-                        title = stringResource(R.string.settings_background_image_blur),
-                        subtitle = stringResource(R.string.settings_background_image_blur_summary),
-                        icon = Icons.Rounded.BlurOn,
-                        checked = config.backgroundImageBlurEnabled,
-                        onCheckedChange = onImageBlurToggle,
-                        modifier = Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    )
-                }
-                item {
-                    OneUiSwitchCapsule(
-                        title = stringResource(R.string.settings_background_image_fluid),
-                        subtitle = stringResource(R.string.settings_background_image_fluid_summary),
-                        icon = Icons.Rounded.AutoAwesome,
-                        checked = config.backgroundImageFluidEnabled,
-                        onCheckedChange = onImageFluidToggle,
-                        modifier = Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    )
-                }
             }
         }
     }

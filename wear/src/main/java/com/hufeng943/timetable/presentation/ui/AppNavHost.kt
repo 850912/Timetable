@@ -5,6 +5,12 @@ package com.hufeng943.timetable.presentation.ui
 
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.Composable
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
@@ -107,6 +113,8 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         isLiquidGlassEnabled = false,
         glassChromaticAberration = false,
         glassBlurEnabled = false,
+        imageBackgroundBlurEnabled = false,
+        imageBackgroundFluidEnabled = false,
         liquidGlassEffect = com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.SOFT,
     ) else storedConfig
     val globalGlassBackdrop = rememberLayerBackdrop()
@@ -144,8 +152,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 ) {
                     SwipeDismissableNavHost(
                         navController = navController,
-                        startDestination = NavRoutes.MAIN,
-                        userSwipeEnabled = true
+                        startDestination = NavRoutes.MAIN
                     ) {
                 composable(NavRoutes.MAIN) {
                     HomeScreen()
@@ -253,7 +260,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
 
 
                 composable(NavRoutes.MORE_SETTINGS) {
-                    SettingScreen()
+                    SettingScreen(appConfigViewModel = appConfigViewModel)
                 }
 
                 composable(NavRoutes.MORE_DAY_ARRANGEMENT) {
@@ -308,9 +315,6 @@ private fun AppBackground(
             }
         } else null
         value = decoded
-        awaitDispose {
-            decoded?.takeUnless { it.isRecycled }?.recycle()
-        }
     }
 
     Box(modifier.fillMaxSize().background(AppTheme.colors.background)) {
@@ -328,10 +332,42 @@ private fun AppBackground(
                 TimetableBackgroundMode.IMAGE -> {
                     val bitmap = backgroundBitmap
                     if (bitmap != null) {
-                        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize().then(if (config.backgroundImageBlurEnabled) Modifier.blur(config.backgroundImageBlurRadius.dp) else Modifier), contentScale = ContentScale.Crop)
-                        if (config.backgroundImageFluidEnabled) {
-                            GalaxyAiAmbientLayer(RectangleShape, strength = 0.42f)
-                        }
+                        val fluidProgress = if (config.imageBackgroundFluidEnabled) {
+                            val transition = rememberInfiniteTransition(label = "imageBackgroundFluid")
+                            transition.animateFloat(
+                                initialValue = -1f,
+                                targetValue = 1f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(durationMillis = 14_000),
+                                    repeatMode = RepeatMode.Reverse,
+                                ),
+                                label = "imageBackgroundFluidProgress",
+                            ).value
+                        } else 0f
+                        val imageModifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                val effectScale = when {
+                                    config.imageBackgroundFluidEnabled -> 1.12f
+                                    config.imageBackgroundBlurEnabled -> 1.08f
+                                    else -> 1f
+                                }
+                                scaleX = effectScale
+                                scaleY = effectScale
+                                translationX = size.width * 0.025f * fluidProgress
+                                translationY = size.height * -0.018f * fluidProgress
+                                rotationZ = 0.35f * fluidProgress
+                            }
+                            .then(
+                                if (config.imageBackgroundBlurEnabled) Modifier.blur(10.dp)
+                                else Modifier
+                            )
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = imageModifier,
+                            contentScale = ContentScale.Crop,
+                        )
                     } else {
                         // Never leave a black/empty page when a previously selected image becomes unreadable.
                         GalaxyAiAmbientLayer(RectangleShape, strength = 1f)

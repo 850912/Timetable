@@ -24,11 +24,10 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 
 /**
- * WYS App Market-inspired liquid glass.
+ * Shared liquid-glass renderer for watch surfaces.
  *
- * The reference APK ships Kyant AndroidLiquidGlass and exposes blur/lens/aberration/vibrancy
- * controls. We use the same renderer on Android 13+ and keep a cheap translucent fallback for
- * older devices. Values are intentionally restrained for Wear OS GPU budgets.
+ * Blur, lens distortion, aberration, and vibrancy remain independently configurable. Android 13+
+ * uses the Backdrop renderer; older or constrained devices keep a lightweight fallback.
  */
 @Composable
 fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {

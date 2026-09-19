@@ -36,7 +36,7 @@ fun FirstDaySelectPager(config: AppConfig, onFirstDaySelect: (FirstDayOfTheWeek)
     val transformationSpec = rememberTransformationSpec()
 
     ScreenScaffold(scrollState = scrollState) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
+        TransformingLazyColumn(state = scrollState, modifier = Modifier.fillMaxSize(), contentPadding = contentPadding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false)) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()

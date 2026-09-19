@@ -47,7 +47,7 @@ fun OneUiCapsuleSurface(
     accentColor: Color = Color.Unspecified,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    titleMaxLines: Int = 3,
+    titleMaxLines: Int = 2,
     subtitleMaxLines: Int = 3,
     trailing: (@Composable () -> Unit)? = null,
 ) {

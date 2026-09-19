@@ -54,7 +54,7 @@ fun TimetableListPager(
         TransformingLazyColumn(
             state = scrollState,
             flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
-            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState, hapticFeedbackEnabled = false),
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding
         ) {

@@ -38,7 +38,7 @@ fun DeleteConfirmScreen(
             state = scrollState,
             contentPadding = contentPadding,
             flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
-            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState)
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState, hapticFeedbackEnabled = false)
         ) {
             item {
                 ListHeader(

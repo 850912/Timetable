@@ -56,7 +56,7 @@ fun ColorSelectionScreen(onSave: (color: Color) -> Unit) {
             modifier = Modifier.fillMaxSize(),
             state = scrollState,
             flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
-            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState, hapticFeedbackEnabled = false),
             contentPadding = contentPadding,
         ) {
             item {
