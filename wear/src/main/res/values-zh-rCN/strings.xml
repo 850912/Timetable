@@ -125,16 +125,16 @@
     <string name="about_features_schedule">课程：多课表、日期例外、今日调课、手机 ↔ 手表同步。</string>
     <string name="about_features_wear">Wear：首页状态优先、Tile 时间线、当前课进度与下一节倒计时复杂功能。</string>
     <string name="about_features_tools">工具：学业待办与提醒、本周课表分享、ICS / CSV / JSON、系统日历同步。</string>
-    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护 · 版本 3.4.1。</string>
+    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护 · 版本 3.4.2。</string>
     <string name="about_declaration_development">维护：黑白君 (HeiBaiJun)；部分开发借助生成式 AI。连续点击版本号 7 次进入开发者选项。</string>
     <string name="about_open_source_wear">界面：Wear Compose 1.6.2 · Navigation 2.9.8 · Backdrop 2.0.1 · MaterialKolor 4.1.1</string>
     <string name="about_open_source_data">数据：Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">工具：Horologist 0.7.15 · Coroutines 1.11.0 · AboutLibraries 15.0.3。完整声明见下方。</string>
-    <string name="about_changelog_part1">3.4.1：修复小米 Watch 5 启动崩溃、子页面动效和语言即时更新。</string>
+    <string name="about_changelog_part1">3.4.2：修复语言适配导致的 Hilt 启动崩溃，兼容小米 Watch 5。</string>
     <string name="about_changelog_part2">自定义图片新增独立模糊与流体开关，并精简手表文案、统一外观设置。</string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
-        " · 当前版本采用语义化版本号 3.4.1\n"
+        " · 当前版本采用语义化版本号 3.4.2\n"
         " · 原项目：HuFeng943 / Timetable\n"
         " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
         " · 当前版本在原项目基础上持续维护与扩展\n"
@@ -146,7 +146,7 @@
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
     <string name="about_open_source_stack">核心组件：Wear Compose 1.6.2、Navigation 2.9.8、Backdrop 2.0.1、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX、Coroutines、AboutLibraries 与 MaterialKolor。许可证页面由实际构建依赖生成。</string>
-    <string name="about_changelog_title">3.4.1 更新</string>
+    <string name="about_changelog_title">3.4.2 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
         " · 冷启动不再主动触发 Tile 数据读取，减少首次打开竞争\n"

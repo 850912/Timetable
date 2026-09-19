@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.aboutLibraries)
 }
 
-val versionPrefix = "3.4.1"
+val versionPrefix = "3.4.2"
 
 fun releaseSecret(name: String): String? =
     providers.gradleProperty(name)
@@ -53,7 +53,7 @@ configure<ApplicationExtension> {
         minSdk = 28
         targetSdk = 37
 
-        versionCode = 3040100
+        versionCode = 3040200
         versionName = if (isRelease) versionPrefix else "$versionPrefix-dev"
     }
 

@@ -9,6 +9,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.hufeng943.timetable.data.PreferenceStorage
 import com.hufeng943.timetable.presentation.ui.theme.TimetableTheme
 import androidx.compose.runtime.getValue
@@ -16,12 +19,10 @@ import com.hufeng943.timetable.presentation.ui.AppNavHost
 import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val appConfigViewModel: AppConfigViewModel by viewModels()
@@ -39,7 +40,11 @@ class MainActivity : ComponentActivity() {
             Locale.setDefault(locale)
             configuration.setLocale(locale)
             newBase.createConfigurationContext(configuration)
-        } else newBase
+        } else {
+            // Reset the process default as well when returning to the system language.
+            Locale.setDefault(Resources.getSystem().configuration.locales[0])
+            newBase
+        }
         super.attachBaseContext(context)
     }
 
@@ -47,28 +52,20 @@ class MainActivity : ComponentActivity() {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                appConfigViewModel.localeRecreateEvent.collect { recreate() }
+            }
+        }
+
         setContent {
             val currentThemePreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(initialValue = com.hufeng943.timetable.presentation.ui.theme.ThemePreset.AMOLED_BLACK)
             val config by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
-            val baseContext = LocalContext.current
-            val effectiveLocale = remember(config.languageTag) {
-                config.languageTag?.let { Locale.forLanguageTag(it) }
-                    ?: Resources.getSystem().configuration.locales[0]
-            }
-            val localizedContext = remember(baseContext, effectiveLocale) {
-                val localizedConfiguration = Configuration(baseContext.resources.configuration).apply {
-                    setLocale(effectiveLocale)
-                }
-                baseContext.createConfigurationContext(localizedConfiguration)
-            }
-            SideEffect { Locale.setDefault(effectiveLocale) }
-            CompositionLocalProvider(
-                LocalContext provides localizedContext,
-                LocalConfiguration provides localizedContext.resources.configuration,
-            ) {
-                TimetableTheme(themePreset = currentThemePreset, dynamicColorEnabled = config.isDynamicColorEnabled) {
-                    AppNavHost()
-                }
+            TimetableTheme(themePreset = currentThemePreset, dynamicColorEnabled = config.isDynamicColorEnabled) {
+                // Keep Compose's Activity-backed LocalContext intact. Hilt uses it to
+                // construct destination ViewModels and rejects a plain ContextImpl.
+                AppNavHost(appConfigViewModel = appConfigViewModel)
             }
         }
     }

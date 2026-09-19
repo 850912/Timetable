@@ -10,8 +10,10 @@ import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
 import com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -20,6 +22,9 @@ import javax.inject.Inject
 class AppConfigViewModel @Inject constructor(
     private val preferenceStorage: PreferenceStorage
 ) : ViewModel() {
+
+    private val _localeRecreateEvent = Channel<Unit>(Channel.CONFLATED)
+    val localeRecreateEvent = _localeRecreateEvent.receiveAsFlow()
 
     val appConfig: StateFlow<AppConfig> = preferenceStorage.appConfigFlow.stateIn(
         scope = viewModelScope,
@@ -31,6 +36,7 @@ class AppConfigViewModel @Inject constructor(
         if (appConfig.value.languageTag == languageTag) return
         viewModelScope.launch {
             preferenceStorage.setLanguage(languageTag)
+            _localeRecreateEvent.send(Unit)
         }
     }
 
