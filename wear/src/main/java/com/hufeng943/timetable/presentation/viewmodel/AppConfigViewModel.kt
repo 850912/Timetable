@@ -96,6 +96,9 @@ class AppConfigViewModel @Inject constructor(
     fun updateGlassBlurEnabled(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setGlassBlurEnabled(enabled) } }
     fun updateGlassBlurRadius(value: Float) { viewModelScope.launch { preferenceStorage.setGlassBlurRadius(value) } }
     fun updateBackgroundBrightness(value: Float) { viewModelScope.launch { preferenceStorage.setBackgroundBrightness(value) } }
+    fun updateBackgroundImageBlurEnabled(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setBackgroundImageBlurEnabled(enabled) } }
+    fun updateBackgroundImageBlurRadius(value: Float) { viewModelScope.launch { preferenceStorage.setBackgroundImageBlurRadius(value) } }
+    fun updateBackgroundImageFluidEnabled(enabled: Boolean) { viewModelScope.launch { preferenceStorage.setBackgroundImageFluidEnabled(enabled) } }
 
     fun updateTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {
         viewModelScope.launch { preferenceStorage.setTimetableBackground(mode, imagePath) }

@@ -7,6 +7,8 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.hufeng943.timetable.R
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
@@ -43,18 +45,18 @@ fun ThemePresetSelectPager(currentPreset: ThemePreset, onPresetSelect: (ThemePre
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
-                ) { Text("主题风格") }
+                ) { Text(stringResource(R.string.settings_theme_style)) }
             }
             items(ThemePreset.entries, key = { it.name }) { preset ->
                 OneUiCapsuleSurface(
-                    title = preset.title,
-                    subtitle = when (preset) {
-                        ThemePreset.AMOLED_BLACK -> "省电极黑 · 高对比度"
-                        ThemePreset.SYSTEM_DYNAMIC -> "跟随系统动态配色 · 不覆盖课程强调色"
-                        ThemePreset.GRAPHITE -> "低饱和钛金质感 · 夜间更耐看"
-                        ThemePreset.AURORA -> "青紫柔光 · 新版胶囊层级"
-                        else -> "AMOLED 胶囊 · 课程/课表强调色保持独立"
-                    },
+                    title = themePresetLabel(preset),
+                    subtitle = stringResource(when (preset) {
+                        ThemePreset.AMOLED_BLACK -> R.string.theme_summary_amoled
+                        ThemePreset.SYSTEM_DYNAMIC -> R.string.theme_summary_dynamic
+                        ThemePreset.GRAPHITE -> R.string.theme_summary_graphite
+                        ThemePreset.AURORA -> R.string.theme_summary_aurora
+                        else -> R.string.theme_summary_default
+                    }),
                     icon = Icons.Rounded.Palette,
                     selected = preset == currentPreset,
                     emphasize = preset == currentPreset,
@@ -66,3 +68,16 @@ fun ThemePresetSelectPager(currentPreset: ThemePreset, onPresetSelect: (ThemePre
         }
     }
 }
+
+@Composable
+fun themePresetLabel(preset: ThemePreset): String = stringResource(when (preset) {
+    ThemePreset.AMOLED_BLACK -> R.string.theme_amoled_black
+    ThemePreset.DEEP_BLUE -> R.string.theme_deep_blue
+    ThemePreset.CYAN_TEAL -> R.string.theme_cyan_teal
+    ThemePreset.ROYAL_PURPLE -> R.string.theme_royal_purple
+    ThemePreset.SUNSET_ORANGE -> R.string.theme_sunset_orange
+    ThemePreset.SAKURA_PINK -> R.string.theme_sakura_pink
+    ThemePreset.GRAPHITE -> R.string.theme_graphite
+    ThemePreset.AURORA -> R.string.theme_aurora
+    ThemePreset.SYSTEM_DYNAMIC -> R.string.theme_system_dynamic
+})

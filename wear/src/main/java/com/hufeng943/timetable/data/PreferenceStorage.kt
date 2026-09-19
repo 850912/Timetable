@@ -56,6 +56,9 @@ class PreferenceStorage @Inject constructor(
         val BACKGROUND_BRIGHTNESS = floatPreferencesKey("background_brightness")
         val TIMETABLE_BACKGROUND_MODE = stringPreferencesKey("timetable_background_mode")
         val TIMETABLE_BACKGROUND_IMAGE_PATH = stringPreferencesKey("timetable_background_image_path")
+        val BACKGROUND_IMAGE_BLUR_ENABLED = booleanPreferencesKey("background_image_blur_enabled")
+        val BACKGROUND_IMAGE_BLUR_RADIUS = floatPreferencesKey("background_image_blur_radius")
+        val BACKGROUND_IMAGE_FLUID_ENABLED = booleanPreferencesKey("background_image_fluid_enabled")
     }
 
     val appConfigFlow: Flow<AppConfig> = context.dataStore.data.map { prefs ->
@@ -109,7 +112,10 @@ class PreferenceStorage @Inject constructor(
             timetableBackgroundMode = runCatching {
                 TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
             }.getOrDefault(TimetableBackgroundMode.THEME),
-            timetableBackgroundImagePath = prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH]
+            timetableBackgroundImagePath = prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH],
+            backgroundImageBlurEnabled = prefs[Keys.BACKGROUND_IMAGE_BLUR_ENABLED] ?: false,
+            backgroundImageBlurRadius = (prefs[Keys.BACKGROUND_IMAGE_BLUR_RADIUS] ?: 6f).coerceIn(0f, 12f),
+            backgroundImageFluidEnabled = prefs[Keys.BACKGROUND_IMAGE_FLUID_ENABLED] ?: false
         )
     }
 
@@ -170,6 +176,10 @@ class PreferenceStorage @Inject constructor(
     suspend fun setBackgroundBrightness(value: Float) {
         context.dataStore.edit { it[Keys.BACKGROUND_BRIGHTNESS] = value.coerceIn(0.10f, 1f) }
     }
+
+    suspend fun setBackgroundImageBlurEnabled(enabled: Boolean) { context.dataStore.edit { it[Keys.BACKGROUND_IMAGE_BLUR_ENABLED] = enabled } }
+    suspend fun setBackgroundImageBlurRadius(value: Float) { context.dataStore.edit { it[Keys.BACKGROUND_IMAGE_BLUR_RADIUS] = value.coerceIn(0f, 12f) } }
+    suspend fun setBackgroundImageFluidEnabled(enabled: Boolean) { context.dataStore.edit { it[Keys.BACKGROUND_IMAGE_FLUID_ENABLED] = enabled } }
 
     suspend fun setTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {
         context.dataStore.edit { prefs ->

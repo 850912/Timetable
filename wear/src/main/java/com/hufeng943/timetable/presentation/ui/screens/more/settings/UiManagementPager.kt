@@ -44,10 +44,10 @@ fun UiManagementPager(
     val state = rememberTransformingLazyColumnState()
     val transform = rememberTransformationSpec()
 
-    fun backgroundLabel(): String = when (config.timetableBackgroundMode) {
-        TimetableBackgroundMode.SOLID -> "纯色"
-        TimetableBackgroundMode.THEME -> "主题光晕"
-        TimetableBackgroundMode.IMAGE -> "自定义图片"
+    @Composable fun backgroundLabel(): String = when (config.timetableBackgroundMode) {
+        TimetableBackgroundMode.SOLID -> stringResource(R.string.settings_background_solid)
+        TimetableBackgroundMode.THEME -> stringResource(R.string.settings_background_theme)
+        TimetableBackgroundMode.IMAGE -> stringResource(R.string.settings_background_image)
     }
 
     ScreenScaffold(scrollState = state) { padding ->
@@ -57,12 +57,12 @@ fun UiManagementPager(
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transform),
-                ) { Text("UI 管理") }
+                ) { Text(stringResource(R.string.settings_ui_management)) }
             }
             item {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Tune,
-                    text = "主题、背景、玻璃与动效。",
+                    text = stringResource(R.string.settings_ui_management_summary),
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     maxLines = 3,
@@ -71,8 +71,8 @@ fun UiManagementPager(
             item {
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.Palette,
-                    label = "主题风格",
-                    secondaryLabel = currentThemePreset.title,
+                    label = stringResource(R.string.settings_theme_style),
+                    secondaryLabel = themePresetLabel(currentThemePreset),
                     onClick = onThemeSelectClick,
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
@@ -92,7 +92,7 @@ fun UiManagementPager(
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.BlurOn,
                     label = stringResource(R.string.settings_liquid_glass),
-                    secondaryLabel = if (config.isLiquidGlassEnabled) "液态 · ${config.liquidGlassEffect.name.lowercase()}" else "已关闭",
+                    secondaryLabel = if (config.isLiquidGlassEnabled) stringResource(R.string.settings_enabled) else stringResource(R.string.settings_disabled),
                     onClick = onLiquidGlassAdvancedClick,
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
@@ -111,8 +111,8 @@ fun UiManagementPager(
             }
             item {
                 OneUiSwitchCapsule(
-                    title = "界面动效",
-                    subtitle = "按压与切换动画",
+                    title = stringResource(R.string.settings_ui_animations),
+                    subtitle = stringResource(R.string.settings_ui_animations_summary),
                     icon = Icons.Rounded.Animation,
                     checked = config.uiAnimationsEnabled,
                     onCheckedChange = onUiAnimationsToggle,
@@ -122,8 +122,8 @@ fun UiManagementPager(
             }
             item {
                 OneUiSwitchCapsule(
-                    title = "顶部时间显示",
-                    subtitle = "显示应用内时间",
+                    title = stringResource(R.string.settings_top_time),
+                    subtitle = stringResource(R.string.settings_top_time_summary),
                     icon = Icons.Rounded.Schedule,
                     checked = config.isShowTopTime,
                     onCheckedChange = onShowTopTimeToggle,

@@ -3,7 +3,6 @@ package com.hufeng943.timetable.presentation.ui
 
 
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
@@ -143,16 +142,10 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     LocalSwipeToDismissBackgroundScrimColor provides Color.Black.copy(alpha = 0.18f),
                     LocalSwipeToDismissContentScrimColor provides Color.Black.copy(alpha = 0.10f),
                 ) {
-                    // Predictive-back is disabled at the Android application level in the manifest.
-                    // BackHandler keeps in-app navigation working by performing an ordinary pop.
-                    BackHandler(enabled = navController.previousBackStackEntry != null) {
-                        navController.popBackStack()
-                    }
-
                     SwipeDismissableNavHost(
                         navController = navController,
                         startDestination = NavRoutes.MAIN,
-                        userSwipeEnabled = false
+                        userSwipeEnabled = true
                     ) {
                 composable(NavRoutes.MAIN) {
                     HomeScreen()
@@ -335,7 +328,10 @@ private fun AppBackground(
                 TimetableBackgroundMode.IMAGE -> {
                     val bitmap = backgroundBitmap
                     if (bitmap != null) {
-                        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize().then(if (config.backgroundImageBlurEnabled) Modifier.blur(config.backgroundImageBlurRadius.dp) else Modifier), contentScale = ContentScale.Crop)
+                        if (config.backgroundImageFluidEnabled) {
+                            GalaxyAiAmbientLayer(RectangleShape, strength = 0.42f)
+                        }
                     } else {
                         // Never leave a black/empty page when a previously selected image becomes unreadable.
                         GalaxyAiAmbientLayer(RectangleShape, strength = 1f)

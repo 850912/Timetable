@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.aboutLibraries)
 }
 
-val versionPrefix = "3.4.0"
+val versionPrefix = "3.5.0"
 
 val commitCountProvider = providers.exec {
     commandLine("git", "rev-list", "--count", "HEAD")

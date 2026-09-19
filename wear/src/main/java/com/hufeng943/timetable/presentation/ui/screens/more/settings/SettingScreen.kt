@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hufeng943.timetable.data.ThemePreference
 import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
@@ -22,7 +22,7 @@ fun SettingScreen(
     appConfigViewModel: AppConfigViewModel = hiltViewModel(),
     themePreference: ThemePreference = hiltViewModel<ThemePrefViewModel>().themePreference
 ) {
-    val internalNavController = rememberNavController()
+    val internalNavController = rememberSwipeDismissableNavController()
     val config = LocalAppConfig.current
     val scope = rememberCoroutineScope()
     val currentPreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(initialValue = ThemePreset.AMOLED_BLACK)
@@ -93,8 +93,12 @@ fun SettingScreen(
                 config = config,
                 onBackgroundSelected = { mode, path ->
                     appConfigViewModel.updateTimetableBackground(mode, path)
-                    internalNavController.popBackStack()
-                }
+                    if (mode != com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode.IMAGE || path == null) {
+                        internalNavController.popBackStack()
+                    }
+                },
+                onImageBlurToggle = appConfigViewModel::updateBackgroundImageBlurEnabled,
+                onImageFluidToggle = appConfigViewModel::updateBackgroundImageFluidEnabled,
             )
         }
 
