@@ -41,6 +41,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import android.graphics.BitmapFactory
+import android.app.ActivityManager
+import android.os.Build
 import android.content.Context
 import android.content.BroadcastReceiver
 import android.content.Intent
@@ -91,6 +93,9 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val storedConfig by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val powerManager = remember(context) { context.getSystemService(Context.POWER_SERVICE) as PowerManager }
+    val lowRamDevice = remember(context) {
+        (context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.isLowRamDevice == true
+    }
     var isPowerSaveMode by remember(powerManager) { mutableStateOf(powerManager.isPowerSaveMode) }
     DisposableEffect(context, powerManager) {
         val receiver = object : BroadcastReceiver() {
@@ -121,8 +126,10 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         liquidGlassEffect = com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.SOFT,
     ) else storedConfig
     val globalGlassBackdrop = rememberLayerBackdrop()
-    // Backdrop capture is shared by all glass surfaces; the renderer falls back below Android 13.
-    val useBackdropEffects = config.isLiquidGlassEnabled
+    // Do not capture a live backdrop when the renderer will use the lightweight fallback anyway.
+    // Avoiding the capture layer entirely matters on constrained Wear OS hardware.
+    val useBackdropEffects = config.isLiquidGlassEnabled &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !lowRamDevice
 
     AppScaffold(
         containerColor = Color.Transparent,
@@ -149,9 +156,13 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
             )
             Box(Modifier.fillMaxSize()) {
+                // This app owns one global background *behind* the navigation host. Wear navigation
+                // applies the background scrim as an actual full-screen background to the current
+                // destination, so any opaque/black value hides the selected wallpaper while idle.
+                // Keep that base transparent; the content scrim still supplies gesture shading.
                 CompositionLocalProvider(
-                    LocalSwipeToDismissBackgroundScrimColor provides AppTheme.colors.background,
-                    LocalSwipeToDismissContentScrimColor provides Color.Black.copy(alpha = 0.34f),
+                    LocalSwipeToDismissBackgroundScrimColor provides Color.Transparent,
+                    LocalSwipeToDismissContentScrimColor provides Color.Black.copy(alpha = 0.10f),
                 ) {
                     SwipeDismissableNavHost(
                         navController = navController,
@@ -336,7 +347,7 @@ private fun AppBackground(
                     val bitmap = backgroundBitmap
                     if (bitmap != null) {
                         if (config.imageBackgroundFluidEnabled) {
-                            FluidImageToneBackground(bitmap = bitmap, blur = config.imageBackgroundBlurEnabled)
+                            FluidImageToneBackground(bitmap = bitmap, softened = config.imageBackgroundBlurEnabled)
                         } else {
                             Image(
                                 bitmap = bitmap.asImageBitmap(),
@@ -355,30 +366,118 @@ private fun AppBackground(
         }
         // User photos can contain arbitrarily bright/detail-heavy regions. Keep white Wear text and
         // translucent cards readable with a guaranteed contrast scrim, then apply brightness on top.
-        val imageReadability = if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE) 0.30f else 0f
-        val scrimAlpha = (imageReadability + (1f - config.backgroundBrightness) * 0.38f).coerceIn(0f, 0.58f)
+        val imageReadability = if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE) 0.24f else 0f
+        val scrimAlpha = (imageReadability + (1f - config.backgroundBrightness) * 0.34f).coerceIn(0f, 0.50f)
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
     }
 }
 
 
-private fun sampleTone(bitmap: android.graphics.Bitmap, fx: Float, fy: Float): Color {
-    val x = (bitmap.width * fx).toInt().coerceIn(0, bitmap.width - 1)
-    val y = (bitmap.height * fy).toInt().coerceIn(0, bitmap.height - 1)
-    return Color(bitmap.getPixel(x, y)).copy(alpha = 1f)
+
+private fun sampleRegionTone(bitmap: android.graphics.Bitmap, centerX: Float, centerY: Float): Color {
+    // Average a small grid instead of trusting one pixel. This is still tiny work (25 reads per tone)
+    // but produces a much more representative palette for photos with highlights or text overlays.
+    var red = 0L
+    var green = 0L
+    var blue = 0L
+    var count = 0
+    val spreadX = 0.18f
+    val spreadY = 0.18f
+    for (iy in -2..2) {
+        for (ix in -2..2) {
+            val fx = (centerX + ix * spreadX / 4f).coerceIn(0f, 1f)
+            val fy = (centerY + iy * spreadY / 4f).coerceIn(0f, 1f)
+            val x = ((bitmap.width - 1) * fx).toInt().coerceIn(0, bitmap.width - 1)
+            val y = ((bitmap.height - 1) * fy).toInt().coerceIn(0, bitmap.height - 1)
+            val pixel = bitmap.getPixel(x, y)
+            red += android.graphics.Color.red(pixel)
+            green += android.graphics.Color.green(pixel)
+            blue += android.graphics.Color.blue(pixel)
+            count++
+        }
+    }
+    return Color(
+        android.graphics.Color.rgb(
+            (red / count).toInt(),
+            (green / count).toInt(),
+            (blue / count).toInt(),
+        )
+    ).copy(alpha = 1f)
 }
 
 @Composable
-private fun FluidImageToneBackground(bitmap: android.graphics.Bitmap, blur: Boolean) {
+private fun FluidImageToneBackground(bitmap: android.graphics.Bitmap, softened: Boolean) {
+    val config = LocalAppConfig.current
     val tones = remember(bitmap) {
-        listOf(sampleTone(bitmap, .22f, .25f), sampleTone(bitmap, .72f, .30f), sampleTone(bitmap, .35f, .72f), sampleTone(bitmap, .78f, .78f))
+        listOf(
+            sampleRegionTone(bitmap, .24f, .25f),
+            sampleRegionTone(bitmap, .74f, .28f),
+            sampleRegionTone(bitmap, .30f, .74f),
+            sampleRegionTone(bitmap, .76f, .77f),
+        )
     }
-    val transition = rememberInfiniteTransition(label = "toneFluid")
-    val motion by transition.animateFloat(-1f, 1f, infiniteRepeatable(tween(12_000), RepeatMode.Reverse), label = "toneFluidMotion")
-    Canvas(Modifier.fillMaxSize().then(if (blur) Modifier.blur(7.dp) else Modifier)) {
-        drawRect(Brush.linearGradient(listOf(tones[0], tones[3]), start = Offset.Zero, end = Offset(size.width, size.height)))
-        val radius = size.maxDimension * .72f
-        drawRect(Brush.radialGradient(listOf(tones[1].copy(alpha=.92f), Color.Transparent), center = Offset(size.width*(.72f + motion*.08f), size.height*(.28f - motion*.05f)), radius = radius))
-        drawRect(Brush.radialGradient(listOf(tones[2].copy(alpha=.88f), Color.Transparent), center = Offset(size.width*(.28f - motion*.07f), size.height*(.76f + motion*.04f)), radius = radius))
+    // Do not run an infinite transition when global UI animations are disabled. The generated
+    // background remains visible, only the slow drift stops.
+    val motion = if (config.uiAnimationsEnabled) {
+        val transition = rememberInfiniteTransition(label = "toneFluid")
+        transition.animateFloat(
+            initialValue = -1f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(16_000), RepeatMode.Reverse),
+            label = "toneFluidMotion",
+        ).value
+    } else 0f
+
+    // Fluid mode is already made from low-frequency gradients. Keep three static GPU layers and
+    // move only the two transparent radial layers; this avoids rebuilding gradient shaders on every
+    // animation frame and is substantially cheaper than a full-screen RenderEffect blur on Wear.
+    val radialScale = if (softened) 1.18f else 1f
+    val spotAlpha = if (softened) .78f else .90f
+    Box(Modifier.fillMaxSize()) {
+        Canvas(Modifier.fillMaxSize()) {
+            drawRect(
+                Brush.linearGradient(
+                    colors = listOf(tones[0], tones[3]),
+                    start = Offset.Zero,
+                    end = Offset(size.width, size.height),
+                )
+            )
+        }
+        Canvas(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = radialScale
+                    scaleY = radialScale
+                    translationX = size.width * motion * .055f
+                    translationY = size.height * -motion * .035f
+                }
+        ) {
+            drawRect(
+                Brush.radialGradient(
+                    colors = listOf(tones[1].copy(alpha = spotAlpha), Color.Transparent),
+                    center = Offset(size.width * .72f, size.height * .28f),
+                    radius = size.maxDimension * .72f,
+                )
+            )
+        }
+        Canvas(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = radialScale
+                    scaleY = radialScale
+                    translationX = size.width * -motion * .05f
+                    translationY = size.height * motion * .03f
+                }
+        ) {
+            drawRect(
+                Brush.radialGradient(
+                    colors = listOf(tones[2].copy(alpha = spotAlpha), Color.Transparent),
+                    center = Offset(size.width * .28f, size.height * .76f),
+                    radius = size.maxDimension * .72f,
+                )
+            )
+        }
     }
 }

@@ -7,7 +7,7 @@ android {
         applicationId = "com.hufeng943.timetable.watchface.nacho"
         minSdk = 33
         targetSdk = 37
-        versionCode = 3050000
-        versionName = "3.5.0"
+        versionCode = 3050100
+        versionName = "3.5.1"
     }
 }
