@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,6 +35,8 @@ import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.TimeTextDefaults.rememberTimeSource
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -147,8 +150,8 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
             )
             Box(Modifier.fillMaxSize()) {
                 CompositionLocalProvider(
-                    LocalSwipeToDismissBackgroundScrimColor provides Color.Black.copy(alpha = 0.18f),
-                    LocalSwipeToDismissContentScrimColor provides Color.Black.copy(alpha = 0.10f),
+                    LocalSwipeToDismissBackgroundScrimColor provides AppTheme.colors.background,
+                    LocalSwipeToDismissContentScrimColor provides Color.Black.copy(alpha = 0.34f),
                 ) {
                     SwipeDismissableNavHost(
                         navController = navController,
@@ -332,42 +335,17 @@ private fun AppBackground(
                 TimetableBackgroundMode.IMAGE -> {
                     val bitmap = backgroundBitmap
                     if (bitmap != null) {
-                        val fluidProgress = if (config.imageBackgroundFluidEnabled) {
-                            val transition = rememberInfiniteTransition(label = "imageBackgroundFluid")
-                            transition.animateFloat(
-                                initialValue = -1f,
-                                targetValue = 1f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(durationMillis = 14_000),
-                                    repeatMode = RepeatMode.Reverse,
-                                ),
-                                label = "imageBackgroundFluidProgress",
-                            ).value
-                        } else 0f
-                        val imageModifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                val effectScale = when {
-                                    config.imageBackgroundFluidEnabled -> 1.12f
-                                    config.imageBackgroundBlurEnabled -> 1.08f
-                                    else -> 1f
-                                }
-                                scaleX = effectScale
-                                scaleY = effectScale
-                                translationX = size.width * 0.025f * fluidProgress
-                                translationY = size.height * -0.018f * fluidProgress
-                                rotationZ = 0.35f * fluidProgress
-                            }
-                            .then(
-                                if (config.imageBackgroundBlurEnabled) Modifier.blur(10.dp)
-                                else Modifier
+                        if (config.imageBackgroundFluidEnabled) {
+                            FluidImageToneBackground(bitmap = bitmap, blur = config.imageBackgroundBlurEnabled)
+                        } else {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().graphicsLayer { scaleX = 1.06f; scaleY = 1.06f }
+                                    .then(if (config.imageBackgroundBlurEnabled) Modifier.blur(10.dp) else Modifier),
+                                contentScale = ContentScale.Crop,
                             )
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = imageModifier,
-                            contentScale = ContentScale.Crop,
-                        )
+                        }
                     } else {
                         // Never leave a black/empty page when a previously selected image becomes unreadable.
                         GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
@@ -375,7 +353,32 @@ private fun AppBackground(
                 }
             }
         }
-        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.35f).coerceIn(0f, 0.35f)
+        // User photos can contain arbitrarily bright/detail-heavy regions. Keep white Wear text and
+        // translucent cards readable with a guaranteed contrast scrim, then apply brightness on top.
+        val imageReadability = if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE) 0.30f else 0f
+        val scrimAlpha = (imageReadability + (1f - config.backgroundBrightness) * 0.38f).coerceIn(0f, 0.58f)
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
+    }
+}
+
+
+private fun sampleTone(bitmap: android.graphics.Bitmap, fx: Float, fy: Float): Color {
+    val x = (bitmap.width * fx).toInt().coerceIn(0, bitmap.width - 1)
+    val y = (bitmap.height * fy).toInt().coerceIn(0, bitmap.height - 1)
+    return Color(bitmap.getPixel(x, y)).copy(alpha = 1f)
+}
+
+@Composable
+private fun FluidImageToneBackground(bitmap: android.graphics.Bitmap, blur: Boolean) {
+    val tones = remember(bitmap) {
+        listOf(sampleTone(bitmap, .22f, .25f), sampleTone(bitmap, .72f, .30f), sampleTone(bitmap, .35f, .72f), sampleTone(bitmap, .78f, .78f))
+    }
+    val transition = rememberInfiniteTransition(label = "toneFluid")
+    val motion by transition.animateFloat(-1f, 1f, infiniteRepeatable(tween(12_000), RepeatMode.Reverse), label = "toneFluidMotion")
+    Canvas(Modifier.fillMaxSize().then(if (blur) Modifier.blur(7.dp) else Modifier)) {
+        drawRect(Brush.linearGradient(listOf(tones[0], tones[3]), start = Offset.Zero, end = Offset(size.width, size.height)))
+        val radius = size.maxDimension * .72f
+        drawRect(Brush.radialGradient(listOf(tones[1].copy(alpha=.92f), Color.Transparent), center = Offset(size.width*(.72f + motion*.08f), size.height*(.28f - motion*.05f)), radius = radius))
+        drawRect(Brush.radialGradient(listOf(tones[2].copy(alpha=.88f), Color.Transparent), center = Offset(size.width*(.28f - motion*.07f), size.height*(.76f + motion*.04f)), radius = radius))
     }
 }

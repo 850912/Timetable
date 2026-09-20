@@ -132,17 +132,17 @@
     <string name="about_features_schedule">Classes: multiple timetables, date exceptions, same-day changes, and phone ↔ watch sync.</string>
     <string name="about_features_wear">Wear: status-first home, Tile timeline, current-class progress, and next-class countdown complications.</string>
     <string name="about_features_tools">Tools: academic tasks and reminders, weekly image sharing, ICS / CSV / JSON, and system calendar sync.</string>
-    <string name="about_declaration_project">Project: maintained from HuFeng943 / Timetable · version 3.4.2.</string>
+    <string name="about_declaration_project">Project: maintained from HuFeng943 / Timetable · version 3.5.0.</string>
     <string name="about_declaration_development">Maintained by HeiBaiJun; some development used generative AI. Tap the version 7 times for Developer Options.</string>
     <string name="about_open_source_wear">UI: Wear Compose 1.6.2 · Navigation 2.9.8 · Backdrop 2.0.1 · MaterialKolor 4.1.1</string>
     <string name="about_open_source_data">Data: Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">Tools: Horologist 0.7.15 · Coroutines 1.11.0 · AboutLibraries 15.0.3. Full notices are listed below.</string>
-    <string name="about_changelog_part1">3.4.2 fixes the Hilt startup crash caused by locale handling, including on Xiaomi Watch 5.</string>
+    <string name="about_changelog_part1">3.5.0 fixes the Hilt startup crash caused by locale handling, including on Xiaomi Watch 5.</string>
     <string name="about_changelog_part2">Adds separate blur and fluid-motion switches for custom images, shortens watch text, and aligns appearance settings.</string>
     <string name="about_declaration_title">Declaration</string>
     <string name="about_declaration_subtitle" translatable="false">https://github.com/HuFeng943/Timetable</string>
     <string name="about_declaration_text">
-        " · Current release uses semantic version 3.4.2\n"
+        " · Current release uses semantic version 3.5.0\n"
         " · Original project: HuFeng943 / Timetable\n"
         " · Secondary development &amp; maintenance: 黑白君 (HeiBaiJun)\n"
         " · This version continues development on top of the original project\n"
@@ -154,7 +154,7 @@
     <string name="about_library_version">v%1$s</string>
     <string name="about_library_developers">By %1$s</string>
     <string name="about_open_source_stack">Core stack: Wear Compose 1.6.2, Navigation 2.9.8, Backdrop 2.0.1, Horologist 0.7.15, Room 2.8.4, Hilt 2.60, KotlinX, Coroutines, AboutLibraries, and MaterialKolor. The license screen is generated from build dependencies.</string>
-    <string name="about_changelog_title">3.4.2 highlights</string>
+    <string name="about_changelog_title">3.5.0 highlights</string>
     <string name="about_changelog_expand_hint">Tap to expand</string>
     <string name="about_changelog">
         " · Removed eager Tile data work from the Wear cold-start path\n"

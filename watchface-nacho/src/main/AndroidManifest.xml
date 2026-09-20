@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-feature android:name="android.hardware.type.watch" />
+    <application android:label="@string/watch_face_name" android:hasCode="false" android:theme="@android:style/Theme.DeviceDefault">
+        <property android:name="com.google.wear.watchface.format.version" android:value="1" />
+        <property android:name="com.google.wear.watchface.format.publisher" android:value="Timetable-3.5.0" />
+    </application>
+</manifest>

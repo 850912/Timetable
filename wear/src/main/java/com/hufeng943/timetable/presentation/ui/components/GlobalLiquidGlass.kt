@@ -54,13 +54,22 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
 
     val liquid = config.isLiquidGlassEnabled
     val profile = config.liquidGlassEffect
-    // Wear optimization: blur is substantially more expensive than tint/refraction. Keep the
-    // reference-app optical look, but reserve a tiny blur pass for the Fluid profile only.
-    // Low-RAM watches automatically use the cheaper path.
-    val blurDp = if (!lowRamDevice && profile == LiquidGlassEffect.FLUID) {
-        0.55f.coerceAtMost(config.glassBlurRadius.coerceAtLeast(0f))
+    // Every advanced control must have a visible optical effect. Profiles are multipliers,
+    // not hard gates, so blur/lens/aberration settings never become no-ops on capable devices.
+    val profileBlurMultiplier = when (profile) {
+        LiquidGlassEffect.SOFT -> 0.55f
+        LiquidGlassEffect.BALANCED -> 0.82f
+        LiquidGlassEffect.FLUID -> 1.0f
+    }
+    val blurDp = if (!lowRamDevice && config.glassBlurEnabled) {
+        (config.glassBlurRadius.coerceIn(0f, 8f) * profileBlurMultiplier).coerceAtLeast(0f)
     } else 0f
-    val lensAmount = config.glassLensDistortion.coerceIn(0f, 0.60f)
+    val profileLensMultiplier = when (profile) {
+        LiquidGlassEffect.SOFT -> 0.45f
+        LiquidGlassEffect.BALANCED -> 0.72f
+        LiquidGlassEffect.FLUID -> 1.0f
+    }
+    val lensAmount = (config.glassLensDistortion.coerceIn(0f, 0.60f) * profileLensMultiplier)
     val clarity = config.glassClarity.coerceIn(0f, 1f)
     // Tint density and optical clarity are independent. Higher clarity preserves the low-opacity
     // liquid look without forcing the tint control to an extreme.
@@ -70,7 +79,7 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
         backdrop = backdrop,
         shape = { shape },
         effects = {
-            if (config.glassBlurEnabled && blurDp > 0f) blur(blurDp.dp.toPx())
+            if (blurDp > 0.01f) blur(blurDp.dp.toPx())
             if (liquid) {
                 // Micro-refraction + vibrancy are what make the reference look like optical glass
                 // rather than a plain frosted panel.
@@ -82,14 +91,14 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
                     lens(
                         refractionHeight = height,
                         refractionAmount = radius,
-                        depthEffect = !lowRamDevice && profile != LiquidGlassEffect.SOFT,
-                        chromaticAberration = !lowRamDevice && config.glassChromaticAberration && profile == LiquidGlassEffect.FLUID,
+                        depthEffect = !lowRamDevice && lensAmount > 0.06f,
+                        chromaticAberration = !lowRamDevice && config.glassChromaticAberration,
                     )
                 }
             }
         },
         highlight = {
-            Highlight.Ambient.copy(alpha = if (liquid) 0.34f else 0.16f)
+            Highlight.Ambient.copy(alpha = when (profile) { LiquidGlassEffect.SOFT -> 0.20f; LiquidGlassEffect.BALANCED -> 0.30f; LiquidGlassEffect.FLUID -> 0.40f })
         },
         shadow = {
             Shadow(radius = 1.dp, color = Color.Black.copy(alpha = 0.14f))
