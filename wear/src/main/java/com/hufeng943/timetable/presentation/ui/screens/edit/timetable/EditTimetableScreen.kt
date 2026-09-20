@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.common.DynamicSubTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
@@ -34,7 +34,7 @@ fun EditTimetableScreen(
     // This screen already lives inside the app-level SwipeDismissableNavHost.
     // Keep child pages on the centralized non-swipe internal host so the parent page is not
     // rendered as a second swipe-dismiss background (which caused the left-edge ghost frame).
-    val internalNavController = rememberNavController()
+    val internalNavController = rememberSwipeDismissableNavController()
 
     WearInternalNavHost(
         navController = internalNavController,

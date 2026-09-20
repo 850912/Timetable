@@ -12,8 +12,8 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.wear.compose.navigation.composable
+import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
@@ -53,7 +53,7 @@ fun ScheduleToolsScreen(
             var ws by remember { mutableStateOf(LocalTime(8, 0)) }
             var we by remember { mutableStateOf(LocalTime(18, 0)) }
             var action by remember { mutableStateOf(BatchAction.SHIFT) }
-            val nav = rememberNavController()
+            val nav = rememberSwipeDismissableNavController()
 
             WearInternalNavHost(navController = nav, startDestination = QuickRoutes.MAIN) {
                 composable(QuickRoutes.MAIN) {
