@@ -130,7 +130,8 @@ fun PullToDatePicker(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .globalLiquidGlass(RoundedCornerShape(10.dp), MaterialTheme.colorScheme.secondaryContainer)
+                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = glassContainerOverlayAlpha()))
                     .clickable {
                         onDateSelected(today)
                         scrollTrigger.tryEmit(Unit)
@@ -140,7 +141,7 @@ fun PullToDatePicker(
                 Text(
                     text = stringResource(R.string.today),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = if (com.hufeng943.timetable.presentation.ui.common.LocalAppConfig.current.isLiquidGlassEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
 

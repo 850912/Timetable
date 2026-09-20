@@ -71,6 +71,7 @@ fun HorizontalDatePicker(
     val focusRequester = remember { FocusRequester() }
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
+    val glassActive = com.hufeng943.timetable.presentation.ui.common.LocalAppConfig.current.isLiquidGlassEnabled
 
     var isInitialLayout by remember { mutableStateOf(true) }
     var isRotaryDriven by remember { mutableStateOf(false) }
@@ -198,7 +199,7 @@ fun HorizontalDatePicker(
             } else {
                 MaterialTheme.colorScheme.surfaceContainer
             }
-            val contentColor = if (isSelected) {
+            val contentColor = if (isSelected && !glassActive) {
                 MaterialTheme.colorScheme.onPrimary
             } else {
                 MaterialTheme.colorScheme.onSurface
@@ -208,7 +209,8 @@ fun HorizontalDatePicker(
                 modifier = Modifier
                     .size(width = 46.dp, height = 56.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(backgroundColor)
+                    .globalLiquidGlass(RoundedCornerShape(16.dp), backgroundColor)
+                    .background(backgroundColor.copy(alpha = glassContainerOverlayAlpha()))
                     .clickable {
                         onDateSelected(date)
                         if (date == selectedDate) {

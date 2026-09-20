@@ -132,17 +132,17 @@
     <string name="about_features_schedule">Classes: multiple timetables, date exceptions, same-day changes, and phone ↔ watch sync.</string>
     <string name="about_features_wear">Wear: status-first home, Tile timeline, current-class progress, and next-class countdown complications.</string>
     <string name="about_features_tools">Tools: academic tasks and reminders, weekly image sharing, ICS / CSV / JSON, and system calendar sync.</string>
-    <string name="about_declaration_project">Project: maintained from HuFeng943 / Timetable · version 3.5.1.</string>
+    <string name="about_declaration_project">Project: maintained from HuFeng943 / Timetable · version 3.5.2.</string>
     <string name="about_declaration_development">Maintained by HeiBaiJun; some development used generative AI. Tap the version 7 times for Developer Options.</string>
     <string name="about_open_source_wear">UI: Wear Compose 1.6.2 · Navigation 2.9.8 · Backdrop 2.0.1 · MaterialKolor 4.1.1</string>
     <string name="about_open_source_data">Data: Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">Tools: Horologist 0.7.15 · Coroutines 1.11.0 · AboutLibraries 15.0.3. Full notices are listed below.</string>
-    <string name="about_changelog_part1">3.5.1 fixes the navigation black scrim that hid theme, fluid, and custom-image backgrounds.</string>
-    <string name="about_changelog_part2">Liquid glass returns to a Wear-safe cost profile while keeping lens distortion, dispersion, and all three material profiles functional.</string>
+    <string name="about_changelog_part1">3.5.2 applies the current Liquid Glass material across global cards/options and fixes forward navigation exposing the previous page again.</string>
+    <string name="about_changelog_part2">All Liquid Glass controls remain functional; the lightweight fallback is no longer covered by an opaque container on constrained watches.</string>
     <string name="about_declaration_title">Declaration</string>
     <string name="about_declaration_subtitle" translatable="false">https://github.com/HuFeng943/Timetable</string>
     <string name="about_declaration_text">
-        " · Current release uses semantic version 3.5.1\n"
+        " · Current release uses semantic version 3.5.2\n"
         " · Original project: HuFeng943 / Timetable\n"
         " · Secondary development &amp; maintenance: 黑白君 (HeiBaiJun)\n"
         " · This version continues development on top of the original project\n"
@@ -154,13 +154,15 @@
     <string name="about_library_version">v%1$s</string>
     <string name="about_library_developers">By %1$s</string>
     <string name="about_open_source_stack">Core stack: Wear Compose 1.6.2, Navigation 2.9.8, Backdrop 2.0.1, Horologist 0.7.15, Room 2.8.4, Hilt 2.60, KotlinX, Coroutines, AboutLibraries, and MaterialKolor. The license screen is generated from build dependencies.</string>
-    <string name="about_changelog_title">3.5.1 highlights</string>
+    <string name="about_changelog_title">3.5.2 highlights</string>
     <string name="about_changelog_expand_hint">Tap to expand</string>
     <string name="about_changelog">
-        " · Fixed the navigation black scrim that hid theme / fluid / custom-image backgrounds\n"
-        " · Fluid backgrounds now use regional average tones instead of four single pixels\n"
-        " · Capped per-card live blur cost and uses a lightweight material on inactive pages\n"
-        " · Keeps dispersion, lens distortion, and soft / balanced / fluid profiles functional\n"
+        " · Applies the current Liquid Glass material to global cards, settings options, and date cells\n"
+        " · Fixes forward navigation exposing / shifting the previous page around round-screen edges\n"
+        " · Uses Wear Compose's official reduced-motion path for forward navigation while keeping swipe-back\n"
+        " · Keeps lightweight glass visible when live Backdrop is unavailable on constrained watches\n"
+        " · Keeps dispersion, lens distortion, blur, tint, clarity, and all three profiles globally functional\n"
+        " · Fluid backgrounds continue to use regional average tones from the custom image\n"
         " · Removed eager Tile data work from the Wear cold-start path\n"
         " · Delayed China Wear Data Layer bootstrap until the first UI has settled\n"
         " · Refreshes Tile and complications immediately after local timetable edits\n"

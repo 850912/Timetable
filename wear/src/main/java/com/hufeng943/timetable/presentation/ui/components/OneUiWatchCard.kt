@@ -30,7 +30,6 @@ import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.Text
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
-import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import kotlinx.datetime.LocalTime
 
 @Composable
@@ -59,7 +58,7 @@ fun OneUiWatchCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
             .globalLiquidGlass(RoundedCornerShape(22.dp), cardBackground)
-            .background(cardBackground.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled)) 0f else 1f))
+            .background(cardBackground.copy(alpha = glassContainerOverlayAlpha()))
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {

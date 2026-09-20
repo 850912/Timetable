@@ -33,6 +33,19 @@ import com.kyant.backdrop.shadow.Shadow
  * 0..8, but it is mapped to a sub-dp optical blur and combined with refraction/highlight changes.
  * This keeps every control visible while restoring the cost profile of 3.4.x.
  */
+
+/**
+ * Background alpha for containers that are already painted by [globalLiquidGlass].
+ *
+ * This deliberately depends on the feature toggle rather than backdrop availability. On low-RAM
+ * watches and Android versions where the live shader is unavailable, [globalLiquidGlass] paints its
+ * lightweight fallback itself. Painting an opaque container afterwards would cover that fallback and
+ * make the global glass toggle appear to do nothing.
+ */
+@Composable
+fun glassContainerOverlayAlpha(): Float =
+    if (LocalAppConfig.current.isLiquidGlassEnabled) 0f else 1f
+
 @Composable
 fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
     val config = LocalAppConfig.current

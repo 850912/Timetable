@@ -125,16 +125,16 @@
     <string name="about_features_schedule">课程：多课表、日期例外、今日调课、手机 ↔ 手表同步。</string>
     <string name="about_features_wear">Wear：首页状态优先、Tile 时间线、当前课进度与下一节倒计时复杂功能。</string>
     <string name="about_features_tools">工具：学业待办与提醒、本周课表分享、ICS / CSV / JSON、系统日历同步。</string>
-    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护 · 版本 3.5.1。</string>
+    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护 · 版本 3.5.2。</string>
     <string name="about_declaration_development">维护：黑白君 (HeiBaiJun)；部分开发借助生成式 AI。连续点击版本号 7 次进入开发者选项。</string>
     <string name="about_open_source_wear">界面：Wear Compose 1.6.2 · Navigation 2.9.8 · Backdrop 2.0.1 · MaterialKolor 4.1.1</string>
     <string name="about_open_source_data">数据：Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">工具：Horologist 0.7.15 · Coroutines 1.11.0 · AboutLibraries 15.0.3。完整声明见下方。</string>
-    <string name="about_changelog_part1">3.5.1：修复主题、流体与自定义图片背景被导航黑色遮罩覆盖的问题。</string>
-    <string name="about_changelog_part2">液态玻璃恢复 Wear 低开销渲染：模糊改为 0–8 档映射，保留镜头畸变、色散和三档材质差异。</string>
+    <string name="about_changelog_part1">3.5.2：液态玻璃扩展到全局卡片/选项容器，并修正前进导航再次露出上一页的问题。</string>
+    <string name="about_changelog_part2">液态玻璃高级参数继续真实参与渲染；低内存/旧系统降级材质也不再被后续不透明背景覆盖。</string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
-        " · 当前版本采用语义化版本号 3.5.1\n"
+        " · 当前版本采用语义化版本号 3.5.2\n"
         " · 原项目：HuFeng943 / Timetable\n"
         " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
         " · 当前版本在原项目基础上持续维护与扩展\n"
@@ -146,13 +146,15 @@
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
     <string name="about_open_source_stack">核心组件：Wear Compose 1.6.2、Navigation 2.9.8、Backdrop 2.0.1、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX、Coroutines、AboutLibraries 与 MaterialKolor。许可证页面由实际构建依赖生成。</string>
-    <string name="about_changelog_title">3.5.1 更新</string>
+    <string name="about_changelog_title">3.5.2 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
-        " · 修复导航黑色遮罩导致主题 / 流体 / 自定义图片背景仅在切页时可见\n"
-        " · 流体背景改为图片分区平均色生成，避免单像素取色偏差\n"
-        " · 液态玻璃限制每卡片实时模糊成本，并在非活动页面使用轻量材质\n"
-        " · 色散、镜头畸变和柔和 / 均衡 / 流体档继续真实参与渲染\n"
+        " · 全局卡片、设置选项、日期选择项统一使用当前液态玻璃材质\n"
+        " · 修复前进导航时上一页被保留并在圆形边缘露出 / 位移后消失的问题\n"
+        " · 使用 Wear Compose 官方 ReduceMotion 路径关闭有问题的前进缩放，保留侧滑返回\n"
+        " · 修复低内存 / 无实时 Backdrop 时轻量玻璃被后续不透明背景覆盖的问题\n"
+        " · 液态玻璃色散、镜头畸变、模糊、透明度、清透度和三档材质继续全局生效\n"
+        " · 流体背景继续由自定义图片分区平均色生成，避免单像素取色偏差\n"
         " · 冷启动不再主动触发 Tile 数据读取，减少首次打开竞争\n"
         " · 国行 Wear Data Layer bootstrap 延后到首屏稳定后执行\n"
         " · 手表本地课程 / 课时 / 课表保存后立即刷新 Tile 与复杂功能\n"

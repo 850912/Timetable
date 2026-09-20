@@ -84,9 +84,13 @@ import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import com.hufeng943.timetable.presentation.viewmodel.edit.course.EditCourseViewModel
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
+import androidx.wear.compose.foundation.LocalReduceMotion
+import androidx.wear.compose.foundation.ReduceMotion
 import androidx.wear.compose.foundation.LocalSwipeToDismissBackgroundScrimColor
 import androidx.wear.compose.foundation.LocalSwipeToDismissContentScrimColor
 
+@OptIn(ExperimentalWearFoundationApi::class)
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navController = rememberSwipeDismissableNavController()
@@ -161,6 +165,12 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 // destination, so any opaque/black value hides the selected wallpaper while idle.
                 // Keep that base transparent; the content scrim still supplies gesture shading.
                 CompositionLocalProvider(
+                    // Wear Compose 1.6.x intentionally zooms the new route from 75% on forward
+                    // navigation while retaining the previous route underneath. With a transparent
+                    // global wallpaper this exposes the old screen as a moving crescent. Ask the
+                    // navigation host to use its official reduced-motion path: forward navigation
+                    // snaps to the new route, while swipe-to-dismiss back gestures remain intact.
+                    LocalReduceMotion provides ReduceMotion { true },
                     LocalSwipeToDismissBackgroundScrimColor provides Color.Transparent,
                     LocalSwipeToDismissContentScrimColor provides Color.Black.copy(alpha = 0.10f),
                 ) {

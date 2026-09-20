@@ -46,7 +46,6 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
-import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
@@ -54,6 +53,7 @@ import com.hufeng943.timetable.R
 import kotlinx.coroutines.launch
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hufeng943.timetable.presentation.ui.components.glassContainerOverlayAlpha
 @Composable
 fun ExportScreen(
     viewModel: ExportViewModel = hiltViewModel(),
@@ -123,7 +123,7 @@ fun ExportScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(20.dp))
                         .globalLiquidGlass(RoundedCornerShape(20.dp), AppTheme.colors.surfaceContainer)
-                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled)) 0f else 1f))
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = glassContainerOverlayAlpha()))
                         .padding(12.dp)
                 ) {
                     Column {

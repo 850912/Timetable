@@ -39,8 +39,8 @@ import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleShape
 import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
-import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
+import com.hufeng943.timetable.presentation.ui.components.glassContainerOverlayAlpha
 
 @Composable
 fun TextEditScreen(label: String, initialText: String, onSave: (String) -> Unit) {
@@ -78,7 +78,7 @@ fun TextEditScreen(label: String, initialText: String, onSave: (String) -> Unit)
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                         .clip(OneUiCapsuleShape)
                         .globalLiquidGlass(OneUiCapsuleShape, AppTheme.colors.surfaceContainer)
-                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled)) 0f else 1f)),
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = glassContainerOverlayAlpha())),
                     contentAlignment = Alignment.Center,
                 ) {
                     GalaxyAiAmbientLayer(shape = OneUiCapsuleShape, strength = 0.22f)
