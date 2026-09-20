@@ -74,7 +74,7 @@ fun SettingPager(
             }
         }
     ) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false)) {
+        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
@@ -82,12 +82,12 @@ fun SettingPager(
                     transformation = SurfaceTransformation(transformationSpec)
                 ) { Text(stringResource(R.string.more_menu_settings)) }
             }
-            item { SettingItemCard(Icons.Rounded.Palette, stringResource(R.string.settings_ui_management), stringResource(R.string.settings_ui_management_summary), transformationSpec, onUiManagementClick) }
-            item { SettingItemCard(Icons.Rounded.Share, stringResource(R.string.settings_export), stringResource(R.string.settings_export_summary), transformationSpec, onExportClick, true) }
-            item { SettingItemCard(Icons.Rounded.FileUpload, stringResource(R.string.settings_import), stringResource(R.string.settings_import_summary), transformationSpec, onImportClick, true) }
+            item { SettingItemCard(Icons.Rounded.Palette, "UI 管理", "主题、背景、玻璃与动效", transformationSpec, onUiManagementClick) }
+            item { SettingItemCard(Icons.Rounded.Share, "导出课表", "ICS / CSV / JSON 备份", transformationSpec, onExportClick, true) }
+            item { SettingItemCard(Icons.Rounded.FileUpload, "导入课表", "扫描本机备份一键恢复", transformationSpec, onImportClick, true) }
             item { SettingItemCard(Icons.Rounded.Language, stringResource(R.string.settings_language), currentLanguageLabel, transformationSpec, onLanguageSelectClick) }
             item { SettingItemCard(Icons.Rounded.AccessTime, stringResource(R.string.settings_time_format), currentTimeFormatLabel, transformationSpec, onTimeFormatSelectClick) }
-            item { SettingItemCard(Icons.Rounded.BatterySaver, stringResource(R.string.settings_power_save), when (config.powerSaveMode) { com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.FOLLOW_SYSTEM -> stringResource(R.string.settings_power_follow_system); com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_ON -> stringResource(R.string.settings_power_always_on); com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_OFF -> stringResource(R.string.settings_power_always_off) }, transformationSpec, onPowerSaveSelectClick) }
+            item { SettingItemCard(Icons.Rounded.BatterySaver, "省电模式", when (config.powerSaveMode) { com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.FOLLOW_SYSTEM -> "跟随系统"; com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_ON -> "始终开启"; com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode.ALWAYS_OFF -> "始终关闭" }, transformationSpec, onPowerSaveSelectClick) }
             item { SettingItemCard(Icons.Rounded.DateRange, stringResource(R.string.settings_first_day), currentFirstDayLabel, transformationSpec, onFirstDaySelectClick) }
         }
     }

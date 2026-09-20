@@ -26,3 +26,4 @@ include(":mobile")
 include(":wear")
 include(":shared")
 
+include(":watchface-nacho")

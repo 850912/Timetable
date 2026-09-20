@@ -4,19 +4,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.annotation.StringRes
-import com.hufeng943.timetable.R
 
-enum class ThemePreset(@StringRes val titleRes: Int) {
-    AMOLED_BLACK(R.string.theme_amoled_black),
-    DEEP_BLUE(R.string.theme_deep_blue),
-    CYAN_TEAL(R.string.theme_cyan_teal),
-    ROYAL_PURPLE(R.string.theme_royal_purple),
-    SUNSET_ORANGE(R.string.theme_sunset_orange),
-    SAKURA_PINK(R.string.theme_sakura_pink),
-    GRAPHITE(R.string.theme_graphite),
-    AURORA(R.string.theme_aurora),
-    SYSTEM_DYNAMIC(R.string.theme_system_dynamic),
+enum class ThemePreset(val title: String) {
+    AMOLED_BLACK("曜石黑"),
+    DEEP_BLUE("Galaxy 蓝"),
+    CYAN_TEAL("薄荷青"),
+    ROYAL_PURPLE("星云紫"),
+    SUNSET_ORANGE("活力橙"),
+    SAKURA_PINK("珊瑚粉"),
+    GRAPHITE("钛金灰"),
+    AURORA("极光"),
+    SYSTEM_DYNAMIC("系统动态色")
 }
 
 data class TimetableColors(

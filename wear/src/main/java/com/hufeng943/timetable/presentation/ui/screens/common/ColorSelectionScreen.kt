@@ -34,8 +34,8 @@ import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleShape
 import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
-import com.hufeng943.timetable.presentation.ui.components.glassContainerOverlayAlpha
 
 @Composable
 fun ColorSelectionScreen(onSave: (color: Color) -> Unit) {
@@ -56,7 +56,7 @@ fun ColorSelectionScreen(onSave: (color: Color) -> Unit) {
             modifier = Modifier.fillMaxSize(),
             state = scrollState,
             flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
-            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState, hapticFeedbackEnabled = false),
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
             contentPadding = contentPadding,
         ) {
             item {
@@ -76,7 +76,7 @@ fun ColorSelectionScreen(onSave: (color: Color) -> Unit) {
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                         .clip(OneUiCapsuleShape)
                         .globalLiquidGlass(OneUiCapsuleShape, AppTheme.colors.surfaceContainer)
-                        .background(AppTheme.colors.surfaceContainer.copy(alpha = glassContainerOverlayAlpha()))
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled)) 0f else 1f))
                         .padding(horizontal = 10.dp, vertical = 8.dp),
                 ) {
                     if (rowIndex == 0) GalaxyAiAmbientLayer(OneUiCapsuleShape, strength = 0.20f)

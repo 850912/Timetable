@@ -1,19 +1,20 @@
 package com.hufeng943.timetable.presentation.ui.components
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 
 /**
- * Navigation host for child flows that already live inside the app-level
- * Wear navigation host.
+ * Navigation host for flows that are already displayed inside the app-level
+ * Wear [androidx.wear.compose.navigation.SwipeDismissableNavHost].
  *
- * The app-level host owns swipe-to-dismiss. Nesting another swipe host makes
- * both containers animate the outgoing page, which produces the visible
- * left-shift/ghost frame on forward navigation. Internal flows therefore use
- * a plain NavHost. Its default crossfade keeps the current page stationary
- * while the destination is composed and also avoids competing back gestures.
+ * Nested swipe hosts can briefly translate the parent destination when a child destination is
+ * pushed on some Wear OS 6 builds. That looks like the previous screen sliding left and then
+ * disappearing. Child flows therefore use a plain Navigation-Compose host with explicit no-motion
+ * transitions. The top-level host still owns Wear OS swipe-to-dismiss and its native motion.
  */
 @Composable
 fun WearInternalNavHost(
@@ -24,6 +25,10 @@ fun WearInternalNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
         builder = builder,
     )
 }

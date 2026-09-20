@@ -115,7 +115,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
         val localNodeId = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull() ?: return
         val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds, records = records)
         val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
-        val request = PutDataMapRequest.create(WearFileTransferProtocol.path(requestId)).apply {
+        val request = PutDataMapRequest.create(WearFileTransferProtocol.ackPath(requestId)).apply {
             dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_SYNC_ACK)
             dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)
             dataMap.putString(WearFileTransferProtocol.KEY_TARGET_NODE_ID, targetNodeId)

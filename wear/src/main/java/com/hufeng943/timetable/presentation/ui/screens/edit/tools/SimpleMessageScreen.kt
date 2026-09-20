@@ -17,7 +17,6 @@ internal fun SimpleMessageScreen(title: String, message: String) {
     ScreenScaffold(scrollState = state) { padding ->
         TransformingLazyColumn(
             state = state,
-            rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(state, hapticFeedbackEnabled = false),
             contentPadding = padding,
             modifier = Modifier.fillMaxSize(),
         ) {

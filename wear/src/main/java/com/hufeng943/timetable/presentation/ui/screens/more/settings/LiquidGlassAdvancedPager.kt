@@ -61,35 +61,22 @@ fun LiquidGlassAdvancedPager(
         composable("main") {
             val state = rememberTransformingLazyColumnState()
             val transform = rememberTransformationSpec()
-            val profileLabel = when (config.liquidGlassEffect) {
-                LiquidGlassEffect.SOFT -> stringResource(R.string.settings_profile_soft)
-                LiquidGlassEffect.BALANCED -> stringResource(R.string.settings_profile_balanced)
-                LiquidGlassEffect.FLUID -> stringResource(R.string.settings_profile_fluid)
-            }
             @Composable
             fun itemModifier(scope: androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope): Modifier = with(scope) {
                 Modifier.fillMaxWidth().transformedHeight(this, transform)
                     .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
             }
             ScreenScaffold(scrollState = state) { padding ->
-                TransformingLazyColumn(state = state, rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(state, hapticFeedbackEnabled = false), modifier = Modifier.fillMaxSize(), contentPadding = padding) {
+                TransformingLazyColumn(state = state, rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(state), modifier = Modifier.fillMaxSize(), contentPadding = padding) {
                     item { ListHeader(modifier=Modifier.fillMaxWidth().transformedHeight(this,transform).minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text(stringResource(R.string.settings_liquid_glass_advanced))} }
-                    item { OneUiSwitchCapsule(title=stringResource(R.string.settings_liquid_glass),subtitle=stringResource(R.string.settings_glass_summary_short),icon=Icons.Rounded.BlurOn,checked=config.isLiquidGlassEnabled,onCheckedChange=onEnabledChange,modifier=itemModifier(this)) }
-                    if (config.isLiquidGlassEnabled) item { OneUiCapsuleSurface(
-                        title = stringResource(R.string.settings_glass_profile, profileLabel),
-                        subtitle = stringResource(R.string.settings_tap_to_change),
-                        icon = Icons.Rounded.Tune,
-                        onClick = { onEffectChange(LiquidGlassEffect.entries[(config.liquidGlassEffect.ordinal + 1) % LiquidGlassEffect.entries.size]) },
-                        modifier = itemModifier(this)
-                    ) }
-                    if (config.isLiquidGlassEnabled) item { val title=stringResource(R.string.settings_glass_tint); OneUiCapsuleSurface(title=title,subtitle=stringResource(R.string.settings_glass_tint_value,(config.glassOpacity*100).toInt()),icon=Icons.Rounded.BlurOn,onClick={openAdjust(AdjustTarget(title,(config.glassOpacity*100).toInt(),5..95,"%") { onOpacityChange(it/100f) })},modifier=itemModifier(this)) }
-                    if (config.isLiquidGlassEnabled) item { val title=stringResource(R.string.settings_glass_clarity); OneUiCapsuleSurface(title=title,subtitle=stringResource(R.string.settings_glass_clarity_value,(config.glassClarity*100).toInt()),icon=Icons.Rounded.Tune,onClick={openAdjust(AdjustTarget(title,(config.glassClarity*100).toInt(),0..100,"%") { onClarityChange(it/100f) })},modifier=itemModifier(this)) }
-                    if (config.isLiquidGlassEnabled) item { OneUiSwitchCapsule(title=stringResource(R.string.settings_glass_aberration),subtitle=stringResource(R.string.settings_glass_aberration_summary),icon=Icons.Rounded.ColorLens,checked=config.glassChromaticAberration,onCheckedChange=onChromaticAberrationChange,modifier=itemModifier(this)) }
-                    if (config.isLiquidGlassEnabled) item { val title=stringResource(R.string.settings_glass_lens); OneUiCapsuleSurface(title=title,subtitle=stringResource(R.string.settings_glass_lens_value,(config.glassLensDistortion*100).toInt()),icon=Icons.Rounded.Tune,onClick={openAdjust(AdjustTarget(title,(config.glassLensDistortion*100).toInt(),0..60,"%") { onLensDistortionChange(it/100f) })},modifier=itemModifier(this)) }
-                    if (config.isLiquidGlassEnabled) item { OneUiSwitchCapsule(title=stringResource(R.string.settings_glass_blur),subtitle=if(config.glassBlurEnabled) stringResource(R.string.settings_glass_blur_on,config.glassBlurRadius.toInt()) else stringResource(R.string.settings_disabled),icon=Icons.Rounded.BlurOn,checked=config.glassBlurEnabled,onCheckedChange=onBlurEnabledChange,modifier=itemModifier(this)) }
-                    if (config.glassBlurEnabled && config.isLiquidGlassEnabled) item { val title=stringResource(R.string.settings_glass_blur_strength); OneUiCapsuleSurface(title=title,subtitle=stringResource(R.string.settings_glass_blur_level,config.glassBlurRadius.toInt()),icon=Icons.Rounded.BlurOn,onClick={openAdjust(AdjustTarget(title,config.glassBlurRadius.toInt().coerceIn(0,8),0..8," / 8") { onBlurRadiusChange(it.toFloat()) })},modifier=itemModifier(this)) }
-                    item { val title=stringResource(R.string.settings_background_brightness); OneUiCapsuleSurface(title=title,subtitle=stringResource(R.string.settings_background_brightness_value,(config.backgroundBrightness*100).toInt()),icon=Icons.Rounded.Wallpaper,onClick={openAdjust(AdjustTarget(title,(config.backgroundBrightness*100).toInt(),10..100,"%") { onBrightnessChange(it/100f) })},modifier=itemModifier(this)) }
-                    item { OneUiCapsuleSurface(title=stringResource(R.string.settings_glass_readability),subtitle=stringResource(R.string.settings_glass_wear_optimized),icon=Icons.Rounded.Wallpaper,modifier=itemModifier(this)) }
+                    item { OneUiSwitchCapsule(title=stringResource(R.string.settings_liquid_glass),subtitle="实时折射、模糊与高光",icon=Icons.Rounded.BlurOn,checked=config.isLiquidGlassEnabled,onCheckedChange=onEnabledChange,modifier=itemModifier(this)) }
+                    // Wear OS: hide controls whose visual delta is too small or whose GPU cost is
+                    // disproportionate on round watches. Keep only parameters that are clearly
+                    // visible and stable across Wear OS 6 / China-ROM devices.
+                    if (config.isLiquidGlassEnabled) item { OneUiCapsuleSurface(title="玻璃底色浓度",subtitle="${(config.glassOpacity*100).toInt()}% · 越低越通透",icon=Icons.Rounded.BlurOn,onClick={openAdjust(AdjustTarget("玻璃底色浓度",(config.glassOpacity*100).toInt(),5..95,"%") { onOpacityChange(it/100f) })},modifier=itemModifier(this)) }
+                    if (config.isLiquidGlassEnabled) item { OneUiCapsuleSurface(title="玻璃清透度",subtitle="${(config.glassClarity*100).toInt()}% · 影响玻璃底色与高光层次",icon=Icons.Rounded.Tune,onClick={openAdjust(AdjustTarget("玻璃清透度",(config.glassClarity*100).toInt(),0..100,"%") { onClarityChange(it/100f) })},modifier=itemModifier(this)) }
+                    item { OneUiCapsuleSurface(title=stringResource(R.string.settings_background_brightness),subtitle="${(config.backgroundBrightness*100).toInt()}% · 点按调节",icon=Icons.Rounded.Wallpaper,onClick={openAdjust(AdjustTarget("背景亮度",(config.backgroundBrightness*100).toInt(),10..100,"%") { onBrightnessChange(it/100f) })},modifier=itemModifier(this)) }
+                    item { OneUiCapsuleSurface(title=stringResource(R.string.settings_glass_readability),subtitle="Wear 已优化玻璃性能。",icon=Icons.Rounded.Wallpaper,modifier=itemModifier(this)) }
                 }
             }
         }

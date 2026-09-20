@@ -56,8 +56,6 @@ class PreferenceStorage @Inject constructor(
         val BACKGROUND_BRIGHTNESS = floatPreferencesKey("background_brightness")
         val TIMETABLE_BACKGROUND_MODE = stringPreferencesKey("timetable_background_mode")
         val TIMETABLE_BACKGROUND_IMAGE_PATH = stringPreferencesKey("timetable_background_image_path")
-        val IMAGE_BACKGROUND_BLUR_ENABLED = booleanPreferencesKey("image_background_blur_enabled")
-        val IMAGE_BACKGROUND_FLUID_ENABLED = booleanPreferencesKey("image_background_fluid_enabled")
     }
 
     val appConfigFlow: Flow<AppConfig> = context.dataStore.data.map { prefs ->
@@ -72,9 +70,7 @@ class PreferenceStorage @Inject constructor(
         }.getOrDefault(FirstDayOfTheWeek.SYSTEM)
 
         val effectiveFirstDay: DayOfWeek = if (firstDaySetting == FirstDayOfTheWeek.SYSTEM) {
-            val effectiveLocale = langSetting?.let { java.util.Locale.forLanguageTag(it) }
-                ?: android.content.res.Resources.getSystem().configuration.locales[0]
-            val calendar = java.util.Calendar.getInstance(effectiveLocale)
+            val calendar = java.util.Calendar.getInstance(java.util.Locale.getDefault())
             when (calendar.firstDayOfWeek) {
                 java.util.Calendar.MONDAY -> DayOfWeek.MONDAY
                 java.util.Calendar.SUNDAY -> DayOfWeek.SUNDAY
@@ -113,9 +109,7 @@ class PreferenceStorage @Inject constructor(
             timetableBackgroundMode = runCatching {
                 TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
             }.getOrDefault(TimetableBackgroundMode.THEME),
-            timetableBackgroundImagePath = prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH],
-            imageBackgroundBlurEnabled = prefs[Keys.IMAGE_BACKGROUND_BLUR_ENABLED] ?: false,
-            imageBackgroundFluidEnabled = prefs[Keys.IMAGE_BACKGROUND_FLUID_ENABLED] ?: false,
+            timetableBackgroundImagePath = prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH]
         )
     }
 
@@ -183,14 +177,6 @@ class PreferenceStorage @Inject constructor(
             if (imagePath.isNullOrBlank()) prefs.remove(Keys.TIMETABLE_BACKGROUND_IMAGE_PATH)
             else prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH] = imagePath
         }
-    }
-
-    suspend fun setImageBackgroundBlurEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.IMAGE_BACKGROUND_BLUR_ENABLED] = enabled }
-    }
-
-    suspend fun setImageBackgroundFluidEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.IMAGE_BACKGROUND_FLUID_ENABLED] = enabled }
     }
 }
 

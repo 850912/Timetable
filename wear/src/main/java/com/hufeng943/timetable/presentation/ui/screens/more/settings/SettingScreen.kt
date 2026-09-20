@@ -3,7 +3,9 @@ package com.hufeng943.timetable.presentation.ui.screens.more.settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.hufeng943.timetable.data.ThemePreference
@@ -19,7 +21,7 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun SettingScreen(
-    appConfigViewModel: AppConfigViewModel = hiltViewModel(),
+    appConfigViewModel: AppConfigViewModel = hiltViewModel(LocalContext.current as ViewModelStoreOwner),
     themePreference: ThemePreference = hiltViewModel<ThemePrefViewModel>().themePreference
 ) {
     val internalNavController = rememberNavController()
@@ -54,8 +56,6 @@ fun SettingScreen(
                 onDynamicColorToggle = appConfigViewModel::updateDynamicColorEnabled,
                 onShowTopTimeToggle = appConfigViewModel::updateShowTopTime,
                 onUiAnimationsToggle = appConfigViewModel::updateUiAnimationsEnabled,
-                onImageBlurToggle = appConfigViewModel::updateImageBackgroundBlurEnabled,
-                onImageFluidToggle = appConfigViewModel::updateImageBackgroundFluidEnabled,
             )
         }
 

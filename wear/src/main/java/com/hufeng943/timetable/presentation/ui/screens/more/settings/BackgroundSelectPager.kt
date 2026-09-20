@@ -13,6 +13,10 @@ import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.RadioButtonChecked
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -46,6 +50,7 @@ fun BackgroundSelectPager(
     val scope = rememberCoroutineScope()
     val state = rememberTransformingLazyColumnState()
     val transform = rememberTransformationSpec()
+    var pendingImageMode by remember { mutableStateOf(TimetableBackgroundMode.IMAGE) }
 
     // Use the Android photo picker contract. AndroidX automatically falls back to
     // ACTION_OPEN_DOCUMENT on devices where the photo picker is unavailable.
@@ -116,14 +121,14 @@ fun BackgroundSelectPager(
                     }
                 }
                 if (path != null) {
-                    onBackgroundSelected(TimetableBackgroundMode.IMAGE, path)
+                    onBackgroundSelected(pendingImageMode, path)
                 }
             }
         }
     }
 
     ScreenScaffold(scrollState = state) { padding ->
-        TransformingLazyColumn(state = state, contentPadding = padding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(state, hapticFeedbackEnabled = false)) {
+        TransformingLazyColumn(state = state, contentPadding = padding) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
@@ -160,6 +165,23 @@ fun BackgroundSelectPager(
                     icon = Icons.Rounded.Image,
                     selected = config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE,
                     onClick = {
+                        pendingImageMode = TimetableBackgroundMode.IMAGE
+                        imagePicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+            item {
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.settings_background_fluid_image),
+                    subtitle = stringResource(R.string.settings_background_fluid_image_summary),
+                    icon = Icons.Rounded.ColorLens,
+                    selected = config.timetableBackgroundMode == TimetableBackgroundMode.FLUID_IMAGE,
+                    onClick = {
+                        pendingImageMode = TimetableBackgroundMode.FLUID_IMAGE
                         imagePicker.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )

@@ -6,7 +6,7 @@ import com.hufeng943.timetable.data.TimeFormat
 import kotlinx.datetime.DayOfWeek
 import com.kyant.backdrop.Backdrop
 
-enum class TimetableBackgroundMode { SOLID, THEME, IMAGE }
+enum class TimetableBackgroundMode { SOLID, THEME, IMAGE, FLUID_IMAGE }
 
 enum class LiquidGlassEffect { SOFT, BALANCED, FLUID }
 
@@ -33,9 +33,7 @@ data class AppConfig(
     val glassBlurRadius: Float = 1f,
     val backgroundBrightness: Float = 0.82f,
     val timetableBackgroundMode: TimetableBackgroundMode = TimetableBackgroundMode.THEME,
-    val timetableBackgroundImagePath: String? = null,
-    val imageBackgroundBlurEnabled: Boolean = false,
-    val imageBackgroundFluidEnabled: Boolean = false,
+    val timetableBackgroundImagePath: String? = null
 )
 
 val LocalAppConfig = staticCompositionLocalOf { AppConfig() }

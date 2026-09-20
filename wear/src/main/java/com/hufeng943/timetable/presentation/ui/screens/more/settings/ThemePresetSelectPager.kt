@@ -7,7 +7,6 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
@@ -22,7 +21,6 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.theme.ThemePreset
-import com.hufeng943.timetable.R
 import kotlinx.coroutines.launch
 
 @Composable
@@ -39,23 +37,23 @@ fun ThemePresetSelectPager(currentPreset: ThemePreset, onPresetSelect: (ThemePre
             }
         }
     ) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false)) {
+        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
-                ) { Text(stringResource(R.string.settings_theme_style)) }
+                ) { Text("主题风格") }
             }
             items(ThemePreset.entries, key = { it.name }) { preset ->
                 OneUiCapsuleSurface(
-                    title = stringResource(preset.titleRes),
+                    title = preset.title,
                     subtitle = when (preset) {
-                        ThemePreset.AMOLED_BLACK -> stringResource(R.string.theme_summary_amoled)
-                        ThemePreset.SYSTEM_DYNAMIC -> stringResource(R.string.theme_summary_dynamic)
-                        ThemePreset.GRAPHITE -> stringResource(R.string.theme_summary_graphite)
-                        ThemePreset.AURORA -> stringResource(R.string.theme_summary_aurora)
-                        else -> stringResource(R.string.theme_summary_color)
+                        ThemePreset.AMOLED_BLACK -> "省电极黑 · 高对比度"
+                        ThemePreset.SYSTEM_DYNAMIC -> "跟随系统动态配色 · 不覆盖课程强调色"
+                        ThemePreset.GRAPHITE -> "低饱和钛金质感 · 夜间更耐看"
+                        ThemePreset.AURORA -> "青紫柔光 · 新版胶囊层级"
+                        else -> "AMOLED 胶囊 · 课程/课表强调色保持独立"
                     },
                     icon = Icons.Rounded.Palette,
                     selected = preset == currentPreset,

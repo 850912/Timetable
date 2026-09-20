@@ -10,6 +10,9 @@ object WearFileTransferProtocol {
 
     fun path(requestId: String): String = "$PATH_PREFIX/$requestId"
 
+    /** Separate response path so an ACK cannot overwrite/delete the request DataItem. */
+    fun ackPath(requestId: String): String = "$PATH_PREFIX/$requestId/ack"
+
     /** Accept both the legacy base path and request-scoped child paths. */
     fun matchesPath(path: String?): Boolean =
         path == PATH_PREFIX || path?.startsWith("$PATH_PREFIX/") == true

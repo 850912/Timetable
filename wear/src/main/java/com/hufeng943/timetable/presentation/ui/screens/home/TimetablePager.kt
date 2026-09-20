@@ -377,7 +377,7 @@ private fun CourseListPager(
                     .nestedScroll(nestedScrollConnection),
                 state = scrollState,
                 flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
-                rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState, hapticFeedbackEnabled = false),
+                rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
                 if (isToday && statusSummary.dayFinished) {

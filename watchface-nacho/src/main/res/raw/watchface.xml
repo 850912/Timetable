@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<WatchFace width="450" height="450">
+    <Scene>
+        <!-- Soft cyan/pink bubbles echo Nachoneko's public visual palette while keeping the artwork original. -->
+        <Group x="0" y="0" width="450" height="450" alpha="255">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <PartDraw x="0" y="0" width="450" height="450">
+                <Ellipse x="28" y="32" width="250" height="250"><Fill color="#183946" /></Ellipse>
+                <Ellipse x="245" y="170" width="190" height="190"><Fill color="#3B2738" /></Ellipse>
+                <Ellipse x="122" y="115" width="210" height="210"><Fill color="#24313D" /></Ellipse>
+            </PartDraw>
+        </Group>
+
+        <!-- Minimal cat face remains visible in AOD at very low visual complexity. -->
+        <PartDraw x="105" y="82" width="240" height="180">
+            <Ellipse x="20" y="24" width="200" height="150"><Fill color="#1D222A" /></Ellipse>
+            <Ellipse x="67" y="86" width="20" height="24"><Fill color="#8DEAF0" /></Ellipse>
+            <Ellipse x="153" y="86" width="20" height="24"><Fill color="#8DEAF0" /></Ellipse>
+            <RoundRectangle x="112" y="120" width="16" height="9" cornerRadiusX="5" cornerRadiusY="5"><Fill color="#F6AFC2" /></RoundRectangle>
+        </PartDraw>
+
+        <PartText x="0" y="32" width="450" height="48">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <Text align="CENTER"><Font family="SYNC_TO_DEVICE" size="22" color="#B8F7FA">NACHO · TIMETABLE</Font></Text>
+        </PartText>
+
+        <DigitalClock x="0" y="258" width="450" height="96">
+            <TimeText x="0" y="0" width="450" height="96" format="HH:mm">
+                <Font family="SYNC_TO_DEVICE" size="74" weight="BOLD" color="#F4F7FA" />
+            </TimeText>
+        </DigitalClock>
+
+        <PartText x="0" y="354" width="450" height="38">
+            <Text align="CENTER">
+                <Font family="SYNC_TO_DEVICE" size="22" color="#91DDE4">
+                    <Template><![CDATA[%s · %d %s]]><Parameter expression="[DAY_OF_WEEK_S]"/><Parameter expression="[DAY]"/><Parameter expression="[MONTH_S]"/></Template>
+                </Font>
+            </Text>
+        </PartText>
+
+        <PartText x="0" y="397" width="450" height="34">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <Text align="CENTER"><Font family="SYNC_TO_DEVICE" size="18" color="#F6AFC2">sleepy cat · :3</Font></Text>
+        </PartText>
+    </Scene>
+</WatchFace>

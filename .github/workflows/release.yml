@@ -79,14 +79,14 @@ jobs:
           ./gradlew --no-daemon :mobile:assembleRelease :wear:assembleRelease
 
       - name: Upload mobile release APK
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v5
         with:
           name: timetable-mobile-release
           path: mobile/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
       - name: Upload wear release APKs
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v5
         with:
           name: timetable-wear-release
           path: wear/build/outputs/apk/release/*.apk

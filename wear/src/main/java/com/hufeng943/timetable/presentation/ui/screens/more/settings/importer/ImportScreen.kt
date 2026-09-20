@@ -18,7 +18,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
@@ -36,7 +35,6 @@ import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
-import com.hufeng943.timetable.R
 import kotlinx.coroutines.launch
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,9 +51,6 @@ fun ImportScreen(
 
     val importState by viewModel.state.collectAsStateWithLifecycle()
     val backupFiles by viewModel.backupFiles.collectAsStateWithLifecycle()
-    val phoneImportSuccess = stringResource(R.string.import_phone_success)
-    val importFailed = stringResource(R.string.import_failed)
-    val phoneUnavailable = stringResource(R.string.import_phone_unavailable)
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
@@ -66,12 +61,13 @@ fun ImportScreen(
                     false
                 )
                 if (success) {
-                    Toast.makeText(context, phoneImportSuccess, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "成功导入手机中的课表", Toast.LENGTH_SHORT).show()
                     onNavigateBack()
                 } else {
                     Toast.makeText(
                         context,
-                        importFailed,
+                        intent.getStringExtra(com.hufeng943.timetable.sync.WearOsSyncReceiverService.EXTRA_MESSAGE)
+                            ?: "导入失败",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -91,12 +87,12 @@ fun ImportScreen(
     LaunchedEffect(importState) {
         when (val s = importState) {
             is ImportState.Success -> {
-                Toast.makeText(context, context.getString(R.string.import_success, s.count), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "成功导入 ${s.count} 门课表！", Toast.LENGTH_SHORT).show()
                 viewModel.resetState()
                 onNavigateBack()
             }
             is ImportState.Error -> {
-                Toast.makeText(context, importFailed, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, s.message, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
             }
             else -> Unit
@@ -112,7 +108,7 @@ fun ImportScreen(
             }
         }
     ) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false)) {
+        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
                     modifier = Modifier
@@ -120,13 +116,13 @@ fun ImportScreen(
                         
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transformationSpec)
-                ) { Text(stringResource(R.string.import_title)) }
+                ) { Text("导入课表") }
             }
 
             item {
                 OneUiCapsuleSurface(
-                    title = if (importState is ImportState.Importing) stringResource(R.string.importing) else stringResource(R.string.import_from_phone),
-                    subtitle = stringResource(R.string.import_from_phone_summary),
+                    title = if (importState is ImportState.Importing) "正在导入…" else "从 Galaxy 手机选择文件",
+                    subtitle = "手机选择文件并发送到手表",
                     icon = Icons.Rounded.PhoneAndroid,
                     emphasize = true,
                     onClick = {
@@ -137,7 +133,7 @@ fun ImportScreen(
                                 if (!launched) {
                                     Toast.makeText(
                                         context,
-                                        phoneUnavailable,
+                                        "无法连接手机，请确认手机端 Timetable 已安装",
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
@@ -158,7 +154,7 @@ fun ImportScreen(
                             .fillMaxWidth()
                             ,
                         transformation = SurfaceTransformation(transformationSpec)
-                    ) { Text(stringResource(R.string.import_local_backups)) }
+                    ) { Text("手表本地备份") }
                 }
 
                 items(backupFiles, key = { it.absolutePath }) { file ->

@@ -21,6 +21,7 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 
 @Composable
 fun OneUiInfoCapsule(
@@ -36,7 +37,7 @@ fun OneUiInfoCapsule(
             .fillMaxWidth()
             .clip(OneUiCapsuleShape)
             .globalLiquidGlass(OneUiCapsuleShape, colors.surfaceContainer)
-            .background(colors.surfaceContainer.copy(alpha = glassContainerOverlayAlpha()))
+            .background(colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (glassConfig.isLiquidGlassEnabled)) 0f else 1f))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

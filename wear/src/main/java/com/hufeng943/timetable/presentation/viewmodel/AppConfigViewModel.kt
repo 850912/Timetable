@@ -10,10 +10,11 @@ import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
 import com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,20 +24,20 @@ class AppConfigViewModel @Inject constructor(
     private val preferenceStorage: PreferenceStorage
 ) : ViewModel() {
 
-    private val _localeRecreateEvent = Channel<Unit>(Channel.CONFLATED)
-    val localeRecreateEvent = _localeRecreateEvent.receiveAsFlow()
-
     val appConfig: StateFlow<AppConfig> = preferenceStorage.appConfigFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
         initialValue = AppConfig()
     )
 
+    private val _localeRecreateEvent = MutableSharedFlow<Unit>()
+    val localeRecreateEvent: SharedFlow<Unit> = _localeRecreateEvent.asSharedFlow()
+
     fun updateLanguage(languageTag: String?) {
         if (appConfig.value.languageTag == languageTag) return
         viewModelScope.launch {
             preferenceStorage.setLanguage(languageTag)
-            _localeRecreateEvent.send(Unit)
+            _localeRecreateEvent.emit(Unit)
         }
     }
 
@@ -79,13 +80,5 @@ class AppConfigViewModel @Inject constructor(
 
     fun updateTimetableBackground(mode: TimetableBackgroundMode, imagePath: String? = null) {
         viewModelScope.launch { preferenceStorage.setTimetableBackground(mode, imagePath) }
-    }
-
-    fun updateImageBackgroundBlurEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferenceStorage.setImageBackgroundBlurEnabled(enabled) }
-    }
-
-    fun updateImageBackgroundFluidEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferenceStorage.setImageBackgroundFluidEnabled(enabled) }
     }
 }

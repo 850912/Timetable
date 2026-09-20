@@ -1,6 +1,8 @@
 package com.hufeng943.timetable.presentation.ui.screens.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -34,6 +36,8 @@ fun HomeScreen() {
         // 页面指示器
         AnimatedVisibility(
             visible = !isDatePickerOpen, // 当时间选择器关闭时显示
+            enter = EnterTransition.None,
+            exit = ExitTransition.None,
             // Wear OS 6 / One UI Watch 8: avoid re-layout animation during page changes.
             modifier = Modifier
                 .align(Alignment.BottomCenter)

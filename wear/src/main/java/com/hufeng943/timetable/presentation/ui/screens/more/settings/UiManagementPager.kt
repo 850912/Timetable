@@ -40,36 +40,30 @@ fun UiManagementPager(
     onDynamicColorToggle: (Boolean) -> Unit,
     onShowTopTimeToggle: (Boolean) -> Unit,
     onUiAnimationsToggle: (Boolean) -> Unit,
-    onImageBlurToggle: (Boolean) -> Unit,
-    onImageFluidToggle: (Boolean) -> Unit,
 ) {
     val state = rememberTransformingLazyColumnState()
     val transform = rememberTransformationSpec()
 
-    val backgroundLabel = when (config.timetableBackgroundMode) {
-        TimetableBackgroundMode.SOLID -> stringResource(R.string.settings_background_solid_short)
-        TimetableBackgroundMode.THEME -> stringResource(R.string.settings_background_theme_short)
-        TimetableBackgroundMode.IMAGE -> stringResource(R.string.settings_background_image_short)
-    }
-    val liquidEffectLabel = when (config.liquidGlassEffect) {
-        com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.SOFT -> stringResource(R.string.settings_effect_soft)
-        com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.BALANCED -> stringResource(R.string.settings_effect_balanced)
-        com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.FLUID -> stringResource(R.string.settings_effect_fluid)
+    fun backgroundLabel(): String = when (config.timetableBackgroundMode) {
+        TimetableBackgroundMode.SOLID -> "纯色"
+        TimetableBackgroundMode.THEME -> "主题光晕"
+        TimetableBackgroundMode.IMAGE -> "自定义图片"
+        TimetableBackgroundMode.FLUID_IMAGE -> "流体背景（图片取色）"
     }
 
     ScreenScaffold(scrollState = state) { padding ->
-        TransformingLazyColumn(state = state, contentPadding = padding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(state, hapticFeedbackEnabled = false)) {
+        TransformingLazyColumn(state = state, contentPadding = padding) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transform),
-                ) { Text(stringResource(R.string.settings_ui_management)) }
+                ) { Text("UI 管理") }
             }
             item {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Tune,
-                    text = stringResource(R.string.settings_ui_management_summary),
+                    text = "主题、背景、玻璃与动效。",
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     maxLines = 3,
@@ -78,8 +72,8 @@ fun UiManagementPager(
             item {
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.Palette,
-                    label = stringResource(R.string.settings_theme_style),
-                    secondaryLabel = stringResource(currentThemePreset.titleRes),
+                    label = "主题风格",
+                    secondaryLabel = currentThemePreset.title,
                     onClick = onThemeSelectClick,
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
@@ -89,43 +83,17 @@ fun UiManagementPager(
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.Wallpaper,
                     label = stringResource(R.string.settings_timetable_background),
-                    secondaryLabel = backgroundLabel,
+                    secondaryLabel = backgroundLabel(),
                     onClick = onBackgroundSelectClick,
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )
             }
-            if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE) {
-                item {
-                    OneUiSwitchCapsule(
-                        title = stringResource(R.string.settings_image_background_blur),
-                        subtitle = stringResource(R.string.settings_image_background_blur_summary),
-                        icon = Icons.Rounded.BlurOn,
-                        checked = config.imageBackgroundBlurEnabled,
-                        onCheckedChange = onImageBlurToggle,
-                        modifier = Modifier.fillMaxWidth()
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    )
-                }
-                item {
-                    OneUiSwitchCapsule(
-                        title = stringResource(R.string.settings_image_background_fluid),
-                        subtitle = stringResource(R.string.settings_image_background_fluid_summary),
-                        icon = Icons.Rounded.Animation,
-                        checked = config.imageBackgroundFluidEnabled,
-                        onCheckedChange = onImageFluidToggle,
-                        modifier = Modifier.fillMaxWidth()
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    )
-                }
-            }
             item {
                 OneUiCapsuleButton(
                     icon = Icons.Rounded.BlurOn,
                     label = stringResource(R.string.settings_liquid_glass),
-                    secondaryLabel = if (config.isLiquidGlassEnabled) {
-                        stringResource(R.string.settings_liquid_enabled, liquidEffectLabel)
-                    } else stringResource(R.string.settings_disabled),
+                    secondaryLabel = if (config.isLiquidGlassEnabled) "液态 · ${config.liquidGlassEffect.name.lowercase()}" else "已关闭",
                     onClick = onLiquidGlassAdvancedClick,
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
@@ -144,8 +112,8 @@ fun UiManagementPager(
             }
             item {
                 OneUiSwitchCapsule(
-                    title = stringResource(R.string.settings_ui_animations),
-                    subtitle = stringResource(R.string.settings_ui_animations_summary),
+                    title = "界面动效",
+                    subtitle = "按压与切换动画",
                     icon = Icons.Rounded.Animation,
                     checked = config.uiAnimationsEnabled,
                     onCheckedChange = onUiAnimationsToggle,
@@ -155,8 +123,8 @@ fun UiManagementPager(
             }
             item {
                 OneUiSwitchCapsule(
-                    title = stringResource(R.string.settings_top_time),
-                    subtitle = stringResource(R.string.settings_top_time_summary),
+                    title = "顶部时间显示",
+                    subtitle = "显示应用内时间",
                     icon = Icons.Rounded.Schedule,
                     checked = config.isShowTopTime,
                     onCheckedChange = onShowTopTimeToggle,

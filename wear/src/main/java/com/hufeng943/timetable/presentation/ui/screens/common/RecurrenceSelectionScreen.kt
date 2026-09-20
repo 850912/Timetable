@@ -35,7 +35,7 @@ fun RecurrenceSelectionScreen(initialPattern: WeekPattern, onPatternSelected: (W
             state = scrollState,
             contentPadding = contentPadding,
             flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
-            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState, hapticFeedbackEnabled = false),
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
             modifier = Modifier.fillMaxSize()
         ) {
             item {

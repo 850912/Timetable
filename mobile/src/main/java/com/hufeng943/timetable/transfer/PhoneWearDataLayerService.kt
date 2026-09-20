@@ -123,7 +123,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
         val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds)
         val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
         val request = com.google.android.gms.wearable.PutDataMapRequest.create(
-            WearFileTransferProtocol.path(requestId)
+            WearFileTransferProtocol.ackPath(requestId)
         ).apply {
             dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_SYNC_ACK)
             dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)

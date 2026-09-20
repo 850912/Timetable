@@ -22,9 +22,11 @@ fun GalaxyAiAmbientLayer(
     shape: Shape,
     modifier: Modifier = Modifier,
     strength: Float = 1f,
+    primaryOverride: Color? = null,
+    secondaryOverride: Color? = null,
 ) {
-    val primary = AppTheme.colors.primary
-    val secondary = AppTheme.colors.secondary
+    val primary = primaryOverride ?: AppTheme.colors.primary
+    val secondary = secondaryOverride ?: AppTheme.colors.secondary
     val preset = LocalThemePreset.current
     val effectAlpha = strength.coerceIn(0f, 1f)
     val midGlow = if (preset == ThemePreset.AMOLED_BLACK) Color(0xFF8FA9C7) else primary

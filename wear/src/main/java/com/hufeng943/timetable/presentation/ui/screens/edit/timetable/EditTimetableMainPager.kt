@@ -55,7 +55,7 @@ fun EditTimetableMainPager(
             }
         }
     ) { contentPadding ->
-        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding, rotaryScrollableBehavior = androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults.behavior(scrollState, hapticFeedbackEnabled = false)) {
+        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
                     modifier = Modifier.fillMaxWidth()
