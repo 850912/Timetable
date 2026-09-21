@@ -9,12 +9,7 @@ plugins {
 }
 
 val versionPrefix = "3.5.3"
-
-val commitCountProvider = providers.exec {
-    commandLine("git", "rev-list", "--count", "HEAD")
-}.standardOutput.asText.map { output ->
-    output.trim().toIntOrNull() ?: 1
-}.orElse(1)
+val releaseVersionCode = 3050300
 
 fun releaseSecret(name: String): String? =
     providers.gradleProperty(name)
@@ -59,7 +54,7 @@ configure<ApplicationExtension> {
         minSdk = 28
         targetSdk = 37
 
-        versionCode = if (isRelease) commitCountProvider.get() else 1
+        versionCode = if (isRelease) releaseVersionCode else 1
         versionName = if (isRelease) versionPrefix else "$versionPrefix-dev"
     }
 
