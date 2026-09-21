@@ -65,6 +65,7 @@ import com.hufeng943.timetable.presentation.ui.components.pullToDatePickerDrag
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToDatePickerState
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToRefreshConnection
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
+import com.hufeng943.timetable.presentation.ui.components.toScheduleCompactString
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
@@ -314,7 +315,7 @@ private fun CourseListPager(
     val focusRequester = remember { FocusRequester() }
     val zone = TimeZone.currentSystemDefault()
     val isToday = selectedDate == Clock.System.todayIn(zone)
-    val daySummary = wearDaySummary(coursesUi, is24HourFormat)
+    val daySummary = wearDaySummary(coursesUi)
     val currentCourse = statusSummary.currentId?.let { id ->
         coursesUi.firstOrNull { it.timeSlot.id == id }
     }
@@ -334,7 +335,12 @@ private fun CourseListPager(
         if (!isToday || statusSummary.dayFinished) return@LaunchedEffect
         val courseIndex = coursesUi.indexOfFirst { it.timeSlot.id == currentId }
         if (courseIndex >= 0) {
-            scrollState.scrollToItem(courseIndex + 1)
+            // Index 0 is the date header. Each morning/afternoon section inserts one
+            // additional ListHeader before its first course.
+            val sectionHeadersBeforeOrAt = (0..courseIndex).count { index ->
+                index == 0 || isMorningCourse(coursesUi[index]) != isMorningCourse(coursesUi[index - 1])
+            }
+            scrollState.scrollToItem(1 + courseIndex + sectionHeadersBeforeOrAt)
         }
     }
 
@@ -458,9 +464,30 @@ private fun CourseListPager(
                         }
                     }
 
-                    itemsIndexed(
-                        items = coursesUi, key = { _, item -> itemKey(item) }) { _, item ->
-                        this.itemContent(item, transformationSpec)
+                    coursesUi.forEachIndexed { index, item ->
+                        val morning = isMorningCourse(item)
+                        val beginsNewSection = index == 0 || morning != isMorningCourse(coursesUi[index - 1])
+                        if (beginsNewSection) {
+                            item(key = "period-${if (morning) "morning" else "afternoon"}-$index") {
+                                ListHeader(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
+                                    transformation = SurfaceTransformation(transformationSpec),
+                                ) {
+                                    Text(
+                                        text = stringResource(
+                                            if (morning) R.string.home_period_morning
+                                            else R.string.home_period_afternoon
+                                        ),
+                                        style = MaterialTheme.typography.labelLarge,
+                                    )
+                                }
+                            }
+                        }
+                        item(key = itemKey(item)) {
+                            this.itemContent(item, transformationSpec)
+                        }
                     }
                 }
                 itemsIndexed(
@@ -481,6 +508,9 @@ private fun CourseListPager(
         }
     }
 }
+
+private fun isMorningCourse(course: CourseUi): Boolean =
+    (course.timeSlot.startTime?.hour ?: 0) < 12
 
 @Composable
 private fun eventSubtitle(event: AcademicEvent, is24HourFormat: Boolean): String {
@@ -521,7 +551,7 @@ private fun selectedDateCourseTitle(selectedDate: LocalDate): String {
 }
 
 @Composable
-private fun wearDaySummary(courses: List<CourseUi>, is24HourFormat: Boolean): String {
+private fun wearDaySummary(courses: List<CourseUi>): String {
     val ranges = courses.mapNotNull { course ->
         val start = course.timeSlot.startTime ?: return@mapNotNull null
         val end = course.timeSlot.endTime ?: return@mapNotNull null
@@ -532,8 +562,8 @@ private fun wearDaySummary(courses: List<CourseUi>, is24HourFormat: Boolean): St
     return stringResource(
         R.string.home_summary_classes,
         ranges.size,
-        ranges.first().first.toDisplayString(is24HourFormat),
-        ranges.maxBy { it.second }.second.toDisplayString(is24HourFormat),
+        ranges.first().first.toScheduleCompactString(),
+        ranges.maxBy { it.second }.second.toScheduleCompactString(),
     )
 }
 

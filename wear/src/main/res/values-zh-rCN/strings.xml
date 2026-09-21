@@ -243,4 +243,6 @@
     <string name="settings_glass_readability_summary">自动叠加对比度遮罩；照片或亮色背景影响文字时，可继续降低背景亮度。</string>
     <string name="settings_background_fluid_image">流体背景（图片取色）</string>
     <string name="settings_background_fluid_image_summary">仅提取图片色调生成流体光晕，不直接显示原图。</string>
+    <string name="home_period_morning">上午</string>
+    <string name="home_period_afternoon">下午</string>
 </resources>

@@ -3,59 +3,182 @@ package com.hufeng943.timetable.presentation.ui.screens.edit.tools
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Restore
+import androidx.compose.material.icons.rounded.SelectAll
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
-import androidx.wear.compose.material3.*
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.EdgeButton
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.ListHeader
+import androidx.wear.compose.material3.ListHeaderDefaults
+import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.SurfaceTransformation
+import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
-import com.hufeng943.timetable.presentation.ui.common.*
-import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
+import com.hufeng943.timetable.presentation.ui.NavRoutes
+import com.hufeng943.timetable.presentation.ui.common.LocalNavController
+import com.hufeng943.timetable.presentation.ui.common.navigateSingle
+import com.hufeng943.timetable.presentation.ui.common.popSafe
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
-import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.presentation.ui.components.WearDatePickerPage
-import com.hufeng943.timetable.presentation.viewmodel.edit.tools.*
-import kotlinx.datetime.*
+import com.hufeng943.timetable.presentation.ui.components.toDisplayString
+import com.hufeng943.timetable.presentation.viewmodel.edit.tools.ScheduleAdjustmentState
+import com.hufeng943.timetable.presentation.viewmodel.edit.tools.ScheduleAdjustmentViewModel
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.toJavaLocalDate
+import kotlinx.datetime.toKotlinLocalDate
 import java.time.format.TextStyle
-import kotlin.time.Clock
-
-private object DayRoutes { const val MAIN="main"; const val DATE="date"; const val SOURCE="source" }
 
 @Composable
-fun DayArrangementScreen(viewModel: ScheduleAdjustmentViewModel = hiltViewModel()) {
-    val state by viewModel.state.collectAsStateWithLifecycle(); val outerNav=LocalNavController.current
-    LaunchedEffect(viewModel){viewModel.completed.collect{outerNav.popSafe()}}
-    when(val current=state){
-        ScheduleAdjustmentState.Loading -> ScreenScaffold(timeText={}){}
-        is ScheduleAdjustmentState.Error -> SimpleMessageScreen("调休",current.message)
+private fun DayArrangementCompletionEffect(viewModel: ScheduleAdjustmentViewModel) {
+    val nav = LocalNavController.current
+    LaunchedEffect(viewModel) {
+        viewModel.completed.collect {
+            nav.popBackStack(NavRoutes.MORE_DAY_ARRANGEMENT, inclusive = true)
+        }
+    }
+}
+
+@Composable
+fun DayArrangementScreen(viewModel: ScheduleAdjustmentViewModel) {
+    DayArrangementCompletionEffect(viewModel)
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val editor by viewModel.dayEditor.collectAsStateWithLifecycle()
+    val nav = LocalNavController.current
+
+    when (val current = state) {
+        ScheduleAdjustmentState.Loading -> ScreenScaffold(timeText = {}) {}
+        is ScheduleAdjustmentState.Error -> SimpleMessageScreen("调休", current.message)
         is ScheduleAdjustmentState.Ready -> {
-            val today=remember{Clock.System.todayIn(TimeZone.currentSystemDefault())}
-            var date by remember{mutableStateOf(today)}; var sourceDay by remember{mutableStateOf(nextDifferentDay(today.dayOfWeek))}
-            val nav=rememberSwipeDismissableNavController()
-            WearInternalNavHost(navController=nav,startDestination=DayRoutes.MAIN) {
-                composable(DayRoutes.MAIN){
-                    val scroll=rememberTransformingLazyColumnState();val transform=rememberTransformationSpec()
-                    ScreenScaffold(scrollState=scroll,timeText={},edgeButton={EdgeButton(enabled=sourceDay!=date.dayOfWeek,onClick={viewModel.applyDayArrangement(null,date,sourceDay)}){Icon(Icons.Rounded.Check,"确认")}}){padding->
-                        TransformingLazyColumn(state=scroll,contentPadding=padding,modifier=Modifier.fillMaxSize()){
-                            item{ListHeader(modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text("调休")}}
-                            item{OneUiCapsuleSurface(title="范围：全部课表",subtitle="${current.timetables.size} 个课表 · 全部课程/课时",icon=Icons.Rounded.SelectAll,modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                            item{OneUiCapsuleSurface(title="日期：${date.toDisplayString()}",subtitle="${date.dayOfWeek.toDisplayString(TextStyle.FULL)} · 点按选日期",icon=Icons.Rounded.DateRange,onClick={nav.navigateSingle(DayRoutes.DATE)},modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                            item{OneUiCapsuleSurface(title="改上：${sourceDay.toDisplayString(TextStyle.FULL)}的课",subtitle="选择来源星期",icon=Icons.Rounded.SwapHoriz,onClick={nav.navigateSingle(DayRoutes.SOURCE)},modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                            item{OneUiCapsuleSurface(title="恢复调休/换课",subtitle="恢复调休与课程调节",icon=Icons.Rounded.Restore,onClick={viewModel.restoreAdjustments()},modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}
-                        }
+            val scroll = rememberTransformingLazyColumnState()
+            val transform = rememberTransformationSpec()
+            ScreenScaffold(
+                scrollState = scroll,
+                timeText = {},
+                edgeButton = {
+                    EdgeButton(
+                        enabled = editor.sourceDay != editor.date.dayOfWeek,
+                        onClick = { viewModel.applyDayArrangement(null, editor.date, editor.sourceDay) },
+                    ) { Icon(Icons.Rounded.Check, "确认") }
+                },
+            ) { padding ->
+                TransformingLazyColumn(
+                    state = scroll,
+                    contentPadding = padding,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    item {
+                        ListHeader(
+                            modifier = Modifier.fillMaxWidth()
+                                .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
+                            transformation = SurfaceTransformation(transform),
+                        ) { Text("调休") }
+                    }
+                    item {
+                        OneUiCapsuleSurface(
+                            title = "范围：全部课表",
+                            subtitle = "${current.timetables.size} 个课表 · 全部课程/课时",
+                            icon = Icons.Rounded.SelectAll,
+                            modifier = Modifier.fillMaxWidth()
+                                .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                        )
+                    }
+                    item {
+                        OneUiCapsuleSurface(
+                            title = "日期：${editor.date.toDisplayString()}",
+                            subtitle = "${editor.date.dayOfWeek.toDisplayString(TextStyle.FULL)} · 点按选日期",
+                            icon = Icons.Rounded.DateRange,
+                            onClick = { nav.navigateSingle(NavRoutes.MORE_DAY_ARRANGEMENT_DATE) },
+                            modifier = Modifier.fillMaxWidth()
+                                .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                        )
+                    }
+                    item {
+                        OneUiCapsuleSurface(
+                            title = "改上：${editor.sourceDay.toDisplayString(TextStyle.FULL)}的课",
+                            subtitle = "选择来源星期",
+                            icon = Icons.Rounded.SwapHoriz,
+                            onClick = { nav.navigateSingle(NavRoutes.MORE_DAY_ARRANGEMENT_SOURCE) },
+                            modifier = Modifier.fillMaxWidth()
+                                .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                        )
+                    }
+                    item {
+                        OneUiCapsuleSurface(
+                            title = "恢复调休/换课",
+                            subtitle = "恢复调休与课程调节",
+                            icon = Icons.Rounded.Restore,
+                            onClick = { viewModel.restoreAdjustments() },
+                            modifier = Modifier.fillMaxWidth()
+                                .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                        )
                     }
                 }
-                composable(DayRoutes.DATE){WearDatePickerPage(initialDate=date.toJavaLocalDate(),onDatePicked={date=it.toKotlinLocalDate();if(sourceDay==date.dayOfWeek)sourceDay=nextDifferentDay(sourceDay);nav.popSafe()})}
-                composable(DayRoutes.SOURCE){DayOfWeekPicker(sourceDay,date.dayOfWeek){sourceDay=it;nav.popSafe()}}
             }
         }
     }
 }
 
-@Composable private fun DayOfWeekPicker(initial:DayOfWeek,excluded:DayOfWeek,onSelect:(DayOfWeek)->Unit){val state=rememberTransformingLazyColumnState();val transform=rememberTransformationSpec();ScreenScaffold(scrollState=state,timeText={}){padding->TransformingLazyColumn(state=state,contentPadding=padding,modifier=Modifier.fillMaxSize()){item{ListHeader(modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),transformation=SurfaceTransformation(transform)){Text("选择来源星期")}};DayOfWeek.entries.filter{it!=excluded}.forEach{day->item(key=day){OneUiCapsuleSurface(title=day.toDisplayString(TextStyle.FULL),selected=day==initial,onClick={onSelect(day)},modifier=Modifier.fillMaxWidth().minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding))}}}}}
-private fun nextDifferentDay(day:DayOfWeek)=DayOfWeek.entries[(day.ordinal+1)%7]
+@Composable
+fun DayArrangementDateScreen(viewModel: ScheduleAdjustmentViewModel) {
+    val editor by viewModel.dayEditor.collectAsStateWithLifecycle()
+    val nav = LocalNavController.current
+    WearDatePickerPage(
+        initialDate = editor.date.toJavaLocalDate(),
+        onDatePicked = {
+            viewModel.updateDayArrangementDate(it.toKotlinLocalDate())
+            nav.popSafe()
+        },
+    )
+}
+
+@Composable
+fun DayArrangementSourceScreen(viewModel: ScheduleAdjustmentViewModel) {
+    val editor by viewModel.dayEditor.collectAsStateWithLifecycle()
+    val nav = LocalNavController.current
+    DayOfWeekPicker(editor.sourceDay, editor.date.dayOfWeek) {
+        viewModel.updateDayArrangementSource(it)
+        nav.popSafe()
+    }
+}
+
+@Composable
+private fun DayOfWeekPicker(
+    initial: DayOfWeek,
+    excluded: DayOfWeek,
+    onSelect: (DayOfWeek) -> Unit,
+) {
+    val state = rememberTransformingLazyColumnState()
+    val transform = rememberTransformationSpec()
+    ScreenScaffold(scrollState = state, timeText = {}) { padding ->
+        TransformingLazyColumn(state = state, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
+            item {
+                ListHeader(
+                    modifier = Modifier.fillMaxWidth()
+                        .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
+                    transformation = SurfaceTransformation(transform),
+                ) { Text("选择来源星期") }
+            }
+            DayOfWeek.entries.filter { it != excluded }.forEach { day ->
+                item(key = day) {
+                    OneUiCapsuleSurface(
+                        title = day.toDisplayString(TextStyle.FULL),
+                        selected = day == initial,
+                        onClick = { onSelect(day) },
+                        modifier = Modifier.fillMaxWidth()
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                    )
+                }
+            }
+        }
+    }
+}

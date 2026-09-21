@@ -41,3 +41,21 @@ fun LocalDate.toDisplayString(): String {
     return java.time.LocalDate.of(year, month.number, day)
         .format(DateTimeFormatter.ofPattern(pattern))
 }
+
+
+/**
+ * Wear schedule display: the AM/PM context is supplied by the timetable section header,
+ * so individual cards stay compact on a small round display.
+ */
+fun LocalTime.toScheduleCompactString(): String =
+    java.time.LocalTime.of(hour, minute).format(DateTimeFormatter.ofPattern("HH:mm"))
+
+/**
+ * Wear editor display: editing needs an explicit period marker so users do not confuse
+ * morning and afternoon slots when changing a time.
+ */
+fun LocalTime.toScheduleEditorString(): String {
+    val period = if (hour < 12) "上午" else "下午"
+    val h = if (hour % 12 == 0) 12 else hour % 12
+    return "%s %02d:%02d".format(period, h, minute)
+}

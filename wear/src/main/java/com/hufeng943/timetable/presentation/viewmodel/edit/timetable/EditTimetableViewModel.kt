@@ -31,7 +31,7 @@ class EditTimetableViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    private val tId: Long? = savedStateHandle.get<String>(NavArgs.TABLE_ID)?.toLongOrNull()
+    private val tId: Long? = savedStateHandle.longArg(NavArgs.TABLE_ID)?.takeUnless { it == -1L }
     val toDay = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
     private val _uiState = MutableStateFlow<UiState<TimetableUi>>(UiState.Loading)
@@ -117,4 +117,12 @@ class EditTimetableViewModel @Inject constructor(
             false
         }
     }
+}
+
+
+private fun SavedStateHandle.longArg(key: String): Long? = when (val value = get<Any?>(key)) {
+    is Long -> value
+    is Int -> value.toLong()
+    is String -> value.toLongOrNull()
+    else -> null
 }

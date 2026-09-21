@@ -41,9 +41,9 @@ fun TimeText(
             val javaTime = java.time.LocalTime.of(time.hour, time.minute)
             val tStr = DateTimeFormatter.ofPattern(if (is24Hour) "HH:mm" else "hh:mm", locale)
                 .format(javaTime)
-            val aStr =
-                if (is24Hour) null else DateTimeFormatter.ofPattern("a", locale).format(javaTime)
-            tStr to aStr
+            // In 12-hour mode the timetable uses AM/PM sections when context is needed.
+            // Individual time labels stay compact and do not repeat 上午/下午.
+            tStr to null
         }
     }
 

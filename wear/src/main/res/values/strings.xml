@@ -254,4 +254,6 @@
     <string name="settings_glass_readability_summary">A contrast scrim is applied automatically. Lower background brightness when text competes with photos or bright colors.</string>
     <string name="settings_background_fluid_image">Fluid background (image colors)</string>
     <string name="settings_background_fluid_image_summary">Extract the image palette and generate an ambient fluid glow without showing the source image.</string>
+    <string name="home_period_morning">Morning</string>
+    <string name="home_period_afternoon">Afternoon</string>
 </resources>

@@ -20,9 +20,22 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 import javax.inject.Inject
 
 enum class BatchAction { SHIFT, CANCEL, RESTORE }
+
+data class ScheduleToolsEditorState(
+    val start: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
+    val end: LocalDate? = null,
+    val offsetMinutes: Int = 10,
+    val useWindow: Boolean = false,
+    val windowStart: LocalTime = LocalTime(8, 0),
+    val windowEnd: LocalTime = LocalTime(18, 0),
+    val action: BatchAction = BatchAction.SHIFT,
+)
 
 sealed interface ScheduleToolsState {
     data object Loading : ScheduleToolsState
@@ -38,6 +51,9 @@ class ScheduleToolsViewModel @Inject constructor(
     private val _state = MutableStateFlow<ScheduleToolsState>(ScheduleToolsState.Loading)
     val state: StateFlow<ScheduleToolsState> = _state.asStateFlow()
 
+    private val _editor = MutableStateFlow(ScheduleToolsEditorState())
+    val editor: StateFlow<ScheduleToolsEditorState> = _editor.asStateFlow()
+
     private val _completed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val completed = _completed.asSharedFlow()
 
@@ -48,6 +64,57 @@ class ScheduleToolsViewModel @Inject constructor(
                 else ScheduleToolsState.Ready(tables)
             }
         }
+    }
+
+    fun updateStart(date: LocalDate) {
+        _editor.value = _editor.value.let { current ->
+            current.copy(start = date, end = current.end?.let { if (it < date) date else it })
+        }
+    }
+
+    fun updateEnd(date: LocalDate?) {
+        _editor.value = _editor.value.copy(end = date)
+    }
+
+    fun updateOffset(minutes: Int) {
+        if (minutes in -30..30 && minutes != 0) _editor.value = _editor.value.copy(offsetMinutes = minutes)
+    }
+
+    fun toggleWindow() {
+        _editor.value = _editor.value.copy(useWindow = !_editor.value.useWindow)
+    }
+
+    fun enableWindow() {
+        _editor.value = _editor.value.copy(useWindow = true)
+    }
+
+    fun updateWindowStart(time: LocalTime) {
+        _editor.value = _editor.value.copy(windowStart = time)
+    }
+
+    fun updateWindowEnd(time: LocalTime) {
+        _editor.value = _editor.value.copy(windowEnd = time)
+    }
+
+    fun cycleAction() {
+        val current = _editor.value.action
+        _editor.value = _editor.value.copy(
+            action = BatchAction.entries[(current.ordinal + 1) % BatchAction.entries.size],
+        )
+    }
+
+    fun applyEditor() {
+        val e = _editor.value
+        apply(
+            action = e.action,
+            startDate = e.start,
+            endDate = e.end,
+            offsetMinutes = e.offsetMinutes,
+            timetableId = null,
+            courseId = null,
+            timeWindowStart = if (e.useWindow) e.windowStart else null,
+            timeWindowEnd = if (e.useWindow) e.windowEnd else null,
+        )
     }
 
     fun apply(

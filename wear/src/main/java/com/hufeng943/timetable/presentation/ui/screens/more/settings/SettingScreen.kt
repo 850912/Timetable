@@ -3,145 +3,133 @@ package com.hufeng943.timetable.presentation.ui.screens.more.settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hufeng943.timetable.data.ThemePreference
-import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
+import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
+import com.hufeng943.timetable.presentation.ui.common.popSafe
 import com.hufeng943.timetable.presentation.ui.screens.more.settings.export.ExportScreen
 import com.hufeng943.timetable.presentation.ui.screens.more.settings.importer.ImportScreen
 import com.hufeng943.timetable.presentation.ui.theme.ThemePreset
 import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import kotlinx.coroutines.launch
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+/** Settings landing page. All child pages are destinations in the app-level Wear NavHost. */
 @Composable
-fun SettingScreen(
-    appConfigViewModel: AppConfigViewModel = hiltViewModel(LocalContext.current as ViewModelStoreOwner),
-    themePreference: ThemePreference = hiltViewModel<ThemePrefViewModel>().themePreference
-) {
-    val internalNavController = rememberSwipeDismissableNavController()
+fun SettingScreen() {
+    val nav = LocalNavController.current
     val config = LocalAppConfig.current
+    SettingPager(
+        config = config,
+        onUiManagementClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_UI) },
+        onLanguageSelectClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_LANGUAGE) },
+        onTimeFormatSelectClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_TIME_FORMAT) },
+        onFirstDaySelectClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_FIRST_DAY) },
+        onPowerSaveSelectClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_POWER_SAVE) },
+        onExportClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_EXPORT) },
+        onImportClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_IMPORT) },
+    )
+}
+
+@Composable
+fun SettingsUiManagementScreen(
+    appConfigViewModel: AppConfigViewModel,
+    themePreference: ThemePreference = hiltViewModel<ThemePrefViewModel>().themePreference,
+) {
+    val nav = LocalNavController.current
+    val config = LocalAppConfig.current
+    val currentPreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(
+        initialValue = ThemePreset.AMOLED_BLACK,
+    )
+    UiManagementPager(
+        config = config,
+        currentThemePreset = currentPreset,
+        onThemeSelectClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_THEME) },
+        onBackgroundSelectClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_BACKGROUND) },
+        onLiquidGlassAdvancedClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_LIQUID_GLASS) },
+        onDynamicColorToggle = appConfigViewModel::updateDynamicColorEnabled,
+        onShowTopTimeToggle = appConfigViewModel::updateShowTopTime,
+        onUiAnimationsToggle = appConfigViewModel::updateUiAnimationsEnabled,
+    )
+}
+
+@Composable
+fun SettingsLanguageScreen(appConfigViewModel: AppConfigViewModel) {
+    LanguageSelectPager(
+        config = LocalAppConfig.current,
+        onLanguageSelect = appConfigViewModel::updateLanguage,
+    )
+}
+
+@Composable
+fun SettingsTimeFormatScreen(appConfigViewModel: AppConfigViewModel) {
+    val nav = LocalNavController.current
+    TimeFormatSelectPager(LocalAppConfig.current) {
+        appConfigViewModel.updateFormat(it)
+        nav.popSafe()
+    }
+}
+
+@Composable
+fun SettingsFirstDayScreen(appConfigViewModel: AppConfigViewModel) {
+    val nav = LocalNavController.current
+    FirstDaySelectPager(LocalAppConfig.current) {
+        appConfigViewModel.updateFirstDayOfTheWeek(it)
+        nav.popSafe()
+    }
+}
+
+@Composable
+fun SettingsPowerSaveScreen(appConfigViewModel: AppConfigViewModel) {
+    val nav = LocalNavController.current
+    PowerSaveModeSelectPager(LocalAppConfig.current) {
+        appConfigViewModel.updatePowerSaveMode(it)
+        nav.popSafe()
+    }
+}
+
+@Composable
+fun SettingsBackgroundScreen(appConfigViewModel: AppConfigViewModel) {
+    val nav = LocalNavController.current
+    BackgroundSelectPager(LocalAppConfig.current) { mode, path ->
+        appConfigViewModel.updateTimetableBackground(mode, path)
+        nav.popSafe()
+    }
+}
+
+@Composable
+fun SettingsThemeScreen(
+    themePreference: ThemePreference = hiltViewModel<ThemePrefViewModel>().themePreference,
+) {
+    val nav = LocalNavController.current
     val scope = rememberCoroutineScope()
-    val currentPreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(initialValue = ThemePreset.AMOLED_BLACK)
-
-    WearInternalNavHost(
-        navController = internalNavController,
-        startDestination = InternalNavRoutes.MAIN) {
-        composable(InternalNavRoutes.MAIN) {
-            SettingPager(
-                config = config,
-                onUiManagementClick = { internalNavController.navigateSingle(InternalNavRoutes.UI_MANAGEMENT) },
-                onLanguageSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.LANGUAGE_SELECT) },
-                onTimeFormatSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.TIME_FORMAT_SELECT) },
-                onFirstDaySelectClick = { internalNavController.navigateSingle(InternalNavRoutes.FIRST_DAY_SELECT) },
-                onPowerSaveSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.POWER_SAVE_SELECT) },
-                onExportClick = { internalNavController.navigateSingle(InternalNavRoutes.EXPORT) },
-                onImportClick = { internalNavController.navigateSingle(InternalNavRoutes.IMPORT) },
-            )
-        }
-
-
-        composable(InternalNavRoutes.UI_MANAGEMENT) {
-            UiManagementPager(
-                config = config,
-                currentThemePreset = currentPreset,
-                onThemeSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.THEME_SELECT) },
-                onBackgroundSelectClick = { internalNavController.navigateSingle(InternalNavRoutes.BACKGROUND_SELECT) },
-                onLiquidGlassAdvancedClick = { internalNavController.navigateSingle(InternalNavRoutes.LIQUID_GLASS_ADVANCED) },
-                onDynamicColorToggle = appConfigViewModel::updateDynamicColorEnabled,
-                onShowTopTimeToggle = appConfigViewModel::updateShowTopTime,
-                onUiAnimationsToggle = appConfigViewModel::updateUiAnimationsEnabled,
-            )
-        }
-
-        composable(InternalNavRoutes.EXPORT) {
-            ExportScreen(onNavigateBack = { internalNavController.popBackStack() })
-        }
-
-        composable(InternalNavRoutes.IMPORT) {
-            ImportScreen(onNavigateBack = { internalNavController.popBackStack() })
-        }
-
-
-        composable(InternalNavRoutes.POWER_SAVE_SELECT) {
-            PowerSaveModeSelectPager(config = config) { mode ->
-                appConfigViewModel.updatePowerSaveMode(mode)
-                internalNavController.popBackStack()
-            }
-        }
-
-        composable(InternalNavRoutes.LIQUID_GLASS_ADVANCED) {
-            LiquidGlassAdvancedPager(
-                config = config,
-                onEnabledChange = appConfigViewModel::updateLiquidGlassEnabled,
-                onOpacityChange = appConfigViewModel::updateGlassOpacity,
-                onClarityChange = appConfigViewModel::updateGlassClarity,
-                onEffectChange = appConfigViewModel::updateLiquidGlassEffect,
-                onBrightnessChange = appConfigViewModel::updateBackgroundBrightness,
-                onChromaticAberrationChange = appConfigViewModel::updateGlassChromaticAberration,
-                onLensDistortionChange = appConfigViewModel::updateGlassLensDistortion,
-                onBlurEnabledChange = appConfigViewModel::updateGlassBlurEnabled,
-                onBlurRadiusChange = appConfigViewModel::updateGlassBlurRadius,
-            )
-        }
-
-        composable(InternalNavRoutes.BACKGROUND_SELECT) {
-            BackgroundSelectPager(
-                config = config,
-                onBackgroundSelected = { mode, path ->
-                    appConfigViewModel.updateTimetableBackground(mode, path)
-                    internalNavController.popBackStack()
-                }
-            )
-        }
-
-        composable(InternalNavRoutes.THEME_SELECT) {
-            ThemePresetSelectPager(
-                currentPreset = currentPreset,
-                onPresetSelect = { newPreset ->
-                    scope.launch {
-                        themePreference.setThemePreset(newPreset)
-                        internalNavController.popBackStack()
-                    }
-                }
-            )
-        }
-
-        composable(InternalNavRoutes.LANGUAGE_SELECT) {
-            LanguageSelectPager(
-                config = config,
-                onLanguageSelect = appConfigViewModel::updateLanguage
-            )
-        }
-
-        composable(InternalNavRoutes.TIME_FORMAT_SELECT) {
-            TimeFormatSelectPager(
-                config = config,
-                onTimeFormatSelect = {
-                    appConfigViewModel.updateFormat(it)
-                    internalNavController.popBackStack()
-                }
-            )
-        }
-
-        composable(InternalNavRoutes.FIRST_DAY_SELECT) {
-            FirstDaySelectPager(
-                config = config,
-                onFirstDaySelect = {
-                    appConfigViewModel.updateFirstDayOfTheWeek(it)
-                    internalNavController.popBackStack()
-                }
-            )
+    val currentPreset by themePreference.themePresetFlow.collectAsStateWithLifecycle(
+        initialValue = ThemePreset.AMOLED_BLACK,
+    )
+    ThemePresetSelectPager(currentPreset) { preset ->
+        scope.launch {
+            themePreference.setThemePreset(preset)
+            nav.popSafe()
         }
     }
 }
 
+@Composable
+fun SettingsExportScreen() {
+    val nav = LocalNavController.current
+    ExportScreen(onNavigateBack = { nav.popSafe() })
+}
+
+@Composable
+fun SettingsImportScreen() {
+    val nav = LocalNavController.current
+    ImportScreen(onNavigateBack = { nav.popSafe() })
+}
+
 @dagger.hilt.android.lifecycle.HiltViewModel
 class ThemePrefViewModel @javax.inject.Inject constructor(
-    val themePreference: ThemePreference
+    val themePreference: ThemePreference,
 ) : androidx.lifecycle.ViewModel()

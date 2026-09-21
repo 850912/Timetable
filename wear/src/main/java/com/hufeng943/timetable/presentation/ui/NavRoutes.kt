@@ -6,6 +6,13 @@ object NavArgs {
     const val COURSE_ID = "courseId"
 }
 
+/**
+ * App-level routes for the Wear app.
+ *
+ * Wear OS swipe-to-dismiss works best when every visible page participates in the same
+ * SwipeDismissableNavHost. Feature flows below therefore use nested navigation *graphs* inside
+ * the app host, rather than creating child NavHosts inside screens.
+ */
 object NavRoutes {
     const val MAIN = "main"
 
@@ -15,12 +22,20 @@ object NavRoutes {
 
     //----------------------------------
     const val LIST_TIMETABLE = "list_timetable"
-    const val SCHEDULE_TOOLS = "schedule_tools"
 
-    // Nested graph
+    // Batch schedule tools graph.
+    const val SCHEDULE_TOOLS = "schedule_tools"
+    const val SCHEDULE_TOOLS_MAIN = "schedule_tools/main"
+    const val SCHEDULE_TOOLS_START = "schedule_tools/start"
+    const val SCHEDULE_TOOLS_END = "schedule_tools/end"
+    const val SCHEDULE_TOOLS_WINDOW_START = "schedule_tools/window_start"
+    const val SCHEDULE_TOOLS_WINDOW_END = "schedule_tools/window_end"
+    const val SCHEDULE_TOOLS_DAYS = "schedule_tools/days"
+    const val SCHEDULE_TOOLS_OFFSET = "schedule_tools/offset"
+
+    // Timetable editor graph.
     const val EDIT_TIMETABLE = "edit_timetable/{${NavArgs.TABLE_ID}}"
     fun editTimetable(timetableId: Long? = null) = "edit_timetable/${timetableId ?: -1L}"
-
     const val EDIT_TIMETABLE_MAIN = "edit_timetable/main"
     const val EDIT_TIMETABLE_NAME = "edit_timetable/name"
     const val EDIT_TIMETABLE_START_DATE = "edit_timetable/start_date"
@@ -37,15 +52,12 @@ object NavRoutes {
         "edit_course/$timetableId/${courseId ?: -1L}"
 
     const val EDIT_COURSE_MAIN = "edit_course/main"
-
-    // 子页面路由模板（带参数，用于 composable 匹配）
     const val EDIT_COURSE_NAME = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/name"
     const val EDIT_COURSE_LOCATION = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/location"
     const val EDIT_COURSE_TEACHER = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/teacher"
     const val EDIT_COURSE_COLOR = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/color"
     const val EDIT_COURSE_DELETE_CONFIRM = "edit_course/{${NavArgs.TABLE_ID}}/{${NavArgs.COURSE_ID}}/delete_confirm"
 
-    // 子页面导航函数（供 navigate 调用）
     fun editCourseName(timetableId: Long, courseId: Long) =
         "edit_course/$timetableId/$courseId/name"
     fun editCourseLocation(timetableId: Long, courseId: Long) =
@@ -61,15 +73,53 @@ object NavRoutes {
     const val LIST_TIMESLOT = "list_timeslot/{${NavArgs.COURSE_ID}}"
     fun listTimeSlot(courseId: Long) = "list_timeslot/$courseId"
 
+    // Time-slot editor graph.
     const val EDIT_TIMESLOT = "edit_timeslot/{${NavArgs.COURSE_ID}}/{${NavArgs.TIME_SLOT_ID}}"
     fun editTimeSlot(courseId: Long, timeSlotId: Long? = null) =
         "edit_timeslot/$courseId/${timeSlotId ?: -1L}"
+    const val EDIT_TIMESLOT_MAIN = "edit_timeslot/main"
+    const val EDIT_TIMESLOT_START_TIME = "edit_timeslot/start_time"
+    const val EDIT_TIMESLOT_END_TIME = "edit_timeslot/end_time"
+    const val EDIT_TIMESLOT_DATES = "edit_timeslot/dates"
+    const val EDIT_TIMESLOT_WEEK_DAY = "edit_timeslot/week_day"
+    const val EDIT_TIMESLOT_RECURRENCE = "edit_timeslot/recurrence"
+    const val EDIT_TIMESLOT_REMARK = "edit_timeslot/remark"
+    const val EDIT_TIMESLOT_DELETE_CONFIRM = "edit_timeslot/delete_confirm"
 
     //----------------------------------
     const val MORE_ABOUT = "more/about"
     const val MORE_ABOUT_LIBRARIES = "more/about/libraries"
     const val MORE_ABOUT_DEVELOPER = "more/about/developer"
+
+    // Settings graph.
     const val MORE_SETTINGS = "more/settings"
+    const val MORE_SETTINGS_MAIN = "more/settings/main"
+    const val MORE_SETTINGS_UI = "more/settings/ui"
+    const val MORE_SETTINGS_LANGUAGE = "more/settings/language"
+    const val MORE_SETTINGS_TIME_FORMAT = "more/settings/time_format"
+    const val MORE_SETTINGS_FIRST_DAY = "more/settings/first_day"
+    const val MORE_SETTINGS_POWER_SAVE = "more/settings/power_save"
+    const val MORE_SETTINGS_EXPORT = "more/settings/export"
+    const val MORE_SETTINGS_IMPORT = "more/settings/import"
+    const val MORE_SETTINGS_THEME = "more/settings/theme"
+    const val MORE_SETTINGS_BACKGROUND = "more/settings/background"
+    const val MORE_SETTINGS_LIQUID_GLASS = "more/settings/liquid_glass"
+    const val MORE_SETTINGS_GLASS_OPACITY = "more/settings/liquid_glass/opacity"
+    const val MORE_SETTINGS_GLASS_CLARITY = "more/settings/liquid_glass/clarity"
+    const val MORE_SETTINGS_BACKGROUND_BRIGHTNESS = "more/settings/liquid_glass/background_brightness"
+
+    // Day arrangement graph.
     const val MORE_DAY_ARRANGEMENT = "more/day_arrangement"
+    const val MORE_DAY_ARRANGEMENT_MAIN = "more/day_arrangement/main"
+    const val MORE_DAY_ARRANGEMENT_DATE = "more/day_arrangement/date"
+    const val MORE_DAY_ARRANGEMENT_SOURCE = "more/day_arrangement/source"
+
+    // Course adjustment graph.
     const val MORE_COURSE_ADJUSTMENT = "more/course_adjustment"
+    const val MORE_COURSE_ADJUSTMENT_MAIN = "more/course_adjustment/main"
+    const val MORE_COURSE_ADJUSTMENT_DATE = "more/course_adjustment/date"
+    const val MORE_COURSE_ADJUSTMENT_A_COURSES = "more/course_adjustment/a_courses"
+    const val MORE_COURSE_ADJUSTMENT_A_SLOTS = "more/course_adjustment/a_slots"
+    const val MORE_COURSE_ADJUSTMENT_B_COURSES = "more/course_adjustment/b_courses"
+    const val MORE_COURSE_ADJUSTMENT_B_SLOTS = "more/course_adjustment/b_slots"
 }

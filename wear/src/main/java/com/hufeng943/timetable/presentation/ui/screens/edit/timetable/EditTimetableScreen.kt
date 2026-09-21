@@ -3,145 +3,126 @@ package com.hufeng943.timetable.presentation.ui.screens.edit.timetable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hufeng943.timetable.R
+import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.common.DynamicSubTheme
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.popSafe
-import com.hufeng943.timetable.presentation.ui.components.WearInternalNavHost
 import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
 import com.hufeng943.timetable.presentation.ui.components.WearDatePickerPage
 import com.hufeng943.timetable.presentation.ui.screens.common.ColorSelectionScreen
 import com.hufeng943.timetable.presentation.ui.screens.common.DeleteConfirmScreen
 import com.hufeng943.timetable.presentation.ui.screens.common.TextEditScreen
-import com.hufeng943.timetable.presentation.ui.screens.edit.InternalNavRoutes
-import com.hufeng943.timetable.presentation.ui.screens.edit.tools.ScheduleToolsScreen
 import com.hufeng943.timetable.presentation.viewmodel.edit.timetable.EditTimetableAction
 import com.hufeng943.timetable.presentation.viewmodel.edit.timetable.EditTimetableViewModel
 import kotlinx.datetime.toJavaLocalDate
 import kotlinx.datetime.toKotlinLocalDate
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+/** Main destination of the timetable editor graph. */
 @Composable
-fun EditTimetableScreen(
-    viewModel: EditTimetableViewModel = hiltViewModel()
-) {
+fun EditTimetableScreen(viewModel: EditTimetableViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navController = LocalNavController.current
-    // This screen already lives inside the app-level SwipeDismissableNavHost.
-    // Keep child pages on the centralized non-swipe internal host so the parent page is not
-    // rendered as a second swipe-dismiss background (which caused the left-edge ghost frame).
-    val internalNavController = rememberSwipeDismissableNavController()
+    val nav = LocalNavController.current
 
-    WearInternalNavHost(
-        navController = internalNavController,
-        startDestination = InternalNavRoutes.MAIN) {
-        composable(InternalNavRoutes.MAIN) {
-            HandleEditUiState(uiState) { timetable ->
-                DynamicSubTheme(seedColor = timetable.color) {
-                    EditTimetableMainPager(
-                        timetable = timetable,
-                        onSave = {
-                            viewModel.onAction(EditTimetableAction.Upsert)
-                            navController.popSafe()
-                        },
-                        onNameClick = { internalNavController.navigateSingle(InternalNavRoutes.NAME) },
-                        onStartDateClick = { internalNavController.navigateSingle(InternalNavRoutes.START_DATE) },
-                        onStartDateLongClick = { viewModel.onAction(EditTimetableAction.UpdateStartDate()) },
-                        onEndDateClick = { internalNavController.navigateSingle(InternalNavRoutes.END_DATE) },
-                        onEndDateLongClick = { viewModel.onAction(EditTimetableAction.UpdateEndDate()) },
-                        onColorClick = { internalNavController.navigateSingle(InternalNavRoutes.COLOR) },
-                        onColorLongClick = { viewModel.onAction(EditTimetableAction.UpdateColor()) },
-                        onDelete = { internalNavController.navigateSingle(InternalNavRoutes.DELETE_CONFIRM) },
-                        onQuickModify = { internalNavController.navigateSingle(InternalNavRoutes.QUICK_MODIFY) },
-                        startDateIsToday = viewModel.toDay == timetable.semesterStart
-                    )
-                }
+    HandleEditUiState(uiState) { timetable ->
+        DynamicSubTheme(seedColor = timetable.color) {
+            EditTimetableMainPager(
+                timetable = timetable,
+                onSave = {
+                    viewModel.onAction(EditTimetableAction.Upsert)
+                    nav.popSafe()
+                },
+                onNameClick = { nav.navigateSingle(NavRoutes.EDIT_TIMETABLE_NAME) },
+                onStartDateClick = { nav.navigateSingle(NavRoutes.EDIT_TIMETABLE_START_DATE) },
+                onStartDateLongClick = { viewModel.onAction(EditTimetableAction.UpdateStartDate()) },
+                onEndDateClick = { nav.navigateSingle(NavRoutes.EDIT_TIMETABLE_END_DATE) },
+                onEndDateLongClick = { viewModel.onAction(EditTimetableAction.UpdateEndDate()) },
+                onColorClick = { nav.navigateSingle(NavRoutes.EDIT_TIMETABLE_COLOR) },
+                onColorLongClick = { viewModel.onAction(EditTimetableAction.UpdateColor()) },
+                onDelete = { nav.navigateSingle(NavRoutes.EDIT_TIMETABLE_DELETE_CONFIRM) },
+                onQuickModify = { nav.navigateSingle(NavRoutes.SCHEDULE_TOOLS) },
+                startDateIsToday = viewModel.toDay == timetable.semesterStart,
+            )
+        }
+    }
+}
+
+@Composable
+fun EditTimetableStartDateScreen(viewModel: EditTimetableViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val nav = LocalNavController.current
+    HandleEditUiState(uiState) { timetable ->
+        DynamicSubTheme(seedColor = timetable.color) {
+            WearDatePickerPage(
+                initialDate = timetable.semesterStart.toJavaLocalDate(),
+                onDatePicked = { newDate ->
+                    viewModel.onAction(EditTimetableAction.UpdateStartDate(newDate.toKotlinLocalDate()))
+                    nav.popSafe()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+fun EditTimetableEndDateScreen(viewModel: EditTimetableViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val nav = LocalNavController.current
+    HandleEditUiState(uiState) { timetable ->
+        DynamicSubTheme(seedColor = timetable.color) {
+            WearDatePickerPage(
+                initialDate = (timetable.semesterEnd ?: timetable.semesterStart).toJavaLocalDate(),
+                onDatePicked = { newDate ->
+                    viewModel.onAction(EditTimetableAction.UpdateEndDate(newDate.toKotlinLocalDate()))
+                    nav.popSafe()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+fun EditTimetableNameScreen(viewModel: EditTimetableViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val nav = LocalNavController.current
+    HandleEditUiState(uiState) { timetable ->
+        DynamicSubTheme(seedColor = timetable.color) {
+            TextEditScreen(
+                label = stringResource(R.string.edit_timetable_name_hint),
+                initialText = timetable.semesterName,
+            ) { newValue ->
+                viewModel.onAction(EditTimetableAction.UpdateName(newValue))
+                nav.popSafe()
             }
         }
+    }
+}
 
-        composable(InternalNavRoutes.START_DATE) {
-            HandleEditUiState(uiState) { timetable ->
-                DynamicSubTheme(seedColor = timetable.color) {
-                    WearDatePickerPage(
-                        initialDate = timetable.semesterStart.toJavaLocalDate(),
-                        onDatePicked = { newDate ->
-                            viewModel.onAction(
-                                EditTimetableAction.UpdateStartDate(newDate.toKotlinLocalDate())
-                            )
-                            internalNavController.popSafe()
-                        },
-                    )
-                }
-            }
-        }
+@Composable
+fun EditTimetableColorScreen(viewModel: EditTimetableViewModel) {
+    val nav = LocalNavController.current
+    ColorSelectionScreen { color ->
+        viewModel.onAction(EditTimetableAction.UpdateColor(color))
+        nav.popSafe()
+    }
+}
 
-
-        composable(InternalNavRoutes.END_DATE) {
-            HandleEditUiState(uiState) { timetable ->
-                DynamicSubTheme(seedColor = timetable.color) {
-                    WearDatePickerPage(
-                        initialDate = (timetable.semesterEnd ?: timetable.semesterStart).toJavaLocalDate(),
-                        onDatePicked = { newDate ->
-                            viewModel.onAction(
-                                EditTimetableAction.UpdateEndDate(newDate.toKotlinLocalDate())
-                            )
-                            internalNavController.popSafe()
-                        },
-                    )
-                }
-            }
-        }
-
-        composable(InternalNavRoutes.NAME) {
-            HandleEditUiState(uiState) { timetable ->
-                DynamicSubTheme(seedColor = timetable.color) {
-                    TextEditScreen(
-                        label = stringResource(R.string.edit_timetable_name_hint),
-                        initialText = timetable.semesterName
-                    ) { newValue ->
-                        viewModel.onAction(EditTimetableAction.UpdateName(newValue))
-                        internalNavController.popSafe() // 保存后退出
-                    }
-                }
-            }
-        }
-
-        composable(InternalNavRoutes.COLOR) {
-            ColorSelectionScreen { color ->
-                viewModel.onAction(EditTimetableAction.UpdateColor(color))
-                internalNavController.popSafe()
-            }
-        }
-
-        composable(InternalNavRoutes.QUICK_MODIFY) {
-            HandleEditUiState(uiState) { timetable ->
-                DynamicSubTheme(seedColor = timetable.color) {
-                    ScheduleToolsScreen(
-                        fixedTimetableId = timetable.timetableId,
-                        onCompleted = { internalNavController.popSafe() },
-                    )
-                }
-            }
-        }
-
-        composable(InternalNavRoutes.DELETE_CONFIRM) {
-            HandleEditUiState(uiState) { timetable ->
-                DynamicSubTheme(seedColor = timetable.color) {
-                    DeleteConfirmScreen(
-                        detail = stringResource(
-                        R.string.edit_timetable_display_name, timetable.displayName
-                    ), onConfirm = {
-                            viewModel.onAction(EditTimetableAction.Delete)
-                        navController.popSafe()
-                        }, onCancel = {
-                        internalNavController.popSafe() // 只是关掉确认页，回到编辑页
-                        })
-                }
-            }
+@Composable
+fun EditTimetableDeleteConfirmScreen(viewModel: EditTimetableViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val nav = LocalNavController.current
+    HandleEditUiState(uiState) { timetable ->
+        DynamicSubTheme(seedColor = timetable.color) {
+            DeleteConfirmScreen(
+                detail = stringResource(R.string.edit_timetable_display_name, timetable.displayName),
+                onConfirm = {
+                    viewModel.onAction(EditTimetableAction.Delete)
+                    nav.popBackStack(NavRoutes.EDIT_TIMETABLE, inclusive = true)
+                },
+                onCancel = { nav.popSafe() },
+            )
         }
     }
 }

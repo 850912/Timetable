@@ -26,6 +26,7 @@ import com.hufeng943.timetable.presentation.ui.common.ui.TimeSlotUi
 import com.hufeng943.timetable.presentation.ui.components.DeleteButton
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
+import com.hufeng943.timetable.presentation.ui.components.toScheduleEditorString
 import java.time.format.TextStyle
 
 @Composable
@@ -66,7 +67,7 @@ fun EditTimeSlotMainPager(
             item {
                 OneUiCapsuleSurface(
                     title = stringResource(R.string.edit_timeslot_start),
-                    subtitle = timeSlot.startTime?.toString() ?: stringResource(R.string.not_set),
+                    subtitle = timeSlot.startTime?.toScheduleEditorString() ?: stringResource(R.string.not_set),
                     icon = Icons.Rounded.AccessTime,
                     emphasize = timeSlot.startTime == null,
                     onClick = onStartTimeClick,
@@ -78,7 +79,7 @@ fun EditTimeSlotMainPager(
             item {
                 OneUiCapsuleSurface(
                     title = stringResource(R.string.edit_timeslot_end),
-                    subtitle = timeSlot.endTime?.toString() ?: stringResource(R.string.not_set),
+                    subtitle = timeSlot.endTime?.toScheduleEditorString() ?: stringResource(R.string.not_set),
                     icon = Icons.Rounded.AccessTime,
                     emphasize = timeSlot.endTime == null,
                     onClick = onEndTimeClick,

@@ -160,9 +160,9 @@ fun CourseCard(
 
                     Text(
                         text = buildString {
-                            slot.startTime?.let { append(it.toDisplayString(is24HourFormat)) }
+                            slot.startTime?.let { append(it.toScheduleCompactString()) }
                             if (slot.startTime != null && slot.endTime != null) append(" – ")
-                            slot.endTime?.let { append(it.toDisplayString(is24HourFormat)) }
+                            slot.endTime?.let { append(it.toScheduleCompactString()) }
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.textSecondary,

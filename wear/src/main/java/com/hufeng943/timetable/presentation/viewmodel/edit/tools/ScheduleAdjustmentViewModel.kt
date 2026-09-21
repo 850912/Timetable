@@ -26,12 +26,30 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 enum class CourseAdjustmentMode { SWAP, OCCUPY }
+
+data class DayArrangementEditorState(
+    val date: LocalDate,
+    val sourceDay: DayOfWeek,
+)
+
+data class CourseAdjustmentEditorState(
+    val date: LocalDate,
+    val sourceSlotId: Long = -1L,
+    val sourceTableId: Long = -1L,
+    val targetCourseId: Long = -1L,
+    val browsingCourseId: Long = -1L,
+    val mode: CourseAdjustmentMode = CourseAdjustmentMode.OCCUPY,
+    val permanent: Boolean = false,
+)
 
 sealed interface ScheduleAdjustmentState {
     data object Loading : ScheduleAdjustmentState
@@ -47,6 +65,18 @@ class ScheduleAdjustmentViewModel @Inject constructor(
     private val _state = MutableStateFlow<ScheduleAdjustmentState>(ScheduleAdjustmentState.Loading)
     val state: StateFlow<ScheduleAdjustmentState> = _state.asStateFlow()
 
+    private val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    private val _dayEditor = MutableStateFlow(
+        DayArrangementEditorState(
+            date = today,
+            sourceDay = DayOfWeek.entries[(today.dayOfWeek.ordinal + 1) % DayOfWeek.entries.size],
+        ),
+    )
+    val dayEditor: StateFlow<DayArrangementEditorState> = _dayEditor.asStateFlow()
+
+    private val _courseEditor = MutableStateFlow(CourseAdjustmentEditorState(date = today))
+    val courseEditor: StateFlow<CourseAdjustmentEditorState> = _courseEditor.asStateFlow()
+
     private val _completed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val completed = _completed.asSharedFlow()
 
@@ -57,6 +87,55 @@ class ScheduleAdjustmentViewModel @Inject constructor(
                 else ScheduleAdjustmentState.Ready(tables)
             }
         }
+    }
+
+    fun updateDayArrangementDate(date: LocalDate) {
+        val current = _dayEditor.value
+        val source = if (current.sourceDay == date.dayOfWeek) {
+            DayOfWeek.entries[(current.sourceDay.ordinal + 1) % DayOfWeek.entries.size]
+        } else current.sourceDay
+        _dayEditor.value = current.copy(date = date, sourceDay = source)
+    }
+
+    fun updateDayArrangementSource(day: DayOfWeek) {
+        if (day != _dayEditor.value.date.dayOfWeek) _dayEditor.value = _dayEditor.value.copy(sourceDay = day)
+    }
+
+    fun updateCourseAdjustmentDate(date: LocalDate) {
+        _courseEditor.value = _courseEditor.value.copy(
+            date = date,
+            sourceSlotId = -1L,
+            sourceTableId = -1L,
+            targetCourseId = -1L,
+            browsingCourseId = -1L,
+        )
+    }
+
+    fun browseCourse(courseId: Long) {
+        _courseEditor.value = _courseEditor.value.copy(browsingCourseId = courseId)
+    }
+
+    fun selectSourceOccurrence(tableId: Long, slotId: Long) {
+        _courseEditor.value = _courseEditor.value.copy(
+            sourceTableId = tableId,
+            sourceSlotId = slotId,
+            targetCourseId = -1L,
+        )
+    }
+
+    fun selectTargetCourse(courseId: Long) {
+        _courseEditor.value = _courseEditor.value.copy(targetCourseId = courseId)
+    }
+
+    fun toggleCourseAdjustmentMode() {
+        val mode = _courseEditor.value.mode
+        _courseEditor.value = _courseEditor.value.copy(
+            mode = if (mode == CourseAdjustmentMode.SWAP) CourseAdjustmentMode.OCCUPY else CourseAdjustmentMode.SWAP,
+        )
+    }
+
+    fun toggleCourseAdjustmentPermanent() {
+        _courseEditor.value = _courseEditor.value.copy(permanent = !_courseEditor.value.permanent)
     }
 
     fun applyDayArrangement(timetableId: Long?, targetDate: LocalDate, sourceDay: DayOfWeek) {
