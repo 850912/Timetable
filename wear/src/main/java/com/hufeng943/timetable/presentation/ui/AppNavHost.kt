@@ -74,6 +74,8 @@ import com.hufeng943.timetable.presentation.viewmodel.edit.tools.ScheduleToolsVi
 import com.hufeng943.timetable.presentation.viewmodel.edit.tools.ScheduleAdjustmentViewModel
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.LocalSwipeToDismissBackgroundScrimColor
+import androidx.wear.compose.foundation.LocalSwipeToDismissContentScrimColor
 
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
@@ -142,274 +144,274 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 config = config,
                 modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
             )
-            Box(Modifier.fillMaxSize()) {
-                // Keep Wear Material 3's theme-provided swipe scrims. They use the opaque
-                // colorScheme.background and prevent the previous destination from remaining
-                // visibly layered behind the incoming page during the built-in entry motion.
-                SwipeDismissableNavHost(
-                    navController = navController,
-                    startDestination = NavRoutes.MAIN,
-                    modifier = Modifier.fillMaxSize(),
+            CompositionLocalProvider(
+                    LocalSwipeToDismissBackgroundScrimColor provides Color.Transparent,
+                    LocalSwipeToDismissContentScrimColor provides Color.Transparent,
                 ) {
-                    composable(NavRoutes.MAIN) { HomeScreen() }
-
-                    composable(NavRoutes.COURSE_DETAIL) { CourseDetailScreen() }
-                    composable(NavRoutes.LIST_TIMETABLE) { TimetableListScreen() }
-                    composable(NavRoutes.LIST_COURSE) { CourseListScreen() }
-                    composable(NavRoutes.LIST_TIMESLOT) { TimeSlotListScreen() }
-
-                    // Batch tools: one graph inside the single app SwipeDismissableNavHost.
-                    navigation(
-                        startDestination = NavRoutes.SCHEDULE_TOOLS_MAIN,
-                        route = NavRoutes.SCHEDULE_TOOLS,
+                    SwipeDismissableNavHost(
+                        navController = navController,
+                        startDestination = NavRoutes.MAIN
                     ) {
-                        composable(NavRoutes.SCHEDULE_TOOLS_MAIN) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
-                            ScheduleToolsScreen(hiltViewModel<ScheduleToolsViewModel>(parent))
-                        }
-                        composable(NavRoutes.SCHEDULE_TOOLS_START) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
-                            ScheduleToolsStartDateScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.SCHEDULE_TOOLS_END) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
-                            ScheduleToolsEndDateScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.SCHEDULE_TOOLS_WINDOW_START) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
-                            ScheduleToolsWindowStartScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.SCHEDULE_TOOLS_WINDOW_END) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
-                            ScheduleToolsWindowEndScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.SCHEDULE_TOOLS_DAYS) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
-                            ScheduleToolsDaysScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.SCHEDULE_TOOLS_OFFSET) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
-                            ScheduleToolsOffsetScreen(hiltViewModel(parent))
-                        }
+                composable(NavRoutes.MAIN) { HomeScreen() }
+
+                composable(NavRoutes.COURSE_DETAIL) { CourseDetailScreen() }
+                composable(NavRoutes.LIST_TIMETABLE) { TimetableListScreen() }
+                composable(NavRoutes.LIST_COURSE) { CourseListScreen() }
+                composable(NavRoutes.LIST_TIMESLOT) { TimeSlotListScreen() }
+
+                // Batch tools: one graph inside the single app SwipeDismissableNavHost.
+                navigation(
+                    startDestination = NavRoutes.SCHEDULE_TOOLS_MAIN,
+                    route = NavRoutes.SCHEDULE_TOOLS,
+                ) {
+                    composable(NavRoutes.SCHEDULE_TOOLS_MAIN) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
+                        ScheduleToolsScreen(hiltViewModel<ScheduleToolsViewModel>(parent))
                     }
-
-                    // Timetable editor. Its ViewModel is scoped to this graph so draft edits survive
-                    // navigation to name/date/color child pages without another NavHost.
-                    navigation(
-                        startDestination = NavRoutes.EDIT_TIMETABLE_MAIN,
-                        route = NavRoutes.EDIT_TIMETABLE,
-                    ) {
-                        argument(NavArgs.TABLE_ID) { type = NavType.LongType }
-                        composable(NavRoutes.EDIT_TIMETABLE_MAIN) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
-                            EditTimetableScreen(hiltViewModel<EditTimetableViewModel>(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMETABLE_NAME) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
-                            EditTimetableNameScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMETABLE_START_DATE) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
-                            EditTimetableStartDateScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMETABLE_END_DATE) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
-                            EditTimetableEndDateScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMETABLE_COLOR) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
-                            EditTimetableColorScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMETABLE_DELETE_CONFIRM) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
-                            EditTimetableDeleteConfirmScreen(hiltViewModel(parent))
-                        }
+                    composable(NavRoutes.SCHEDULE_TOOLS_START) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
+                        ScheduleToolsStartDateScreen(hiltViewModel(parent))
                     }
-
-                    // Course editor already used graph-scoped state; keep it in the same host.
-                    navigation(
-                        startDestination = NavRoutes.EDIT_COURSE_MAIN,
-                        route = NavRoutes.EDIT_COURSE,
-                    ) {
-                        argument(NavArgs.TABLE_ID) { type = NavType.LongType }
-                        argument(NavArgs.COURSE_ID) { type = NavType.LongType }
-                        composable(NavRoutes.EDIT_COURSE_MAIN) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
-                            EditCourseMainScreen(hiltViewModel<EditCourseViewModel>(parent))
-                        }
-                        composable(NavRoutes.EDIT_COURSE_NAME) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
-                            EditCourseNameScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_COURSE_LOCATION) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
-                            EditCourseLocationScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_COURSE_TEACHER) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
-                            EditCourseTeacherScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_COURSE_COLOR) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
-                            EditCourseColorScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_COURSE_DELETE_CONFIRM) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
-                            EditCourseDeleteConfirmScreen(hiltViewModel(parent))
-                        }
+                    composable(NavRoutes.SCHEDULE_TOOLS_END) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
+                        ScheduleToolsEndDateScreen(hiltViewModel(parent))
                     }
-
-                    // Time-slot editor graph.
-                    navigation(
-                        startDestination = NavRoutes.EDIT_TIMESLOT_MAIN,
-                        route = NavRoutes.EDIT_TIMESLOT,
-                    ) {
-                        argument(NavArgs.COURSE_ID) { type = NavType.LongType }
-                        argument(NavArgs.TIME_SLOT_ID) { type = NavType.LongType }
-                        composable(NavRoutes.EDIT_TIMESLOT_MAIN) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
-                            EditTimeSlotScreen(hiltViewModel<EditTimeSlotViewModel>(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMESLOT_START_TIME) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
-                            EditTimeSlotStartTimeScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMESLOT_END_TIME) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
-                            EditTimeSlotEndTimeScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMESLOT_DATES) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
-                            EditTimeSlotDatesScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMESLOT_WEEK_DAY) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
-                            EditTimeSlotWeekDayScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMESLOT_RECURRENCE) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
-                            EditTimeSlotRecurrenceScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMESLOT_REMARK) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
-                            EditTimeSlotRemarkScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.EDIT_TIMESLOT_DELETE_CONFIRM) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
-                            EditTimeSlotDeleteConfirmScreen(hiltViewModel(parent))
-                        }
+                    composable(NavRoutes.SCHEDULE_TOOLS_WINDOW_START) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
+                        ScheduleToolsWindowStartScreen(hiltViewModel(parent))
                     }
-
-                    composable(NavRoutes.MORE_ABOUT) { AboutScreen() }
-                    composable(NavRoutes.MORE_ABOUT_LIBRARIES) { AboutLibrariesScreen() }
-                    composable(NavRoutes.MORE_ABOUT_DEVELOPER) { DeveloperOptionsScreen() }
-
-                    // Settings graph: every settings page now participates in the app-level swipe stack.
-                    navigation(
-                        startDestination = NavRoutes.MORE_SETTINGS_MAIN,
-                        route = NavRoutes.MORE_SETTINGS,
-                    ) {
-                        composable(NavRoutes.MORE_SETTINGS_MAIN) { SettingScreen() }
-                        composable(NavRoutes.MORE_SETTINGS_UI) { SettingsUiManagementScreen(appConfigViewModel) }
-                        composable(NavRoutes.MORE_SETTINGS_LANGUAGE) { SettingsLanguageScreen(appConfigViewModel) }
-                        composable(NavRoutes.MORE_SETTINGS_TIME_FORMAT) { SettingsTimeFormatScreen(appConfigViewModel) }
-                        composable(NavRoutes.MORE_SETTINGS_FIRST_DAY) { SettingsFirstDayScreen(appConfigViewModel) }
-                        composable(NavRoutes.MORE_SETTINGS_POWER_SAVE) { SettingsPowerSaveScreen(appConfigViewModel) }
-                        composable(NavRoutes.MORE_SETTINGS_EXPORT) { SettingsExportScreen() }
-                        composable(NavRoutes.MORE_SETTINGS_IMPORT) { SettingsImportScreen() }
-                        composable(NavRoutes.MORE_SETTINGS_THEME) { SettingsThemeScreen() }
-                        composable(NavRoutes.MORE_SETTINGS_BACKGROUND) { SettingsBackgroundScreen(appConfigViewModel) }
-                        composable(NavRoutes.MORE_SETTINGS_LIQUID_GLASS) {
-                            LiquidGlassAdvancedPager(
-                                config = config,
-                                onEnabledChange = appConfigViewModel::updateLiquidGlassEnabled,
-                                onEffectChange = appConfigViewModel::updateLiquidGlassEffect,
-                                onChromaticAberrationChange = appConfigViewModel::updateGlassChromaticAberration,
-                                onLensDistortionChange = appConfigViewModel::updateGlassLensDistortion,
-                                onBlurEnabledChange = appConfigViewModel::updateGlassBlurEnabled,
-                                onBlurRadiusChange = appConfigViewModel::updateGlassBlurRadius,
-                                onOpacityClick = { navController.navigate(NavRoutes.MORE_SETTINGS_GLASS_OPACITY) },
-                                onClarityClick = { navController.navigate(NavRoutes.MORE_SETTINGS_GLASS_CLARITY) },
-                                onBrightnessClick = { navController.navigate(NavRoutes.MORE_SETTINGS_BACKGROUND_BRIGHTNESS) },
-                            )
-                        }
-                        composable(NavRoutes.MORE_SETTINGS_GLASS_OPACITY) {
-                            LiquidGlassIntegerAdjustPager(
-                                title = "玻璃底色浓度",
-                                value = (config.glassOpacity * 100).toInt(),
-                                range = 5..95,
-                                onApply = { appConfigViewModel.updateGlassOpacity(it / 100f) },
-                                onClose = { navController.popBackStack() },
-                            )
-                        }
-                        composable(NavRoutes.MORE_SETTINGS_GLASS_CLARITY) {
-                            LiquidGlassIntegerAdjustPager(
-                                title = "玻璃清透度",
-                                value = (config.glassClarity * 100).toInt(),
-                                range = 0..100,
-                                onApply = { appConfigViewModel.updateGlassClarity(it / 100f) },
-                                onClose = { navController.popBackStack() },
-                            )
-                        }
-                        composable(NavRoutes.MORE_SETTINGS_BACKGROUND_BRIGHTNESS) {
-                            LiquidGlassIntegerAdjustPager(
-                                title = "背景亮度",
-                                value = (config.backgroundBrightness * 100).toInt(),
-                                range = 10..100,
-                                onApply = { appConfigViewModel.updateBackgroundBrightness(it / 100f) },
-                                onClose = { navController.popBackStack() },
-                            )
-                        }
+                    composable(NavRoutes.SCHEDULE_TOOLS_WINDOW_END) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
+                        ScheduleToolsWindowEndScreen(hiltViewModel(parent))
                     }
-
-                    navigation(
-                        startDestination = NavRoutes.MORE_DAY_ARRANGEMENT_MAIN,
-                        route = NavRoutes.MORE_DAY_ARRANGEMENT,
-                    ) {
-                        composable(NavRoutes.MORE_DAY_ARRANGEMENT_MAIN) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_DAY_ARRANGEMENT) }
-                            DayArrangementScreen(hiltViewModel<ScheduleAdjustmentViewModel>(parent))
-                        }
-                        composable(NavRoutes.MORE_DAY_ARRANGEMENT_DATE) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_DAY_ARRANGEMENT) }
-                            DayArrangementDateScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.MORE_DAY_ARRANGEMENT_SOURCE) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_DAY_ARRANGEMENT) }
-                            DayArrangementSourceScreen(hiltViewModel(parent))
-                        }
+                    composable(NavRoutes.SCHEDULE_TOOLS_DAYS) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
+                        ScheduleToolsDaysScreen(hiltViewModel(parent))
                     }
-
-                    navigation(
-                        startDestination = NavRoutes.MORE_COURSE_ADJUSTMENT_MAIN,
-                        route = NavRoutes.MORE_COURSE_ADJUSTMENT,
-                    ) {
-                        composable(NavRoutes.MORE_COURSE_ADJUSTMENT_MAIN) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
-                            CourseAdjustmentScreen(hiltViewModel<ScheduleAdjustmentViewModel>(parent))
-                        }
-                        composable(NavRoutes.MORE_COURSE_ADJUSTMENT_DATE) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
-                            CourseAdjustmentDateScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.MORE_COURSE_ADJUSTMENT_A_COURSES) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
-                            CourseAdjustmentACoursesScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.MORE_COURSE_ADJUSTMENT_A_SLOTS) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
-                            CourseAdjustmentASlotsScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.MORE_COURSE_ADJUSTMENT_B_COURSES) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
-                            CourseAdjustmentBCoursesScreen(hiltViewModel(parent))
-                        }
-                        composable(NavRoutes.MORE_COURSE_ADJUSTMENT_B_SLOTS) { entry ->
-                            val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
-                            CourseAdjustmentBSlotsScreen(hiltViewModel(parent))
-                        }
+                    composable(NavRoutes.SCHEDULE_TOOLS_OFFSET) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.SCHEDULE_TOOLS) }
+                        ScheduleToolsOffsetScreen(hiltViewModel(parent))
                     }
+                }
 
+                // Timetable editor. Its ViewModel is scoped to this graph so draft edits survive
+                // navigation to name/date/color child pages without another NavHost.
+                navigation(
+                    startDestination = NavRoutes.EDIT_TIMETABLE_MAIN,
+                    route = NavRoutes.EDIT_TIMETABLE,
+                ) {
+                    argument(NavArgs.TABLE_ID) { type = NavType.LongType }
+                    composable(NavRoutes.EDIT_TIMETABLE_MAIN) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
+                        EditTimetableScreen(hiltViewModel<EditTimetableViewModel>(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMETABLE_NAME) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
+                        EditTimetableNameScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMETABLE_START_DATE) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
+                        EditTimetableStartDateScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMETABLE_END_DATE) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
+                        EditTimetableEndDateScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMETABLE_COLOR) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
+                        EditTimetableColorScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMETABLE_DELETE_CONFIRM) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMETABLE) }
+                        EditTimetableDeleteConfirmScreen(hiltViewModel(parent))
+                    }
+                }
+
+                // Course editor already used graph-scoped state; keep it in the same host.
+                navigation(
+                    startDestination = NavRoutes.EDIT_COURSE_MAIN,
+                    route = NavRoutes.EDIT_COURSE,
+                ) {
+                    argument(NavArgs.TABLE_ID) { type = NavType.LongType }
+                    argument(NavArgs.COURSE_ID) { type = NavType.LongType }
+                    composable(NavRoutes.EDIT_COURSE_MAIN) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
+                        EditCourseMainScreen(hiltViewModel<EditCourseViewModel>(parent))
+                    }
+                    composable(NavRoutes.EDIT_COURSE_NAME) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
+                        EditCourseNameScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_COURSE_LOCATION) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
+                        EditCourseLocationScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_COURSE_TEACHER) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
+                        EditCourseTeacherScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_COURSE_COLOR) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
+                        EditCourseColorScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_COURSE_DELETE_CONFIRM) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_COURSE) }
+                        EditCourseDeleteConfirmScreen(hiltViewModel(parent))
+                    }
+                }
+
+                // Time-slot editor graph.
+                navigation(
+                    startDestination = NavRoutes.EDIT_TIMESLOT_MAIN,
+                    route = NavRoutes.EDIT_TIMESLOT,
+                ) {
+                    argument(NavArgs.COURSE_ID) { type = NavType.LongType }
+                    argument(NavArgs.TIME_SLOT_ID) { type = NavType.LongType }
+                    composable(NavRoutes.EDIT_TIMESLOT_MAIN) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
+                        EditTimeSlotScreen(hiltViewModel<EditTimeSlotViewModel>(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMESLOT_START_TIME) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
+                        EditTimeSlotStartTimeScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMESLOT_END_TIME) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
+                        EditTimeSlotEndTimeScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMESLOT_DATES) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
+                        EditTimeSlotDatesScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMESLOT_WEEK_DAY) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
+                        EditTimeSlotWeekDayScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMESLOT_RECURRENCE) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
+                        EditTimeSlotRecurrenceScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMESLOT_REMARK) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
+                        EditTimeSlotRemarkScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.EDIT_TIMESLOT_DELETE_CONFIRM) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.EDIT_TIMESLOT) }
+                        EditTimeSlotDeleteConfirmScreen(hiltViewModel(parent))
+                    }
+                }
+
+                composable(NavRoutes.MORE_ABOUT) { AboutScreen() }
+                composable(NavRoutes.MORE_ABOUT_LIBRARIES) { AboutLibrariesScreen() }
+                composable(NavRoutes.MORE_ABOUT_DEVELOPER) { DeveloperOptionsScreen() }
+
+                // Settings graph: every settings page now participates in the app-level swipe stack.
+                navigation(
+                    startDestination = NavRoutes.MORE_SETTINGS_MAIN,
+                    route = NavRoutes.MORE_SETTINGS,
+                ) {
+                    composable(NavRoutes.MORE_SETTINGS_MAIN) { SettingScreen() }
+                    composable(NavRoutes.MORE_SETTINGS_UI) { SettingsUiManagementScreen(appConfigViewModel) }
+                    composable(NavRoutes.MORE_SETTINGS_LANGUAGE) { SettingsLanguageScreen(appConfigViewModel) }
+                    composable(NavRoutes.MORE_SETTINGS_TIME_FORMAT) { SettingsTimeFormatScreen(appConfigViewModel) }
+                    composable(NavRoutes.MORE_SETTINGS_FIRST_DAY) { SettingsFirstDayScreen(appConfigViewModel) }
+                    composable(NavRoutes.MORE_SETTINGS_POWER_SAVE) { SettingsPowerSaveScreen(appConfigViewModel) }
+                    composable(NavRoutes.MORE_SETTINGS_EXPORT) { SettingsExportScreen() }
+                    composable(NavRoutes.MORE_SETTINGS_IMPORT) { SettingsImportScreen() }
+                    composable(NavRoutes.MORE_SETTINGS_THEME) { SettingsThemeScreen() }
+                    composable(NavRoutes.MORE_SETTINGS_BACKGROUND) { SettingsBackgroundScreen(appConfigViewModel) }
+                    composable(NavRoutes.MORE_SETTINGS_LIQUID_GLASS) {
+                        LiquidGlassAdvancedPager(
+                            config = config,
+                            onEnabledChange = appConfigViewModel::updateLiquidGlassEnabled,
+                            onEffectChange = appConfigViewModel::updateLiquidGlassEffect,
+                            onChromaticAberrationChange = appConfigViewModel::updateGlassChromaticAberration,
+                            onLensDistortionChange = appConfigViewModel::updateGlassLensDistortion,
+                            onBlurEnabledChange = appConfigViewModel::updateGlassBlurEnabled,
+                            onBlurRadiusChange = appConfigViewModel::updateGlassBlurRadius,
+                            onOpacityClick = { navController.navigate(NavRoutes.MORE_SETTINGS_GLASS_OPACITY) },
+                            onClarityClick = { navController.navigate(NavRoutes.MORE_SETTINGS_GLASS_CLARITY) },
+                            onBrightnessClick = { navController.navigate(NavRoutes.MORE_SETTINGS_BACKGROUND_BRIGHTNESS) },
+                        )
+                    }
+                    composable(NavRoutes.MORE_SETTINGS_GLASS_OPACITY) {
+                        LiquidGlassIntegerAdjustPager(
+                            title = "玻璃底色浓度",
+                            value = (config.glassOpacity * 100).toInt(),
+                            range = 5..95,
+                            onApply = { appConfigViewModel.updateGlassOpacity(it / 100f) },
+                            onClose = { navController.popBackStack() },
+                        )
+                    }
+                    composable(NavRoutes.MORE_SETTINGS_GLASS_CLARITY) {
+                        LiquidGlassIntegerAdjustPager(
+                            title = "玻璃清透度",
+                            value = (config.glassClarity * 100).toInt(),
+                            range = 0..100,
+                            onApply = { appConfigViewModel.updateGlassClarity(it / 100f) },
+                            onClose = { navController.popBackStack() },
+                        )
+                    }
+                    composable(NavRoutes.MORE_SETTINGS_BACKGROUND_BRIGHTNESS) {
+                        LiquidGlassIntegerAdjustPager(
+                            title = "背景亮度",
+                            value = (config.backgroundBrightness * 100).toInt(),
+                            range = 10..100,
+                            onApply = { appConfigViewModel.updateBackgroundBrightness(it / 100f) },
+                            onClose = { navController.popBackStack() },
+                        )
+                    }
+                }
+
+                navigation(
+                    startDestination = NavRoutes.MORE_DAY_ARRANGEMENT_MAIN,
+                    route = NavRoutes.MORE_DAY_ARRANGEMENT,
+                ) {
+                    composable(NavRoutes.MORE_DAY_ARRANGEMENT_MAIN) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_DAY_ARRANGEMENT) }
+                        DayArrangementScreen(hiltViewModel<ScheduleAdjustmentViewModel>(parent))
+                    }
+                    composable(NavRoutes.MORE_DAY_ARRANGEMENT_DATE) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_DAY_ARRANGEMENT) }
+                        DayArrangementDateScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.MORE_DAY_ARRANGEMENT_SOURCE) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_DAY_ARRANGEMENT) }
+                        DayArrangementSourceScreen(hiltViewModel(parent))
+                    }
+                }
+
+                navigation(
+                    startDestination = NavRoutes.MORE_COURSE_ADJUSTMENT_MAIN,
+                    route = NavRoutes.MORE_COURSE_ADJUSTMENT,
+                ) {
+                    composable(NavRoutes.MORE_COURSE_ADJUSTMENT_MAIN) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
+                        CourseAdjustmentScreen(hiltViewModel<ScheduleAdjustmentViewModel>(parent))
+                    }
+                    composable(NavRoutes.MORE_COURSE_ADJUSTMENT_DATE) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
+                        CourseAdjustmentDateScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.MORE_COURSE_ADJUSTMENT_A_COURSES) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
+                        CourseAdjustmentACoursesScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.MORE_COURSE_ADJUSTMENT_A_SLOTS) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
+                        CourseAdjustmentASlotsScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.MORE_COURSE_ADJUSTMENT_B_COURSES) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
+                        CourseAdjustmentBCoursesScreen(hiltViewModel(parent))
+                    }
+                    composable(NavRoutes.MORE_COURSE_ADJUSTMENT_B_SLOTS) { entry ->
+                        val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
+                        CourseAdjustmentBSlotsScreen(hiltViewModel(parent))
+                    }
+                }
+
+                    }
                 }
             }
         }
@@ -519,7 +521,12 @@ private fun AppBackground(
                 }
             }
         }
-        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.35f).coerceIn(0f, 0.35f)
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
+        // Do not place a full-screen black scrim above SwipeDismissableNavHost.
+        // It causes the previous screen to be visible briefly during the pop animation.
+        // Keep dimming subtle and behind navigation transitions.
+        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.18f).coerceIn(0f, 0.18f)
+        if (scrimAlpha > 0f) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
+        }
     }
 }

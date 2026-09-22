@@ -1,6 +1,8 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.about
 
 import android.util.Log
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -123,6 +125,27 @@ fun AboutScreen() {
                 }
             }
 
+
+            item {
+                OneUiCapsuleSurface(
+                    title = "个人主页",
+                    subtitle = "酷安 / 抖音",
+                    icon = Icons.Rounded.Person,
+                    onClick = {
+                        // Wear OS devices may not have the corresponding mainland apps.
+                        // Let the system/browser handle the target when available.
+                        val uri = Uri.parse("https://www.coolapk.com/u/22532694")
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }
+                    },
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
+                    modifier = Modifier.fillMaxWidth()
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
             item {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Info,
@@ -133,32 +156,7 @@ fun AboutScreen() {
                 )
             }
 
-            item {
-                OneUiInfoCapsule(
-                    icon = Icons.Rounded.Star,
-                    text = stringResource(R.string.about_features_schedule),
-                    modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
-            }
 
-            item {
-                OneUiInfoCapsule(
-                    icon = Icons.Rounded.Star,
-                    text = stringResource(R.string.about_features_wear),
-                    modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
-            }
-
-            item {
-                OneUiInfoCapsule(
-                    icon = Icons.Rounded.Star,
-                    text = stringResource(R.string.about_features_tools),
-                    modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
-            }
 
             item {
                 OneUiCapsuleSurface(
@@ -231,33 +229,6 @@ fun AboutScreen() {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Info,
                     text = stringResource(R.string.about_declaration_development),
-                    modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
-            }
-
-            item {
-                OneUiInfoCapsule(
-                    icon = Icons.Rounded.Code,
-                    text = stringResource(R.string.about_open_source_wear),
-                    modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
-            }
-
-            item {
-                OneUiInfoCapsule(
-                    icon = Icons.Rounded.Code,
-                    text = stringResource(R.string.about_open_source_data),
-                    modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
-            }
-
-            item {
-                OneUiInfoCapsule(
-                    icon = Icons.Rounded.Code,
-                    text = stringResource(R.string.about_open_source_ui),
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )

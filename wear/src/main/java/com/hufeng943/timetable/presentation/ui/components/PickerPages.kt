@@ -29,7 +29,9 @@ fun WearTimePickerPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            // Keep picker surface aligned with the app theme. Do not hardcode black/gray
+            // because Wear OS dynamic colors (Monet) are resolved through MaterialTheme.
+            .background(MaterialTheme.colorScheme.surface),
     ) {
         TimePicker(
             initialTime = initialTime,
@@ -48,7 +50,7 @@ fun WearDatePickerPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.surface),
     ) {
         DatePicker(
             initialDate = initialDate,

@@ -70,6 +70,14 @@
         </receiver>
 
 
+        <service
+            android:name=".sync.ChinaWearReceiverService"
+            android:exported="false" />
+
+        <service
+            android:name=".sync.WearProfileOpenReceiverService"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

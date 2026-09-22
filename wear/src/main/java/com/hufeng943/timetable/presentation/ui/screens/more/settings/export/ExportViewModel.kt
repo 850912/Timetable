@@ -9,6 +9,8 @@ import com.hufeng943.timetable.shared.export.BackupManager
 import com.hufeng943.timetable.shared.export.CsvExporter
 import com.hufeng943.timetable.shared.export.ExportPreviewStats
 import com.hufeng943.timetable.shared.export.IcsExporter
+import com.hufeng943.timetable.shared.export.ExportTarget
+
 import com.hufeng943.timetable.shared.model.Timetable
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -193,6 +195,37 @@ class ExportViewModel @Inject constructor(
             } catch (e: Exception) {
                 _state.value =
                     ExportState.Error(e.message ?: "导出失败")
+            }
+        }
+    }
+
+
+    /**
+     * Build12 unified destination entry.
+     * Existing export functions remain unchanged for compatibility.
+     */
+    fun exportWithTarget(
+        context: Context,
+        target: ExportTarget,
+        format: ExportFormat,
+        scope: ExportScope,
+        uri: Uri? = null
+    ) {
+        when (target) {
+            ExportTarget.PHONE_APP -> {
+                executePhoneExport(context, format, scope)
+            }
+            ExportTarget.DOWNLOAD -> {
+                if (uri != null) {
+                    executeDirectExport(context, uri, format, scope)
+                } else {
+                    _state.value = ExportState.Error("请选择保存位置")
+                }
+            }
+            ExportTarget.BOTH -> {
+                executePhoneExport(context, format, scope)
+                // Download is intentionally triggered separately after URI selection.
+                // Avoid duplicate storage prompts.
             }
         }
     }

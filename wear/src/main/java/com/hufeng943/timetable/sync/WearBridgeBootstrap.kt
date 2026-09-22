@@ -7,7 +7,7 @@ import com.hufeng943.timetable.shared.importexport.WearBridgeProtocol
 import java.util.concurrent.TimeUnit
 
 /**
- * Samsung China bootstrap: the watch deliberately initiates the first Data Layer
+ * Runtime bootstrap: choose transport by Wear service capability; not by watch brand. The watch deliberately initiates the first Data Layer
  * traffic. Real-device testing showed that this wakes the phone-side Wearable API
  * out of API_UNAVAILABLE(16) on a cold connection.
  */

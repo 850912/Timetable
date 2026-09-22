@@ -49,7 +49,7 @@ private object WearHapticCompat {
     }
 
     private fun resolve(className: String, methodName: String): Int? = runCatching {
-        val clazz = Class.forName(className, true, WearHapticCompat::class.java.classLoader)
+        val clazz = Class.forName(className, false, WearHapticCompat::class.java.classLoader)
         val method: Method = clazz.getMethod(methodName)
         if (!JavaModifier.isStatic(method.modifiers) || method.parameterTypes.isNotEmpty() || method.returnType != Int::class.javaPrimitiveType) {
             return@runCatching null

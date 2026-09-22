@@ -172,7 +172,7 @@ fun TimetableTheme(
     val dynamicScheme = if (dynamicColorEnabled) dynamicColorScheme(context) else null
     val colorScheme = dynamicScheme ?: presetScheme
 
-    val timetableColors = if (dynamicScheme != null) AmoledBlackColors.fromColorScheme(colorScheme) else themePreset.baseColors(colorScheme)
+    val timetableColors = themePreset.baseColors(colorScheme)
 
     CompositionLocalProvider(
         LocalThemePreset provides themePreset,
