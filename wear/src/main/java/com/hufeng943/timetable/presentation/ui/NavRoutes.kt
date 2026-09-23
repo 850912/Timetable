@@ -1,5 +1,11 @@
 package com.hufeng943.timetable.presentation.ui
 
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class TimetableRouteKey(val route: String) : NavKey
+
 object NavArgs {
     const val TIME_SLOT_ID = "timeSlotId"
     const val TABLE_ID = "tableId"
@@ -7,11 +13,11 @@ object NavArgs {
 }
 
 /**
- * App-level routes for the Wear app.
+ * Route identifiers shared by the Wear navigation layer.
  *
- * Wear OS swipe-to-dismiss works best when every visible page participates in the same
- * SwipeDismissableNavHost. Feature flows below therefore use nested navigation *graphs* inside
- * the app host, rather than creating child NavHosts inside screens.
+ * Navigation state is now a single Navigation 3 back stack. The feature grouping below is kept
+ * only to make route ownership and argument conventions obvious; it no longer creates nested
+ * Navigation 2 graphs.
  */
 object NavRoutes {
     const val MAIN = "main"

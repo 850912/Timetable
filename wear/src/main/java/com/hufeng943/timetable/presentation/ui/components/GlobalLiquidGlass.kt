@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
+import androidx.wear.compose.foundation.LocalScreenIsActive
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -40,8 +41,12 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
     val enabled = config.isLiquidGlassEnabled
     if (!enabled) return this
 
+    // Wear navigation keeps the previous destination composed during a transition.
+    // Inactive destinations must not keep running backdrop shaders; doing so competes
+    // with the active page and can turn the transition into a visible frozen frame.
+    val screenIsActive = LocalScreenIsActive.current
     val backdrop = LocalLiquidGlassBackdrop.current
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || backdrop == null) {
+    if (!screenIsActive || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || backdrop == null) {
         val alpha = config.glassOpacity.coerceIn(0.18f, 0.52f)
         return drawWithCache {
             val material = Brush.verticalGradient(
@@ -53,7 +58,7 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
         }
     }
 
-    val liquid = config.isLiquidGlassEnabled
+    val liquid = enabled
     // The old UI exposed profile / chromatic / blur / lens controls whose visible delta was tiny
     // on a 1.2–1.5 inch display and whose GPU cost varied greatly by vendor. 3.5.3 keeps one tuned
     // optical path: a small blur on capable watches plus restrained refraction. Low-RAM devices

@@ -14,14 +14,4 @@ enum class FirstDayOfTheWeek(val dayOfWeek: DayOfWeek?) {
     SUNDAY(DayOfWeek.SUNDAY),
     SATURDAY(DayOfWeek.SATURDAY);
 
-    companion object {
-        fun fromDayOfWeek(dayOfWeek: DayOfWeek?): FirstDayOfTheWeek {
-            return when (dayOfWeek) {
-                DayOfWeek.MONDAY -> MONDAY
-                DayOfWeek.SUNDAY -> SUNDAY
-                DayOfWeek.SATURDAY -> SATURDAY
-                else -> SYSTEM
-            }
-        }
-    }
 }

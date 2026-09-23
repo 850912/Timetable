@@ -78,11 +78,7 @@ class ExportViewModel @Inject constructor(
             ExportScope.ALL -> timetables
         }
 
-    fun executePhoneExport(context: Context, format: ExportFormat, scope: ExportScope) =
-        exportWithTarget(context, ExportTarget.PHONE_APP, format, scope)
 
-    fun executeDirectExport(context: Context, uri: Uri, format: ExportFormat, scope: ExportScope) =
-        exportWithTarget(context, ExportTarget.DOWNLOAD, format, scope, uri)
 
     /**
      * One coroutine owns the whole operation. BOTH therefore cannot report success
