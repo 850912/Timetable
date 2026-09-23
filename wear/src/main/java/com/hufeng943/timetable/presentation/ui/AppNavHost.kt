@@ -10,6 +10,10 @@ import android.os.PowerManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -27,7 +31,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.metadata
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.wear.compose.material3.AppScaffold
@@ -38,6 +44,7 @@ import com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
+import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.screens.detail.CourseDetailScreen
 import com.hufeng943.timetable.presentation.ui.screens.edit.course.CourseListScreen
@@ -104,6 +111,19 @@ private fun extractFluidPalette(bitmap: android.graphics.Bitmap): Pair<Color, Co
     return average(0, w, 0, (h * 2 / 3).coerceAtLeast(1)) to
         average(0, w, (h / 3).coerceAtMost(h - 1), h)
 }
+
+private val wearForwardTransitionMetadata = metadata {
+    // Navigation 3's Wear predictive-back scene supplies a horizontal forward transition.
+    // The old-page exposure reported in testing happens during this forward transition.
+    // Override only the forward transition with a short cross-fade; pop/predictive-back remain
+    // controlled by the Wear scene strategy so the edge-back gesture is preserved.
+    put(NavDisplay.TransitionKey) {
+        fadeIn(animationSpec = tween(durationMillis = 140)) togetherWith
+            fadeOut(animationSpec = tween(durationMillis = 100))
+    }
+}
+
+private fun TimetableRouteKey.routeOrNull(): String? = route
 
 @Composable
 private fun AppBackground(
@@ -234,7 +254,7 @@ private fun normalizeRoute(requested: String, current: String?): String {
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navBackStack = rememberNavBackStack(TimetableRouteKey(NavRoutes.MAIN))
-    val strategy = rememberSwipeDismissableSceneStrategy<TimetableRouteKey>()
+    val strategy = rememberSwipeDismissableSceneStrategy<NavKey>()
     val storedConfig by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val powerManager = remember(context) {
@@ -278,7 +298,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navigator = remember(navBackStack) {
         object : com.hufeng943.timetable.presentation.ui.common.TimetableNavigator {
             override fun navigate(route: String) {
-                val current = navBackStack.lastOrNull()?.route
+                val current = (navBackStack.lastOrNull() as? TimetableRouteKey)?.routeOrNull()
                 val normalized = normalizeRoute(route, current)
                 if (normalized.isBlank() || normalized == current) return
                 navBackStack.add(TimetableRouteKey(normalized))
@@ -292,9 +312,11 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
 
             override fun popBackStack(route: String, inclusive: Boolean): Boolean {
                 if (navBackStack.size <= 1) return false
-                val current = navBackStack.lastOrNull()?.route
+                val current = (navBackStack.lastOrNull() as? TimetableRouteKey)?.routeOrNull()
                 val target = normalizeRoute(route, current)
-                val index = navBackStack.indexOfLast { it.route == target }
+                val index = navBackStack.indexOfLast {
+                    (it as? TimetableRouteKey)?.routeOrNull() == target
+                }
                 if (index < 0) return false
                 val removeFrom = if (inclusive) index else index + 1
                 if (removeFrom >= navBackStack.size) return false
@@ -345,7 +367,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 },
                 sceneStrategies = listOf(strategy),
                 entryProvider = entryProvider {
-                    entry<TimetableRouteKey> { key ->
+                    entry<TimetableRouteKey>(metadata = wearForwardTransitionMetadata) { key ->
                         val route = key.route
                         when {
                             route == NavRoutes.MAIN -> HomeScreen()

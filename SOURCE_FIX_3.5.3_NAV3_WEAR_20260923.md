@@ -80,3 +80,16 @@ After the next GitHub Actions build, specifically test:
 7. Repeated enter/back on a glass-enabled configuration
 8. Xiaomi/China-ROM Wear device with liquid glass enabled
 9. Power-save mode navigation
+
+
+## CI failure from the previous v4 artifact
+The first Navigation 3 migration artifact (`v4`) did not compile in GitHub Actions. The failure was limited to `wear/presentation/ui/AppNavHost.kt`: the back stack is typed as `NavKey`, so direct `.route` access on `lastOrNull()`/`it` was invalid; the Wear scene strategy was instantiated as `SwipeDismissableSceneStrategy<TimetableRouteKey>` while `NavDisplay` was expecting `SceneStrategy<NavKey>`; and the compatibility extension `navigateSingle()` was used without importing the extension. GitHub Actions reported those errors at lines 201-208 of the uploaded failure log.
+
+## v5 corrections
+- Instantiate `rememberSwipeDismissableSceneStrategy<NavKey>()`, matching the current Wear Navigation 3 migration guidance.
+- Cast `NavKey` values to `TimetableRouteKey` before reading `route`.
+- Import `navigateSingle` for the existing navigation compatibility layer.
+- Add a Navigation 3 `TransitionKey` entry metadata override that uses a short cross-fade for forward navigation. This removes the horizontal forward slide while preserving Wear's pop/predictive-back handling.
+
+## Verification
+The source was statically re-checked after these edits. No local Gradle build was run; GitHub Actions remains the authoritative compile test for this project.
