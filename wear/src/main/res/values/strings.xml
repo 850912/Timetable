@@ -134,7 +134,7 @@
     <string name="about_features_tools">Tools: academic tasks and reminders, weekly image sharing, ICS / CSV / JSON, and system calendar sync.</string>
     <string name="about_declaration_project">Project: continuously maintained from HuFeng943 / Timetable; current release 3.5.3.</string>
     <string name="about_declaration_development">Maintained by HeiBaiJun; some development used generative AI. Tap the version 7 times for Developer Options.</string>
-    <string name="about_open_source_wear">Wear UI: Wear Compose 1.6.2 + Navigation 3 · Horologist 0.7.15</string>
+    <string name="about_open_source_wear">Wear UI: Wear Compose 1.6.2 · Horologist 0.7.15</string>
     <string name="about_open_source_data">Data: Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">Tools: Coroutines 1.11.0 · AboutLibraries 15.0.3 · MaterialKolor 4.1.1. Open the license list below for full notices.</string>
     <string name="about_changelog_part1">3.5.3 focuses on Wear OS 6 reliability: nested-page motion no longer drags the parent screen away, Xiaomi/China-ROM haptics use a safe runtime fallback, and liquid glass now uses one tuned low-cost optical path.</string>

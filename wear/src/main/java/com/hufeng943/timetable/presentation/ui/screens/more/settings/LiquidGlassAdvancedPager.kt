@@ -49,7 +49,7 @@ import kotlinx.coroutines.flow.drop
 
 /**
  * Main Liquid Glass page only. Numeric adjustment pages are app-level destinations so swipe-back
- * is rendered by the same Wear Navigation 3 back stack as the rest of the app.
+ * is rendered by the same SwipeDismissableNavHost as the rest of the app.
  */
 @Composable
 fun LiquidGlassAdvancedPager(

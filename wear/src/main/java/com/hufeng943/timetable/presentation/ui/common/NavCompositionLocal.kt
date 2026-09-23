@@ -1,28 +1,37 @@
 package com.hufeng943.timetable.presentation.ui.common
 
+import android.util.Log
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.NavOptionsBuilder
 
-/**
- * Small navigation abstraction used by Wear screens.
- *
- * The UI does not need to know whether the app uses Navigation 2 or Navigation 3.
- * Keeping this surface tiny also prevents screen code from depending on a concrete
- * NavController implementation.
- */
-interface TimetableNavigator {
-    fun navigate(route: String)
-    fun pop()
-    fun popBackStack(route: String, inclusive: Boolean = false): Boolean
+val LocalNavController = staticCompositionLocalOf<NavHostController> {
+    error("未提供 NavController！")
 }
 
-val LocalNavController = staticCompositionLocalOf<TimetableNavigator> {
-    error("未提供 TimetableNavigator！")
+fun NavController.navigateSingle(
+    route: String, builder: NavOptionsBuilder.() -> Unit = {}
+) {
+    if (currentBackStackEntry?.destination?.route != route) {
+        navigate(route) {
+            launchSingleTop = true
+            restoreState = true
+            builder()
+        }
+        Log.d("NavController", "跳转至: $route")
+
+    } else {
+        Log.d("NavController", "跳转被拦截: $route")
+    }
 }
 
-fun TimetableNavigator.navigateSingle(route: String) {
-    navigate(route)
-}
-
-fun TimetableNavigator.popSafe() {
-    pop()
+fun NavController.popSafe() {
+    val currentRoute = currentBackStackEntry?.destination?.route
+    if (currentRoute != null && previousBackStackEntry != null) {
+        popBackStack()
+        Log.d("NavController", "弹出: $currentRoute")
+    } else {
+        Log.d("NavController", "弹出被拦截: $currentRoute")
+    }
 }

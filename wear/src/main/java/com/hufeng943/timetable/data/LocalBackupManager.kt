@@ -7,6 +7,23 @@ import java.io.File
 
 object LocalBackupManager {
 
+    fun getPreferredBackupDir(context: Context): File {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            runCatching {
+                val appBackupDir = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    "Timetable"
+                )
+                if (appBackupDir.exists() || appBackupDir.mkdirs()) {
+                    if (appBackupDir.canWrite()) return appBackupDir
+                }
+            }
+        }
+
+        return context.getExternalFilesDir("backups")
+            ?.also { it.mkdirs() }
+            ?: File(context.filesDir, "backups").also { it.mkdirs() }
+    }
 
     fun listBackupFiles(context: Context): List<File> {
         val dirs = buildList {
