@@ -100,6 +100,14 @@ configure<ApplicationExtension> {
         compose = true
     }
 
+    // APK 打包稳定性配置：
+    // 保留原有 ABI / UI / 功能，仅规范资源打包。
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
