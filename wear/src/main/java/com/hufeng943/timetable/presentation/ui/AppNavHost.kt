@@ -77,6 +77,118 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.LocalSwipeToDismissBackgroundScrimColor
 import androidx.wear.compose.foundation.LocalSwipeToDismissContentScrimColor
 
+private fun decodeWearBackground(path: String, maxSide: Int = 512): android.graphics.Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(path, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    var sample = 1
+    var largest = maxOf(bounds.outWidth, bounds.outHeight)
+    while (largest / sample > maxSide * 2) sample *= 2
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = sample.coerceAtLeast(1)
+        inPreferredConfig = android.graphics.Bitmap.Config.RGB_565
+    }
+    return BitmapFactory.decodeFile(path, options)
+}
+
+private fun extractFluidPalette(bitmap: android.graphics.Bitmap): Pair<Color, Color> {
+    fun average(xStart: Int, xEnd: Int, yStart: Int, yEnd: Int): Color {
+        var r = 0L; var g = 0L; var b = 0L; var count = 0L
+        val stepX = ((xEnd - xStart) / 10).coerceAtLeast(1)
+        val stepY = ((yEnd - yStart) / 10).coerceAtLeast(1)
+        var y = yStart
+        while (y < yEnd) {
+            var x = xStart
+            while (x < xEnd) {
+                val c = bitmap.getPixel(x.coerceIn(0, bitmap.width - 1), y.coerceIn(0, bitmap.height - 1))
+                r += android.graphics.Color.red(c); g += android.graphics.Color.green(c); b += android.graphics.Color.blue(c); count++
+                x += stepX
+            }
+            y += stepY
+        }
+        if (count == 0L) return Color(0xFF6577B8)
+        return Color((r / count).toInt(), (g / count).toInt(), (b / count).toInt())
+    }
+    val w = bitmap.width.coerceAtLeast(1); val h = bitmap.height.coerceAtLeast(1)
+    return average(0, w, 0, (h * 2 / 3).coerceAtLeast(1)) to
+        average(0, w, (h / 3).coerceAtMost(h - 1), h)
+}
+
+@Composable
+private fun AppBackground(
+    config: com.hufeng943.timetable.presentation.ui.common.AppConfig,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundBitmap by produceState<android.graphics.Bitmap?>(
+        initialValue = null,
+        key1 = config.timetableBackgroundMode,
+        key2 = config.timetableBackgroundImagePath,
+    ) {
+        val decoded = if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE || config.timetableBackgroundMode == TimetableBackgroundMode.FLUID_IMAGE) {
+            withContext(Dispatchers.IO) {
+                config.timetableBackgroundImagePath?.let { path ->
+                    runCatching { decodeWearBackground(path) }.getOrNull()
+                }
+            }
+        } else null
+        value = decoded
+        awaitDispose {
+            decoded?.takeUnless { it.isRecycled }?.recycle()
+        }
+    }
+
+    val fluidPalette = remember(backgroundBitmap, config.timetableBackgroundMode) {
+        if (config.timetableBackgroundMode == TimetableBackgroundMode.FLUID_IMAGE) {
+            backgroundBitmap?.let(::extractFluidPalette)
+        } else null
+    }
+
+    Box(modifier.fillMaxSize().background(AppTheme.colors.background)) {
+        // Background blur is a single full-screen layer, not one blur pass per card. This keeps
+        // the optional effect predictable on Wear OS while allowing it to be disabled entirely.
+        Box(
+            Modifier
+                .fillMaxSize()
+                
+        ) {
+            when (config.timetableBackgroundMode) {
+                TimetableBackgroundMode.SOLID -> Unit
+                TimetableBackgroundMode.THEME ->
+                    GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
+                TimetableBackgroundMode.IMAGE -> {
+                    val bitmap = backgroundBitmap
+                    if (bitmap != null) {
+                        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    } else {
+                        GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
+                    }
+                }
+                TimetableBackgroundMode.FLUID_IMAGE -> {
+                    val bitmap = backgroundBitmap
+                    if (bitmap != null) {
+                        val palette = fluidPalette ?: extractFluidPalette(bitmap)
+                        GalaxyAiAmbientLayer(
+                            RectangleShape,
+                            strength = 1f,
+                            primaryOverride = palette.first,
+                            secondaryOverride = palette.second,
+                        )
+                    } else {
+                        GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
+                    }
+                }
+            }
+        }
+        // Do not place a full-screen black scrim above SwipeDismissableNavHost.
+        // It causes the previous screen to be visible briefly during the pop animation.
+        // Keep dimming subtle and behind navigation transitions.
+        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.18f).coerceIn(0f, 0.18f)
+        if (scrimAlpha > 0f) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
+        }
+    }
+}
+
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val navController = rememberSwipeDismissableNavController()
@@ -414,116 +526,6 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         }
     }
 }
-
-
-private fun decodeWearBackground(path: String, maxSide: Int = 512): android.graphics.Bitmap? {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(path, bounds)
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-    var sample = 1
-    var largest = maxOf(bounds.outWidth, bounds.outHeight)
-    while (largest / sample > maxSide * 2) sample *= 2
-    val options = BitmapFactory.Options().apply {
-        inSampleSize = sample.coerceAtLeast(1)
-        inPreferredConfig = android.graphics.Bitmap.Config.RGB_565
-    }
-    return BitmapFactory.decodeFile(path, options)
 }
 
-private fun extractFluidPalette(bitmap: android.graphics.Bitmap): Pair<Color, Color> {
-    fun average(xStart: Int, xEnd: Int, yStart: Int, yEnd: Int): Color {
-        var r = 0L; var g = 0L; var b = 0L; var count = 0L
-        val stepX = ((xEnd - xStart) / 10).coerceAtLeast(1)
-        val stepY = ((yEnd - yStart) / 10).coerceAtLeast(1)
-        var y = yStart
-        while (y < yEnd) {
-            var x = xStart
-            while (x < xEnd) {
-                val c = bitmap.getPixel(x.coerceIn(0, bitmap.width - 1), y.coerceIn(0, bitmap.height - 1))
-                r += android.graphics.Color.red(c); g += android.graphics.Color.green(c); b += android.graphics.Color.blue(c); count++
-                x += stepX
-            }
-            y += stepY
-        }
-        if (count == 0L) return Color(0xFF6577B8)
-        return Color((r / count).toInt(), (g / count).toInt(), (b / count).toInt())
-    }
-    val w = bitmap.width.coerceAtLeast(1); val h = bitmap.height.coerceAtLeast(1)
-    return average(0, w, 0, (h * 2 / 3).coerceAtLeast(1)) to
-        average(0, w, (h / 3).coerceAtMost(h - 1), h)
-}
 
-@Composable
-private fun AppBackground(
-    config: com.hufeng943.timetable.presentation.ui.common.AppConfig,
-    modifier: Modifier = Modifier,
-) {
-    val backgroundBitmap by produceState<android.graphics.Bitmap?>(
-        initialValue = null,
-        key1 = config.timetableBackgroundMode,
-        key2 = config.timetableBackgroundImagePath,
-    ) {
-        val decoded = if (config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE || config.timetableBackgroundMode == TimetableBackgroundMode.FLUID_IMAGE) {
-            withContext(Dispatchers.IO) {
-                config.timetableBackgroundImagePath?.let { path ->
-                    runCatching { decodeWearBackground(path) }.getOrNull()
-                }
-            }
-        } else null
-        value = decoded
-        awaitDispose {
-            decoded?.takeUnless { it.isRecycled }?.recycle()
-        }
-    }
-
-    val fluidPalette = remember(backgroundBitmap, config.timetableBackgroundMode) {
-        if (config.timetableBackgroundMode == TimetableBackgroundMode.FLUID_IMAGE) {
-            backgroundBitmap?.let(::extractFluidPalette)
-        } else null
-    }
-
-    Box(modifier.fillMaxSize().background(AppTheme.colors.background)) {
-        // Background blur is a single full-screen layer, not one blur pass per card. This keeps
-        // the optional effect predictable on Wear OS while allowing it to be disabled entirely.
-        Box(
-            Modifier
-                .fillMaxSize()
-                
-        ) {
-            when (config.timetableBackgroundMode) {
-                TimetableBackgroundMode.SOLID -> Unit
-                TimetableBackgroundMode.THEME ->
-                    GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
-                TimetableBackgroundMode.IMAGE -> {
-                    val bitmap = backgroundBitmap
-                    if (bitmap != null) {
-                        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                    } else {
-                        GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
-                    }
-                }
-                TimetableBackgroundMode.FLUID_IMAGE -> {
-                    val bitmap = backgroundBitmap
-                    if (bitmap != null) {
-                        val palette = fluidPalette ?: extractFluidPalette(bitmap)
-                        GalaxyAiAmbientLayer(
-                            RectangleShape,
-                            strength = 1f,
-                            primaryOverride = palette.first,
-                            secondaryOverride = palette.second,
-                        )
-                    } else {
-                        GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
-                    }
-                }
-            }
-        }
-        // Do not place a full-screen black scrim above SwipeDismissableNavHost.
-        // It causes the previous screen to be visible briefly during the pop animation.
-        // Keep dimming subtle and behind navigation transitions.
-        val scrimAlpha = ((1f - config.backgroundBrightness) * 0.18f).coerceIn(0f, 0.18f)
-        if (scrimAlpha > 0f) {
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
-        }
-    }
-}
