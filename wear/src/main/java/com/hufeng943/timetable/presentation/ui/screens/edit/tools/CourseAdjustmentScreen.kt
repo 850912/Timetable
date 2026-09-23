@@ -55,6 +55,7 @@ private data class AdjustmentContext(
     val table: Timetable?,
     val a: ResolvedSchedule?,
     val bCourses: List<Course>,
+    val bTableId: Long,
     val b: Course?,
     val bOccurs: Boolean,
 ) {
@@ -77,10 +78,16 @@ private fun buildAdjustmentContext(
     val table = selected?.let { hit -> timetables.firstOrNull { it.timetableId == hit.first } }
     val a = selected?.third
     val tableOccurrences = table?.resolveDate(editor.date).orEmpty()
-    val bCourses = table?.allCourses.orEmpty().filter { it.id != a?.course?.id }
+    val bCourses = timetables.flatMap { it.allCourses }.filter { it.id != a?.course?.id }
+    val bTableId = editor.targetTableId.takeIf { id -> timetables.any { it.timetableId == id } }
+        ?: bCourses.firstOrNull { it.id == editor.targetCourseId }?.let { course ->
+            timetables.firstOrNull { table -> table.allCourses.any { it.id == course.id } }?.timetableId
+        } ?: -1L
     val b = bCourses.firstOrNull { it.id == editor.targetCourseId } ?: bCourses.firstOrNull()
-    val bOccurs = b?.let { course -> tableOccurrences.any { it.course.id == course.id } } == true
-    return AdjustmentContext(all, selected, table, a, bCourses, b, bOccurs)
+    val bOccurs = b?.let { course ->
+        timetables.firstOrNull { it.timetableId == bTableId }?.resolveDate(editor.date)?.any { it.course.id == course.id } == true
+    } == true
+    return AdjustmentContext(all, selected, table, a, bCourses, bTableId, b, bOccurs)
 }
 
 @Composable
@@ -124,6 +131,7 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel) {
                                     timetableId = table.timetableId,
                                     targetDate = editor.date,
                                     sourceSlotId = a.timeSlot.id,
+                                    targetTableId = ctx.bTableId,
                                     targetCourseId = b.id,
                                     mode = editor.mode,
                                     permanent = editor.permanent,
@@ -178,7 +186,7 @@ fun CourseAdjustmentScreen(viewModel: ScheduleAdjustmentViewModel) {
                     item {
                         OneUiCapsuleSurface(
                             title = "B 课：${ctx.b?.name ?: "无可选课程"}",
-                            subtitle = "与 A 课同课表",
+                            subtitle = "可选择全部课表课程",
                             onClick = { nav.navigateSingle(NavRoutes.MORE_COURSE_ADJUSTMENT_B_COURSES) },
                             modifier = Modifier.fillMaxWidth()
                                 .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
@@ -304,10 +312,13 @@ fun CourseAdjustmentBSlotsScreen(viewModel: ScheduleAdjustmentViewModel) {
         ScheduleAdjustmentState.Loading -> ScreenScaffold(timeText = {}) {}
         is ScheduleAdjustmentState.Error -> SimpleMessageScreen("选择 B 课时", current.message)
         is ScheduleAdjustmentState.Ready -> {
-            val course = buildAdjustmentContext(current.timetables, editor).bCourses
-                .firstOrNull { it.id == editor.browsingCourseId }
+            val ctx = buildAdjustmentContext(current.timetables, editor)
+            val course = ctx.bCourses.firstOrNull { it.id == editor.browsingCourseId }
             TimeSlotSelectionPage("选择 B 课时", course) {
-                if (course != null) viewModel.selectTargetCourse(course.id)
+                if (course != null) {
+                    val tableId = current.timetables.firstOrNull { table -> table.allCourses.any { it.id == course.id } }?.timetableId ?: -1L
+                    viewModel.selectTargetCourse(tableId, course.id)
+                }
                 nav.popBackStack(NavRoutes.MORE_COURSE_ADJUSTMENT_MAIN, inclusive = false)
             }
         }

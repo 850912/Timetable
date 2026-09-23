@@ -43,7 +43,7 @@ internal class ChinaWearBleClient(private val context: Context) {
             session.enableNotifications()
             session.requestMtu(REQUESTED_MTU)
             session.write(envelope)
-            withTimeout(RESPONSE_TIMEOUT_MS) { session.response.await() }
+            withTimeout(RESPONSE_TIMEOUT_MS) { session.state.response.await() }
         } finally { session.close() }
     }
 
@@ -81,7 +81,7 @@ internal class ChinaWearBleClient(private val context: Context) {
         private val gatt: BluetoothGatt,
         private val writeCharacteristic: BluetoothGattCharacteristic,
         private val notifyCharacteristic: BluetoothGattCharacteristic,
-        private val state: State,
+        val state: State,
     ) {
         private var mtu = 23
         private var transferId = System.nanoTime()

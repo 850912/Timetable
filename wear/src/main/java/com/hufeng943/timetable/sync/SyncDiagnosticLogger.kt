@@ -94,6 +94,6 @@ object SyncDiagnosticLogger {
         val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY_EVENTS, "")
             .orEmpty()
-        return raw.lineSequence().filter { it.isNotBlank() }.takeLast(MAX_EVENTS).toList()
+        return raw.lineSequence().filter { it.isNotBlank() }.toList().takeLast(MAX_EVENTS)
     }
 }

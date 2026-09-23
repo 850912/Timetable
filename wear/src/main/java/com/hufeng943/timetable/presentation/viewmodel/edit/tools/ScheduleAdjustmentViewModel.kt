@@ -45,6 +45,7 @@ data class CourseAdjustmentEditorState(
     val date: LocalDate,
     val sourceSlotId: Long = -1L,
     val sourceTableId: Long = -1L,
+    val targetTableId: Long = -1L,
     val targetCourseId: Long = -1L,
     val browsingCourseId: Long = -1L,
     val mode: CourseAdjustmentMode = CourseAdjustmentMode.OCCUPY,
@@ -106,6 +107,7 @@ class ScheduleAdjustmentViewModel @Inject constructor(
             date = date,
             sourceSlotId = -1L,
             sourceTableId = -1L,
+            targetTableId = -1L,
             targetCourseId = -1L,
             browsingCourseId = -1L,
         )
@@ -123,8 +125,8 @@ class ScheduleAdjustmentViewModel @Inject constructor(
         )
     }
 
-    fun selectTargetCourse(courseId: Long) {
-        _courseEditor.value = _courseEditor.value.copy(targetCourseId = courseId)
+    fun selectTargetCourse(tableId: Long, courseId: Long) {
+        _courseEditor.value = _courseEditor.value.copy(targetTableId = tableId, targetCourseId = courseId)
     }
 
     fun toggleCourseAdjustmentMode() {
@@ -225,6 +227,7 @@ class ScheduleAdjustmentViewModel @Inject constructor(
         timetableId: Long,
         targetDate: LocalDate,
         sourceSlotId: Long,
+        targetTableId: Long,
         targetCourseId: Long,
         mode: CourseAdjustmentMode,
         permanent: Boolean,
@@ -235,14 +238,16 @@ class ScheduleAdjustmentViewModel @Inject constructor(
                     ?.firstOrNull { it.timetableId == timetableId } ?: error("课表不存在")
                 val occurrences = table.resolveDate(targetDate)
                 val a = occurrences.firstOrNull { it.timeSlot.id == sourceSlotId } ?: error("A 课在当天不存在")
-                val bCourse = table.allCourses.firstOrNull { it.id == targetCourseId } ?: error("B 课不存在")
+                val targetTable = (_state.value as? ScheduleAdjustmentState.Ready)?.timetables
+                    ?.firstOrNull { it.timetableId == targetTableId } ?: error("B 课表不存在")
+                val bCourse = targetTable.allCourses.firstOrNull { it.id == targetCourseId } ?: error("B 课不存在")
                 require(a.course.id != bCourse.id) { "A 课与 B 课不能相同" }
-                val bOccurrence = occurrences.firstOrNull { it.course.id == bCourse.id }
+                val bOccurrence = targetTable.resolveDate(targetDate).firstOrNull { it.course.id == bCourse.id }
 
                 if (permanent) {
-                    applyPermanent(timetableId, a, bCourse, bOccurrence, mode)
+                    applyPermanent(timetableId, targetTableId, a, bCourse, bOccurrence, mode)
                 } else {
-                    applyToday(timetableId, targetDate, a, bCourse, bOccurrence, mode)
+                    applyToday(timetableId, targetTableId, targetDate, a, bCourse, bOccurrence, mode)
                 }
                 WearSurfaceRefresher.refresh(appContext)
                 _completed.tryEmit(Unit)
@@ -252,6 +257,7 @@ class ScheduleAdjustmentViewModel @Inject constructor(
 
     private suspend fun applyToday(
         timetableId: Long,
+        targetTimetableId: Long,
         date: LocalDate,
         a: ResolvedSchedule,
         bCourse: Course,
@@ -283,11 +289,19 @@ class ScheduleAdjustmentViewModel @Inject constructor(
                 )
             }
         }
-        repository.applyAdjustmentMutations(timetableId, mutations)
+        if (targetTimetableId == timetableId) {
+            repository.applyAdjustmentMutations(timetableId, mutations)
+        } else {
+            val source = mutations.filter { it.courseId == a.course.id }
+            val target = mutations.filter { it.courseId == bCourse.id }
+            repository.applyAdjustmentMutations(timetableId, source)
+            repository.applyAdjustmentMutations(targetTimetableId, target)
+        }
     }
 
     private suspend fun applyPermanent(
         timetableId: Long,
+        targetTimetableId: Long,
         a: ResolvedSchedule,
         bCourse: Course,
         bOccurrence: ResolvedSchedule?,
@@ -305,7 +319,12 @@ class ScheduleAdjustmentViewModel @Inject constructor(
                 listOf(TimeSlotMutation(a.timeSlot, b.course.id), TimeSlotMutation(b.timeSlot, a.course.id))
             }
         }
-        repository.applyAdjustmentMutations(timetableId, mutations)
+        if (targetTimetableId == timetableId) {
+            repository.applyAdjustmentMutations(timetableId, mutations)
+        } else {
+            repository.applyAdjustmentMutations(timetableId, mutations.filter { it.courseId == a.course.id })
+            repository.applyAdjustmentMutations(targetTimetableId, mutations.filter { it.courseId == bCourse.id })
+        }
     }
     private fun requireNoPermanentConflict(
         incoming: TimeSlot,

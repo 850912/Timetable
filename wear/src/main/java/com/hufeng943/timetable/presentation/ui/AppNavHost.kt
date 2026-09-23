@@ -410,9 +410,6 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                         CourseAdjustmentBSlotsScreen(hiltViewModel(parent))
                     }
                 }
-
-                    }
-                }
             }
         }
     }
