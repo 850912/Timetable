@@ -3,6 +3,7 @@ package com.hufeng943.timetable.presentation.ui.screens.more.about
 import android.util.Log
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -129,14 +130,23 @@ fun AboutScreen() {
             item {
                 OneUiCapsuleSurface(
                     title = "个人主页",
-                    subtitle = "酷安 / 抖音",
+                    subtitle = "由手机打开酷安 / 抖音",
                     icon = Icons.Rounded.Person,
                     onClick = {
-                        // Wear OS devices may not have the corresponding mainland apps.
-                        // Let the system/browser handle the target when available.
-                        val uri = Uri.parse("https://www.coolapk.com/u/22532694")
-                        runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        scope.launch {
+                            runCatching {
+                                val ok = com.hufeng943.timetable.data.WearProfileTransfer.openProfile(
+                                    context,
+                                    com.hufeng943.timetable.shared.importexport.ChinaWearProfilePayload(
+                                        target = "coolapk",
+                                        appUri = "coolmarket://u/22532694",
+                                        fallbackUrl = "https://www.coolapk.com/u/22532694",
+                                    ),
+                                )
+                                Toast.makeText(context, if (ok) "已请求手机打开个人主页" else "手机未确认主页请求", Toast.LENGTH_SHORT).show()
+                            }.onFailure {
+                                Toast.makeText(context, it.message ?: "无法请求手机打开主页", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                     titleMaxLines = Int.MAX_VALUE,

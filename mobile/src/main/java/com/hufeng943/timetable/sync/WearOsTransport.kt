@@ -8,6 +8,7 @@ import com.hufeng943.timetable.shared.export.BackupManager
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.shared.sync.SyncEnvelope
 import com.hufeng943.timetable.shared.sync.SyncRecordPayload
+import com.hufeng943.timetable.shared.sync.SyncRetryPolicy
 import com.hufeng943.timetable.shared.sync.SyncResult
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.sync.SyncTransport
@@ -47,10 +48,12 @@ class WearOsTransport(
             .isNotEmpty()
     } }.getOrDefault(false)
 
-    override suspend fun sendRecords(records: List<SyncRecordPayload>): SyncResult {
+    override suspend fun sendRecords(
+        records: List<SyncRecordPayload>,
+        requestId: String,
+    ): SyncResult {
         if (records.isEmpty()) return SyncResult.Success
 
-        val requestId = UUID.randomUUID().toString()
         val ackDeferred = SyncAckTracker.register(requestId)
         return try {
             LegacyWearIo.withClient(context) { client ->
@@ -69,6 +72,12 @@ class WearOsTransport(
                     throw IllegalStateException("无法获取本机 Wear OS 节点(${sourceNode.status.statusCode})")
                 }
 
+                // Reusing requestId is intentional for idempotency. A previous attempt may have
+                // created the same DataItem and timed out only while waiting for the ACK. Delete that
+                // request-scoped item before re-putting it so a retry produces a fresh DataEvent.
+                runCatching {
+                    LegacyWearIo.deleteDataItem(context, android.net.Uri.parse("wear://*/${WearFileTransferProtocol.path(requestId).trimStart('/')}"))
+                }
                 val envelope = SyncEnvelope(
                     requestId = requestId,
                     sourceDeviceId = sourceNode.node.id,
@@ -115,17 +124,33 @@ class WearOsTransport(
      * Sends a complete timetable snapshot. Used for explicit "sync all" and
      * first-time imports where no incremental SyncRecord may exist yet.
      */
-    suspend fun sendTimetablesSnapshot(timetables: List<Timetable>): SyncResult {
+    override suspend fun sendTimetableSnapshot(timetables: List<Timetable>): SyncResult {
         if (timetables.isEmpty()) return SyncResult.Success
 
         val requestId = UUID.randomUUID().toString()
+        val bytes = ByteArrayOutputStream().use { output ->
+            BackupManager.backup(output, timetables)
+            output.toByteArray()
+        }
+        var lastFailure: SyncResult.Failed? = null
+
+        repeat(SyncRetryPolicy.MAX_RETRY) { attempt ->
+            val result = sendTimetableSnapshotAttempt(bytes, requestId)
+            if (result == SyncResult.Success) return result
+            if (result is SyncResult.Failed) lastFailure = result
+            if (attempt + 1 < SyncRetryPolicy.MAX_RETRY) {
+                kotlinx.coroutines.delay(SyncRetryPolicy.nextDelayMillis(attempt))
+            }
+        }
+        return lastFailure ?: SyncResult.Failed("Wear OS 完整课表同步失败")
+    }
+
+    private suspend fun sendTimetableSnapshotAttempt(
+        bytes: ByteArray,
+        requestId: String,
+    ): SyncResult {
         val ackDeferred = SyncAckTracker.register(requestId)
         return try {
-            val bytes = ByteArrayOutputStream().use { output ->
-                BackupManager.backup(output, timetables)
-                output.toByteArray()
-            }
-
             LegacyWearIo.withClient(context) { client ->
                 val nodesResult = Wearable.NodeApi.getConnectedNodes(client)
                     .await(OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -139,7 +164,12 @@ class WearOsTransport(
                 if (!sourceNode.status.isSuccess) {
                     throw IllegalStateException("无法获取本机 Wear OS 节点(${sourceNode.status.statusCode})")
                 }
-
+                runCatching {
+                    LegacyWearIo.deleteDataItem(
+                        context,
+                        android.net.Uri.parse("wear://*/${WearFileTransferProtocol.path(requestId).trimStart('/')}")
+                    )
+                }
                 val request = PutDataMapRequest.create(WearFileTransferProtocol.path(requestId)).apply {
                     dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_PHONE_PUSH_TIMETABLES)
                     dataMap.putString(WearFileTransferProtocol.KEY_REQUEST_ID, requestId)
@@ -148,7 +178,6 @@ class WearOsTransport(
                     dataMap.putString(WearFileTransferProtocol.KEY_MIME_TYPE, "application/json")
                     dataMap.putAsset(WearFileTransferProtocol.KEY_ASSET, Asset.createFromBytes(bytes))
                 }.asPutDataRequest().setUrgent()
-
                 val result = Wearable.DataApi.putDataItem(client, request)
                     .await(OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 if (!result.status.isSuccess) {
@@ -156,12 +185,14 @@ class WearOsTransport(
                 }
             }
             withTimeout(ACK_TIMEOUT_MILLIS) { ackDeferred.await() }
+            SyncDiagnosticsReporter.recordSync(context, "wear_google_snapshot_success:$requestId:${bytes.size}")
             SyncResult.Success
         } catch (e: Exception) {
             SyncAckTracker.cancel(requestId, e)
             val message = if (e is kotlinx.coroutines.TimeoutCancellationException) {
                 "Wear OS 已接收完整课表，但未在时限内确认导入 ACK"
             } else e.message ?: "Wear OS 完整课表同步失败"
+            SyncDiagnosticsReporter.recordError(context, "wear_google_snapshot_failed:$requestId:$message")
             SyncResult.Failed(message, e)
         }
     }

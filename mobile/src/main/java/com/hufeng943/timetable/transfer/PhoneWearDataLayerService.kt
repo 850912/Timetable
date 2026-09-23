@@ -11,6 +11,10 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
 import com.hufeng943.timetable.shared.importexport.WearBridgeProtocol
+import com.hufeng943.timetable.shared.importexport.WearTransportMessageProtocol
+import com.hufeng943.timetable.shared.importexport.ChinaWearProfilePayload
+import com.hufeng943.timetable.shared.importexport.WearProfileRequest
+import com.hufeng943.timetable.sync.WearProfileIntentRouter
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
 import com.hufeng943.timetable.TimetableDatabaseProvider
@@ -19,6 +23,7 @@ import com.hufeng943.timetable.sync.AutoSyncJobService
 import com.hufeng943.timetable.sync.WearConnectionState
 import com.hufeng943.timetable.sync.WearOsTransport
 import com.hufeng943.timetable.sync.SyncAckTracker
+import com.hufeng943.timetable.sync.SyncDiagnosticsReporter
 import com.hufeng943.timetable.reminder.CourseReminderScheduler
 import com.hufeng943.timetable.widget.TodayWidgetProvider
 import com.hufeng943.timetable.shared.sync.SyncAck
@@ -51,6 +56,27 @@ class PhoneWearDataLayerService : WearableListenerService() {
         encodeDefaults = true
     }
     override fun onMessageReceived(messageEvent: MessageEvent) {
+        if (messageEvent.path == WearTransportMessageProtocol.PROFILE_OPEN_PATH) {
+            serviceScope.launch {
+                runCatching {
+                    val payload = json.decodeFromString<ChinaWearProfilePayload>(messageEvent.data.toString(Charsets.UTF_8))
+                    WearProfileIntentRouter.open(
+                        this@PhoneWearDataLayerService,
+                        WearProfileRequest(payload.target, payload.appUri, payload.fallbackUrl),
+                    )
+                    LegacyWearIo.sendMessage(
+                        this@PhoneWearDataLayerService,
+                        messageEvent.sourceNodeId,
+                        WearTransportMessageProtocol.PROFILE_RESULT_PATH,
+                        "queued".toByteArray(),
+                    )
+                    SyncDiagnosticsReporter.recordProfile(this@PhoneWearDataLayerService, "profile_open_queued:${payload.target}:google")
+                }.onFailure {
+                    SyncDiagnosticsReporter.recordError(this@PhoneWearDataLayerService, "profile_open_request_failed:${it.message}")
+                }
+            }
+            return
+        }
         if (messageEvent.path != WearBridgeProtocol.HELLO_PATH) return
 
         getSharedPreferences(WearBridgeProtocol.PREFS, android.content.Context.MODE_PRIVATE)
@@ -88,8 +114,22 @@ class PhoneWearDataLayerService : WearableListenerService() {
                     if (local != target) return@launch
                 }
                 val processed = when (dataMap.getString(WearFileTransferProtocol.KEY_KIND)) {
-                    WearFileTransferProtocol.KIND_SYNC_ACK -> runCatching { applySyncAck(dataMap) }.getOrDefault(false)
-                    WearFileTransferProtocol.KIND_WEAR_EXPORT -> runCatching { saveWearExport(dataMap) }.isSuccess
+                    WearFileTransferProtocol.KIND_SYNC_ACK -> runCatching {
+                        applySyncAck(dataMap)
+                    }.onFailure { error ->
+                        SyncDiagnosticsReporter.recordError(
+                            this@PhoneWearDataLayerService,
+                            "google_sync_ack_failed:${error.javaClass.simpleName}:${error.message ?: "unknown"}",
+                        )
+                    }.getOrDefault(false)
+                    WearFileTransferProtocol.KIND_WEAR_EXPORT -> runCatching {
+                        saveWearExport(dataMap)
+                    }.onFailure { error ->
+                        SyncDiagnosticsReporter.recordExport(
+                            this@PhoneWearDataLayerService,
+                            "google_export_failed:${error.javaClass.simpleName}:${error.message ?: "unknown"}",
+                        )
+                    }.isSuccess
                     else -> false
                 }
                 if (processed) {
@@ -139,6 +179,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
     }
 
     private suspend fun saveWearExport(dataMap: com.google.android.gms.wearable.DataMap) {
+        val requestId = dataMap.getString(WearFileTransferProtocol.KEY_REQUEST_ID) ?: "unknown"
         val asset = dataMap.getAsset(WearFileTransferProtocol.KEY_ASSET)
             ?: throw IllegalArgumentException("缺少导出文件")
         val fileName = sanitizeFileName(
@@ -191,6 +232,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
                 values.clear()
                 values.put(MediaStore.Downloads.IS_PENDING, 0)
                 resolver.update(uri, values, null, null)
+                SyncDiagnosticsReporter.recordExport(this@PhoneWearDataLayerService, "google_export_success:$requestId:$fileName")
             } catch (error: Exception) {
                 resolver.delete(uri, null, null)
                 throw error

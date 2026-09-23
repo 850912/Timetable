@@ -4,16 +4,21 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.wear.remote.interactions.RemoteActivityHelper
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.sync.LegacyWearIo
+import com.hufeng943.timetable.sync.ChinaWearBleClient
 import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.export.BackupManager
 import com.hufeng943.timetable.shared.export.CsvExporter
 import com.hufeng943.timetable.shared.export.IcsExporter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.coroutines.guava.await
 import java.io.ByteArrayOutputStream
 import java.util.Locale
@@ -25,6 +30,13 @@ object WearFileTransfer {
         format: ExportFormatForPhone,
         timetables: List<Timetable>
     ) = withContext(Dispatchers.IO) {
+        val googleAvailable = runCatching {
+            GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context) == 0
+        }.getOrDefault(false)
+        if (!googleAvailable) {
+            exportToPhoneOverChinaBle(context, format, timetables)
+            return@withContext
+        }
         // A DataItem can be written locally even when no phone is reachable.
         // Treat that case as unavailable instead of reporting a false success and
         // navigating away from the export screen.
@@ -76,6 +88,48 @@ object WearFileTransfer {
         }.asPutDataRequest().setUrgent()
 
         LegacyWearIo.putDataItem(context, request)
+    }
+
+    private suspend fun exportToPhoneOverChinaBle(
+        context: Context,
+        format: ExportFormatForPhone,
+        timetables: List<Timetable>,
+    ) {
+        val bytes = ByteArrayOutputStream().use { output ->
+            when (format) {
+                ExportFormatForPhone.ICS -> IcsExporter.streamIcs(output, timetables)
+                ExportFormatForPhone.CSV -> CsvExporter.streamCsv(output, timetables)
+                ExportFormatForPhone.JSON_BACKUP -> BackupManager.backup(output, timetables)
+            }
+            output.toByteArray()
+        }
+        val backupBytes = ByteArrayOutputStream().use { output ->
+            BackupManager.backup(output, timetables)
+            output.toByteArray()
+        }
+        require(bytes.size <= 512 * 1024) { "国行 BLE 导出文件超过 512 KiB" }
+        require(backupBytes.size <= 512 * 1024) { "国行 BLE 备份文件超过 512 KiB" }
+        val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(java.util.Date())
+        val fileName = "Timetable_Export_${timestamp}.${format.extension}"
+        val payload = com.hufeng943.timetable.shared.importexport.ChinaWearExportPayload(
+            fileName = fileName,
+            mimeType = format.mimeType,
+            exportBytesBase64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP),
+            backupBytesBase64 = android.util.Base64.encodeToString(backupBytes, android.util.Base64.NO_WRAP),
+        )
+        val envelope = com.hufeng943.timetable.shared.importexport.ChinaWearEnvelope(
+            requestId = UUID.randomUUID().toString(),
+            type = "EXPORT_REQUEST",
+            timestamp = System.currentTimeMillis(),
+            version = com.hufeng943.timetable.shared.importexport.ChinaWearProtocol.VERSION,
+            payload = Json { encodeDefaults = true }.encodeToString(payload),
+        )
+        val response = ChinaWearBleClient(context).request(
+            com.hufeng943.timetable.shared.importexport.ChinaWearPacketCodec.encode(envelope)
+        )
+        val ack = com.hufeng943.timetable.shared.importexport.ChinaWearPacketCodec.decode(response)
+        check(ack.requestId == envelope.requestId) { "国行 BLE 导出 ACK requestId 不匹配" }
+        check(ack.type == "EXPORT_ACK") { "国行 BLE 导出失败：${ack.payload}" }
     }
 
     suspend fun requestImportFromPhone(context: Context): Boolean {

@@ -29,7 +29,7 @@ class AutoSyncJobService : JobService() {
                 val dao = db.syncRecordDao()
                 SyncCoordinator(
                     dao = dao,
-                    manager = SyncManager(listOf(WearOsTransport(applicationContext)))
+                    manager = SyncManager(SyncTransportProvider.create(applicationContext))
                 ).syncPending()
                 val thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
                 dao.deleteSyncedBefore(thirtyDaysAgo)

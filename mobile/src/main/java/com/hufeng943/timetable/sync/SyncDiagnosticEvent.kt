@@ -1,5 +1,8 @@
 package com.hufeng943.timetable.sync
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class SyncDiagnosticType {
     SYNC,
     EXPORT,
@@ -7,6 +10,7 @@ enum class SyncDiagnosticType {
     ERROR
 }
 
+@Serializable
 data class SyncDiagnosticEvent(
     val type: SyncDiagnosticType,
     val message: String,

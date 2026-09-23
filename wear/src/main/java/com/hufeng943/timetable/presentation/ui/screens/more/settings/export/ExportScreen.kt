@@ -1,6 +1,8 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.settings.export
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,28 +12,27 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Save
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.ButtonDefaults
@@ -46,31 +47,42 @@ import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
-import com.hufeng943.timetable.presentation.ui.theme.AppTheme
-import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
+import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
+import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.shared.export.ExportTarget
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun ExportScreen(
     viewModel: ExportViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val scrollState = rememberTransformingLazyColumnState()
     val transformationSpec = rememberTransformationSpec()
-    val scope = rememberCoroutineScope()
     val config = LocalAppConfig.current
-    val exportState by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val previewStats by viewModel.previewStats.collectAsStateWithLifecycle()
-
     var selectedFormat by remember { mutableStateOf(ExportFormat.ICS) }
     var selectedScope by remember { mutableStateOf(ExportScope.CURRENT) }
+    var selectedTarget by remember { mutableStateOf(ExportTarget.PHONE_APP) }
+    var pendingTarget by remember { mutableStateOf<ExportTarget?>(null) }
+    val scope = rememberCoroutineScope()
 
+    val createDocument = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
+        val target = pendingTarget
+        pendingTarget = null
+        if (uri != null && target != null) {
+            viewModel.exportWithTarget(context, target, selectedFormat, selectedScope, uri)
+        }
+    }
 
-    LaunchedEffect(exportState) {
-        when (val s = exportState) {
+    LaunchedEffect(state) {
+        when (val s = state) {
             is ExportState.Success -> {
                 Toast.makeText(context, s.fileName, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
@@ -85,156 +97,112 @@ fun ExportScreen(
 
     ScreenScaffold(
         scrollState = scrollState,
-        timeText = {
-            if (config.isShowTopTime) {
-                TimeText(backgroundColor = Color.Transparent)
-            }
-        },
+        timeText = { if (config.isShowTopTime) TimeText(backgroundColor = Color.Transparent) },
         edgeButton = {
             EdgeButton(onClick = { scope.launch { scrollState.animateScrollToItem(0) } }) {
                 Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = null)
             }
-        }
+        },
     ) { contentPadding ->
-        TransformingLazyColumn(
-            state = scrollState,
-            contentPadding = contentPadding
-        ) {
+        TransformingLazyColumn(state = scrollState, contentPadding = contentPadding) {
             item {
                 ListHeader(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        
-                        .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
-                    transformation = SurfaceTransformation(transformationSpec)
-                ) {
-                    Text("导出到手机")
-                }
+                    modifier = Modifier.fillMaxWidth().minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
+                    transformation = SurfaceTransformation(transformationSpec),
+                ) { Text("导出") }
             }
-
             item {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
                         .globalLiquidGlass(RoundedCornerShape(20.dp), AppTheme.colors.surfaceContainer)
-                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled)) 0f else 1f))
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && config.isLiquidGlassEnabled) 0f else 1f))
                         .padding(12.dp)
                 ) {
                     Column {
-                        Text(
-                            text = "直接发送到手机 Timetable",
-                            color = AppTheme.colors.primary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Text(
-                            text = (previewStats?.semesterName ?: "正在读取...") + " · 先选格式，再发送",
-                            color = AppTheme.colors.textPrimary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text("课程", color = AppTheme.colors.textSecondary, fontSize = 10.sp)
-                                Text("${previewStats?.totalCourses ?: 0} 门", color = AppTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
-                            Column {
-                                Text("总节次", color = AppTheme.colors.textSecondary, fontSize = 10.sp)
-                                Text("${previewStats?.totalInstances ?: 0} 节", color = AppTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
-                            Column {
-                                Text("单双周", color = AppTheme.colors.textSecondary, fontSize = 10.sp)
-                                Text(
-                                    if (previewStats?.hasRecurrenceRules == true) "✓ 已推导" else "每周",
-                                    color = if (previewStats?.hasRecurrenceRules == true) AppTheme.colors.badgeActive else AppTheme.colors.textSecondary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                        Text("导出目标", color = AppTheme.colors.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(4.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OneUiCapsuleSurface(
+                                title = "手机 App", subtitle = "发送到手机", modifier = Modifier.weight(1f),
+                                selected = selectedTarget == ExportTarget.PHONE_APP, emphasize = selectedTarget == ExportTarget.PHONE_APP,
+                                onClick = { selectedTarget = ExportTarget.PHONE_APP },
+                            )
+                            OneUiCapsuleSurface(
+                                title = "下载", subtitle = "保存文件", modifier = Modifier.weight(1f),
+                                selected = selectedTarget == ExportTarget.DOWNLOAD, icon = Icons.Rounded.Save,
+                                onClick = { selectedTarget = ExportTarget.DOWNLOAD },
+                            )
+                            OneUiCapsuleSurface(
+                                title = "两者", subtitle = "手机 + 本地", modifier = Modifier.weight(1f),
+                                selected = selectedTarget == ExportTarget.BOTH,
+                                onClick = { selectedTarget = ExportTarget.BOTH },
+                            )
                         }
                     }
                 }
             }
-
             item {
-                OneUiCapsuleSurface(
-                    title = "日历 (.ics)",
-                    subtitle = "可导入系统日历",
-                    selected = selectedFormat == ExportFormat.ICS,
-                    emphasize = selectedFormat == ExportFormat.ICS,
-                    onClick = { selectedFormat = ExportFormat.ICS },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
-                )
+                Box(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+                        .globalLiquidGlass(RoundedCornerShape(20.dp), AppTheme.colors.surfaceContainer)
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && config.isLiquidGlassEnabled) 0f else 1f))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Text(previewStats?.semesterName?.takeIf { it.isNotBlank() } ?: "正在读取课表…",
+                            color = AppTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+                        Spacer(Modifier.height(4.dp))
+                        Text("${previewStats?.totalCourses ?: 0} 门课程 · ${previewStats?.totalInstances ?: 0} 节", color = AppTheme.colors.textSecondary, fontSize = 10.sp)
+                    }
+                }
             }
-
-            item {
-                OneUiCapsuleSurface(
-                    title = "表格 (.csv)",
-                    subtitle = "适合 Excel / Numbers",
-                    selected = selectedFormat == ExportFormat.CSV,
-                    onClick = { selectedFormat = ExportFormat.CSV },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
-                )
-            }
-
-            item {
-                OneUiCapsuleSurface(
-                    title = "完整备份 (.json)",
-                    subtitle = "完整课表备份",
-                    selected = selectedFormat == ExportFormat.JSON_BACKUP,
-                    onClick = { selectedFormat = ExportFormat.JSON_BACKUP },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
-                )
-            }
-
+            item { OneUiCapsuleSurface(title = "日历 (.ics)", subtitle = "可导入系统日历", modifier = Modifier.fillMaxWidth(), selected = selectedFormat == ExportFormat.ICS, emphasize = selectedFormat == ExportFormat.ICS, onClick = { selectedFormat = ExportFormat.ICS }) }
+            item { OneUiCapsuleSurface(title = "表格 (.csv)", subtitle = "适合 Excel / Numbers", modifier = Modifier.fillMaxWidth(), selected = selectedFormat == ExportFormat.CSV, onClick = { selectedFormat = ExportFormat.CSV }) }
+            item { OneUiCapsuleSurface(title = "完整备份 (.json)", subtitle = "完整课表备份", modifier = Modifier.fillMaxWidth(), selected = selectedFormat == ExportFormat.JSON_BACKUP, onClick = { selectedFormat = ExportFormat.JSON_BACKUP }) }
             item {
                 OneUiCapsuleSurface(
                     title = if (selectedScope == ExportScope.CURRENT) "当前学期" else "全部学期",
-                    subtitle = if (selectedScope == ExportScope.CURRENT) "仅导出当前活跃学期 · 点击切换" else "包含所有历史学期 · 点击切换",
+                    subtitle = if (selectedScope == ExportScope.CURRENT) "点击切换到全部学期" else "点击切换到当前学期",
+                    modifier = Modifier.fillMaxWidth(),
                     selected = selectedScope == ExportScope.ALL,
                     onClick = {
-                        val newScope = if (selectedScope == ExportScope.CURRENT) ExportScope.ALL else ExportScope.CURRENT
-                        selectedScope = newScope
-                        viewModel.updatePreview(newScope)
+                        selectedScope = if (selectedScope == ExportScope.CURRENT) ExportScope.ALL else ExportScope.CURRENT
+                        viewModel.updatePreview(selectedScope)
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
             }
-
             item {
+                val busy = state is ExportState.Exporting
                 OneUiCapsuleSurface(
-                    title = if (exportState is ExportState.Exporting) "正在发送到手机…" else "导出到手机 App",
-                    subtitle = if (exportState is ExportState.Exporting) "保持手表与手机连接即可" else "手机端自动接收；所选格式仍保留。兼容旧 Wear 通信链路",
+                    title = if (busy) "正在导出…" else when (selectedTarget) {
+                        ExportTarget.PHONE_APP -> "发送到手机 App"
+                        ExportTarget.DOWNLOAD -> "保存到本地"
+                        ExportTarget.BOTH -> "发送 + 保存"
+                    },
+                    subtitle = if (busy) "请保持设备连接" else "Build12：目标由一次操作完整执行",
                     icon = Icons.Rounded.FileDownload,
                     emphasize = true,
-                    onClick = if (exportState is ExportState.Exporting) null else ({
-                        viewModel.executePhoneExport(context, selectedFormat, selectedScope)
+                    onClick = if (busy) null else ({
+                        when (selectedTarget) {
+                            ExportTarget.PHONE_APP -> viewModel.exportWithTarget(context, selectedTarget, selectedFormat, selectedScope)
+                            ExportTarget.DOWNLOAD, ExportTarget.BOTH -> {
+                                pendingTarget = selectedTarget
+                                createDocument.launch(defaultFileName(selectedFormat))
+                            }
+                        }
                     }),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
+    }
+}
+
+private fun defaultFileName(format: ExportFormat): String {
+    val stamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
+    return when (format) {
+        ExportFormat.ICS -> "Timetable-$stamp.ics"
+        ExportFormat.CSV -> "Timetable-$stamp.csv"
+        ExportFormat.JSON_BACKUP -> "Timetable-$stamp.json"
     }
 }

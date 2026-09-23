@@ -29,6 +29,37 @@ class MainActivity : ComponentActivity() {
     @javax.inject.Inject
     lateinit var themePreference: com.hufeng943.timetable.data.ThemePreference
 
+    private val requestChinaBlePermissions = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        if (result.values.all { it }) {
+            com.hufeng943.timetable.sync.ChinaWearBleService.start(this)
+        }
+    }
+
+    private fun startChinaBleTransportIfNeeded() {
+        val gmsAvailable = runCatching {
+            com.google.android.gms.common.GoogleApiAvailability.getInstance()
+                .isGooglePlayServicesAvailable(this) == 0
+        }.getOrDefault(false)
+        if (gmsAvailable) return
+        val permissions = when {
+            android.os.Build.VERSION.SDK_INT >= 31 -> listOf(
+                android.Manifest.permission.BLUETOOTH_SCAN,
+                android.Manifest.permission.BLUETOOTH_CONNECT,
+                android.Manifest.permission.BLUETOOTH_ADVERTISE,
+            )
+            android.os.Build.VERSION.SDK_INT >= 23 -> listOf(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            else -> emptyList()
+        }
+        val missing = permissions.filter { checkSelfPermission(it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
+        if (missing.isNotEmpty()) {
+            requestChinaBlePermissions.launch(missing.toTypedArray())
+            return
+        }
+        runCatching { com.hufeng943.timetable.sync.ChinaWearBleService.start(this) }
+    }
+
     override fun attachBaseContext(newBase: Context) {
         // Never block Activity cold start on DataStore. The locale is mirrored by
         // PreferenceStorage.setLanguage() into a tiny synchronous preference.
@@ -47,6 +78,7 @@ class MainActivity : ComponentActivity() {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        startChinaBleTransportIfNeeded()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 appConfigViewModel.localeRecreateEvent.collect {

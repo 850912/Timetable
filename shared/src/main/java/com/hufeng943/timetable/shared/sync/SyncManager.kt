@@ -1,18 +1,20 @@
 package com.hufeng943.timetable.shared.sync
 
 import kotlinx.coroutines.delay
+import java.util.UUID
 
 class SyncManager(
     private val transports: List<SyncTransport>
 ) {
     /**
      * Sends a compact incremental batch with bounded automatic retry.
-     * Multiple local edits of the same entity are collapsed to the newest record,
-     * while different entity types remain ordered by timestamp for deterministic apply.
+     * The same request id is reused for every retry and across transport fallback,
+     * allowing the receiver's processed-request table to make delivery idempotent.
      */
     suspend fun syncRecords(records: List<SyncRecordPayload>): SyncResult {
         if (records.isEmpty()) return SyncResult.Success
         val compact = compact(records)
+        val requestId = UUID.randomUUID().toString()
         var retry = 0
         var lastError: SyncResult.Failed? = null
 
@@ -21,7 +23,7 @@ class SyncManager(
             for (transport in transports) {
                 if (!transport.isAvailable()) continue
                 anyAvailable = true
-                when (val result = transport.sendRecords(compact)) {
+                when (val result = transport.sendRecords(compact, requestId)) {
                     SyncResult.Success -> return result
                     is SyncResult.Failed -> lastError = result
                 }
@@ -31,7 +33,9 @@ class SyncManager(
                 lastError = SyncResult.Failed("没有可用的增量同步通道")
             }
             retry++
-            if (SyncRetryPolicy.canRetry(retry)) delay(SyncRetryPolicy.nextDelayMillis(retry - 1))
+            if (SyncRetryPolicy.canRetry(retry)) {
+                delay(SyncRetryPolicy.nextDelayMillis(retry - 1))
+            }
         }
         return lastError ?: SyncResult.Failed("同步失败")
     }
@@ -44,7 +48,7 @@ class SyncManager(
                 compareBy<SyncRecordPayload> { it.revision }
                     .thenBy { it.updatedAt }
                     .thenBy { it.sourceRecordId }
-            ) ?: return@mapNotNull null
+            )
         }
         .sortedWith(compareBy<SyncRecordPayload> { it.updatedAt }.thenBy { it.sourceRecordId })
 }

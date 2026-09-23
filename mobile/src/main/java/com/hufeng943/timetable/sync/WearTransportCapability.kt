@@ -1,10 +1,14 @@
 package com.hufeng943.timetable.sync
 
 /**
- * Build15 runtime capability description.
+ * Runtime transport capability snapshot used by Build16 diagnostics.
+ * It intentionally describes capabilities rather than inferring a vendor from Build.MANUFACTURER.
  */
 data class WearTransportCapability(
     val googleDataLayer: Boolean,
-    val chinaBridge: Boolean,
-    val selected: String
+    val chinaBleSupported: Boolean,
+    val chinaBlePermissionGranted: Boolean,
+    val bluetoothEnabled: Boolean,
+    val selected: String,
+    val reason: String,
 )

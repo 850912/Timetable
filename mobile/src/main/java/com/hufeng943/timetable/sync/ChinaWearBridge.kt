@@ -2,6 +2,8 @@ package com.hufeng943.timetable.sync
 
 import android.content.Context
 import com.hufeng943.timetable.shared.importexport.ChinaWearProtocol
+import com.hufeng943.timetable.shared.importexport.ChinaWearEnvelope
+import com.hufeng943.timetable.shared.importexport.ChinaWearPacketCodec
 import com.hufeng943.timetable.shared.sync.SyncRecordPayload
 import java.util.UUID
 

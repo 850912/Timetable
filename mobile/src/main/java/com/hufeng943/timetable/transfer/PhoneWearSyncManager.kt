@@ -6,7 +6,7 @@ import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.sync.SyncManager
 import com.hufeng943.timetable.shared.sync.SyncRecordPayload
 import com.hufeng943.timetable.shared.sync.SyncResult
-import com.hufeng943.timetable.sync.WearOsTransport
+import com.hufeng943.timetable.sync.SyncTransportProvider
 
 @Deprecated("Use SyncManager with WearOsTransport")
 object PhoneWearSyncManager {
@@ -15,7 +15,7 @@ object PhoneWearSyncManager {
         val records = db.syncRecordDao().pending().map {
             SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson)
         }
-        return when (val result = SyncManager(listOf(WearOsTransport(context))).syncRecords(records)) {
+        return when (val result = SyncManager(SyncTransportProvider.create(context)).syncRecords(records)) {
             SyncResult.Success -> "Wear OS"
             is SyncResult.Failed -> throw IllegalStateException(result.message, result.cause)
         }

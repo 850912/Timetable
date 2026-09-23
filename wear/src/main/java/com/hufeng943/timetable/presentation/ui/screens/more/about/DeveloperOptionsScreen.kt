@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.DataObject
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
+import com.hufeng943.timetable.sync.SyncDiagnosticLogger
 
 @Composable
 fun DeveloperOptionsScreen() {
@@ -128,6 +130,23 @@ fun DeveloperOptionsScreen() {
 
             item {
                 OneUiCapsuleSurface(
+                    title = "同步诊断",
+                    subtitle = "Transport · BLE · 最近事件 · 复制 / 清除",
+                    icon = Icons.Rounded.CloudSync,
+                    emphasize = true,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                    onClick = {
+                        showSyncDiagnostics(context)
+                    },
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
                     title = stringResource(R.string.developer_formats_title),
                     subtitle = "ICS · CSV · JSON",
                     icon = Icons.Rounded.Storage,
@@ -212,4 +231,20 @@ fun DeveloperOptionsScreen() {
             }
         }
     }
+}
+
+private fun showSyncDiagnostics(context: android.content.Context) {
+    android.app.AlertDialog.Builder(context)
+        .setTitle("同步诊断")
+        .setMessage(SyncDiagnosticLogger.diagnosticText(context))
+        .setNegativeButton("关闭", null)
+        .setNeutralButton("清除") { _, _ ->
+            SyncDiagnosticLogger.clear(context)
+            Toast.makeText(context, "Wear 诊断日志已清除", Toast.LENGTH_SHORT).show()
+        }
+        .setPositiveButton("复制") { _, _ ->
+            val copied = SyncDiagnosticLogger.copyToClipboard(context)
+            Toast.makeText(context, if (copied) "诊断信息已复制" else "复制失败", Toast.LENGTH_SHORT).show()
+        }
+        .show()
 }

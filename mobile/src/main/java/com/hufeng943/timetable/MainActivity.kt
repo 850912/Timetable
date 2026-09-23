@@ -53,7 +53,9 @@ import com.hufeng943.timetable.shared.model.dailySummary
 import com.hufeng943.timetable.shared.model.resolveDate
 import com.hufeng943.timetable.shared.sync.SyncManager
 import com.hufeng943.timetable.shared.sync.SyncRecordPayload
-import com.hufeng943.timetable.sync.WearOsTransport
+import com.hufeng943.timetable.sync.SyncTransportProvider
+import com.hufeng943.timetable.sync.TransportSelector
+import com.hufeng943.timetable.sync.SyncDiagnosticCenter
 import com.hufeng943.timetable.sync.WearConnectionState
 import com.hufeng943.timetable.widget.TodayWidgetProvider
 import com.hufeng943.timetable.share.WeeklyTimetableShare
@@ -83,7 +85,6 @@ class MainActivity : AppCompatActivity() {
     private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var repository: TimetableRepository
     private lateinit var syncManager: SyncManager
-    private lateinit var wearTransport: WearOsTransport
     private lateinit var timetableContainer: LinearLayout
     private lateinit var emptyText: TextView
     private lateinit var connectionStatus: TextView
@@ -96,6 +97,27 @@ class MainActivity : AppCompatActivity() {
 
     private val openDocument = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) importTimetableFile(uri)
+    }
+
+    private val exportDiagnosticDocument = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        runCatching {
+            contentResolver.openOutputStream(uri)?.use {
+                it.write(SyncDiagnosticCenter.diagnosticText(this).toByteArray(Charsets.UTF_8))
+            } ?: error("无法创建诊断文件")
+            toast("sync_log.txt 已导出")
+        }.onFailure { toast(it.message ?: "诊断日志导出失败") }
+    }
+
+    private val requestChinaBlePermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        if (result.values.all { it }) {
+            startChinaBleReceiverIfReady()
+            toast("蓝牙权限已授予，国行 Wear 同步通道已启用")
+        } else {
+            toast("需要蓝牙权限才能使用国行 Wear 同步")
+        }
     }
 
     private val requestNotificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -129,8 +151,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         repository = TimetableDatabaseProvider.repository(this)
-        wearTransport = WearOsTransport(this)
-        syncManager = SyncManager(listOf(wearTransport))
+        syncManager = SyncManager(SyncTransportProvider.create(this))
+        requestChinaBlePermissionsIfNeeded()
         timetableContainer = findViewById(R.id.timetableContainer)
         emptyText = findViewById(R.id.emptyText)
         connectionStatus = findViewById(R.id.connectionStatus)
@@ -432,28 +454,64 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun requestChinaBlePermissionsIfNeeded() {
+        if (TransportSelector.detect(this) != TransportSelector.Environment.COMPATIBILITY_STACK) return
+        val permissions = when {
+            Build.VERSION.SDK_INT >= 31 -> listOf(
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_ADVERTISE,
+            )
+            Build.VERSION.SDK_INT >= 23 -> listOf(Manifest.permission.ACCESS_FINE_LOCATION)
+            else -> emptyList()
+        }
+        val missing = permissions.filter { checkSelfPermission(it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
+        if (missing.isNotEmpty()) requestChinaBlePermissions.launch(missing.toTypedArray())
+        else startChinaBleReceiverIfReady()
+    }
+
+    private fun startChinaBleReceiverIfReady() {
+        if (TransportSelector.detect(this) != TransportSelector.Environment.COMPATIBILITY_STACK) return
+        runCatching { com.hufeng943.timetable.sync.ChinaWearBleReceiverService.start(this) }
+    }
+
     private fun showSyncStatusDialog() {
         uiScope.launch {
             val dao = TimetableDatabaseProvider.database(this@MainActivity).syncRecordDao()
             val connected = WearConnectionState.connected.value
-                ?: withContext(Dispatchers.IO) { wearTransport.isAvailable() }
+                ?: withContext(Dispatchers.IO) {
+                    var available = false
+                    for (transport in SyncTransportProvider.create(this@MainActivity)) {
+                        if (transport.isAvailable()) { available = true; break }
+                    }
+                    available
+                }
             val pending = withContext(Dispatchers.IO) { dao.pendingCount() }
             val failed = withContext(Dispatchers.IO) { dao.permanentlyFailedCount() }
             val stateText = if (connected) "已连接" else "未连接"
-            val message = buildString {
-                append("手表连接：$stateText\n")
-                append("待同步变更：$pending\n")
-                append("失败变更：$failed\n")
-                append("传输策略：现代 Wearable + 中国区 Legacy fallback\n")
-                append("自动同步：已开启")
-            }
+            val message = SyncDiagnosticCenter.snapshotWithCapability(this@MainActivity, pending, failed, stateText)
             AlertDialog.Builder(this@MainActivity)
-                .setTitle("同步状态中心")
+                .setTitle("同步诊断中心")
                 .setMessage(message)
-                .setNegativeButton("关闭", null)
-                .setPositiveButton("立即同步") { _, _ -> syncToWatch(forceFullSnapshot = true) }
+                .setItems(arrayOf("立即同步", "复制诊断", "导出 sync_log.txt", "清除日志", "关闭")) { dialog, which ->
+                    when (which) {
+                        0 -> syncToWatch(forceFullSnapshot = true)
+                        1 -> copyDiagnostic()
+                        2 -> exportDiagnosticDocument.launch("sync_log.txt")
+                        3 -> { SyncDiagnosticCenter.clear(this@MainActivity); toast("诊断日志已清除") }
+                        else -> dialog.dismiss()
+                    }
+                }
                 .show()
         }
+    }
+
+    private fun copyDiagnostic() {
+        val text = SyncDiagnosticCenter.diagnosticText(this) + "\n连接状态=" +
+            (WearConnectionState.connected.value?.let { if (it) "已连接" else "未连接" } ?: "未知")
+        val clipboard = getSystemService(android.content.ClipboardManager::class.java)
+        clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Timetable 同步诊断", text))
+        toast("诊断信息已复制")
     }
 
     private fun actionButton(label: String, action: () -> Unit): MaterialButton =
@@ -731,7 +789,8 @@ class MainActivity : AppCompatActivity() {
             connectionStatus.text = if (forceFullSnapshot) "正在完整同步课表…" else "正在同步课表变更…"
             val result = withContext(Dispatchers.IO) {
                 if (forceFullSnapshot) {
-                    wearTransport.sendTimetablesSnapshot(currentTimetables)
+                    SyncTransportProvider.create(this@MainActivity).firstOrNull()?.sendTimetableSnapshot(currentTimetables)
+                        ?: com.hufeng943.timetable.shared.sync.SyncResult.Failed("没有可用的同步通道")
                 } else {
                     val db = TimetableDatabaseProvider.database(this@MainActivity)
                     val records = db.syncRecordDao().pending()
@@ -764,9 +823,19 @@ class MainActivity : AppCompatActivity() {
     private fun monitorWearConnection() {
         val dao = TimetableDatabaseProvider.database(this).syncRecordDao()
         uiScope.launch {
-            // Prime the process-local peer state once. Further changes are delivered by
-            // WearableListenerService callbacks instead of a permanent 10-second poll.
-            WearConnectionState.update(withContext(Dispatchers.IO) { wearTransport.isAvailable() })
+            // Prime the process-local peer state using the same transport resolver as actual sync.
+            // Further Google peer changes are delivered by WearableListenerService; BLE availability
+            // is rechecked whenever this Activity becomes active.
+            WearConnectionState.update(withContext(Dispatchers.IO) {
+                var available = false
+                for (transport in SyncTransportProvider.create(this@MainActivity)) {
+                    if (transport.isAvailable()) {
+                        available = true
+                        break
+                    }
+                }
+                available
+            })
             combine(
                 WearConnectionState.connected,
                 dao.observePendingCount(),

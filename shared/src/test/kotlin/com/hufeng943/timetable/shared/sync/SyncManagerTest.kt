@@ -6,13 +6,14 @@ import org.junit.Test
 
 class SyncManagerTest {
     @Test
-    fun retriesAfterFailureAndEventuallySucceeds() = kotlinx.coroutines.runBlocking {
+    fun retriesAfterFailureAndEventuallySucceedsWithSameRequestId() = kotlinx.coroutines.runBlocking {
         val transport = FakeTransport(
             results = ArrayDeque(listOf(SyncResult.Failed("temporary"), SyncResult.Success))
         )
         val result = SyncManager(listOf(transport)).syncRecords(listOf(record(1, 1)))
         assertEquals(SyncResult.Success, result)
         assertEquals(2, transport.calls)
+        assertEquals(1, transport.requestIds.distinct().size)
     }
 
     @Test
@@ -49,13 +50,20 @@ class SyncManagerTest {
         override val name: String = "fake"
         var calls: Int = 0
         var lastRecords: List<SyncRecordPayload> = emptyList()
+        val requestIds = mutableListOf<String>()
 
         override suspend fun isAvailable(): Boolean = true
-        override suspend fun sendRecords(records: List<SyncRecordPayload>): SyncResult {
+
+        override suspend fun sendRecords(
+            records: List<SyncRecordPayload>,
+            requestId: String,
+        ): SyncResult {
             calls++
+            requestIds += requestId
             lastRecords = records
             return if (results.isEmpty()) SyncResult.Failed("no result") else results.removeFirst()
         }
+
         override suspend fun receive(): SyncResult = SyncResult.Failed("unused")
     }
 }
