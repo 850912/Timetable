@@ -30,7 +30,6 @@ import com.hufeng943.timetable.shared.importexport.ChinaWearPacketCodec
 import com.hufeng943.timetable.shared.importexport.ChinaWearProtocol
 import com.hufeng943.timetable.shared.importexport.WearProfileRequest
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -41,12 +40,9 @@ import kotlinx.serialization.decodeFromString
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
-import javax.inject.Inject
 
-@AndroidEntryPoint
 class ChinaWearBleReceiverService : Service() {
-    @Inject lateinit var database: com.hufeng943.timetable.shared.data.database.AppDatabase
-    @Inject lateinit var importService: com.hufeng943.timetable.shared.importexport.ImportService
+    private val importService by lazy { TimetableDatabaseProvider.importService(this) }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }

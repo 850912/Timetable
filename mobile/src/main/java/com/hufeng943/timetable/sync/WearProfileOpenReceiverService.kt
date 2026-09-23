@@ -3,10 +3,10 @@ package com.hufeng943.timetable.sync
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import androidx.lifecycle.LifecycleService
-
 /** Build13: package/scheme-aware phone-side profile opener with fallback and diagnostics. */
-class WearProfileOpenReceiverService : LifecycleService() {
+class WearProfileOpenReceiverService : android.app.Service() {
+    override fun onBind(intent: Intent?): android.os.IBinder? = null
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val target = intent?.getStringExtra(EXTRA_TARGET).orEmpty()
         val appUri = intent?.getStringExtra(EXTRA_APP_URI)
