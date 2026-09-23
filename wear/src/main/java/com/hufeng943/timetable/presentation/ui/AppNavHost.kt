@@ -526,6 +526,3 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         }
     }
 }
-}
-
-
