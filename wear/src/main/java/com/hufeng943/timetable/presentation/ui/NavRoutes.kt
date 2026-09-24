@@ -107,6 +107,7 @@ object NavRoutes {
     const val MORE_SETTINGS_GLASS_OPACITY = "more/settings/liquid_glass/opacity"
     const val MORE_SETTINGS_GLASS_CLARITY = "more/settings/liquid_glass/clarity"
     const val MORE_SETTINGS_BACKGROUND_BRIGHTNESS = "more/settings/liquid_glass/background_brightness"
+    const val MORE_SETTINGS_BACKGROUND_IMAGE_BLUR = "more/settings/background/image_blur"
 
     // Day arrangement graph.
     const val MORE_DAY_ARRANGEMENT = "more/day_arrangement"

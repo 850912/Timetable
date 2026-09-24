@@ -147,12 +147,11 @@ dependencies {
     implementation(libs.androidx.wear.tooling.preview)
     implementation(libs.androidx.wear.remote)
 
-    // Wear Tiles 与 Complications (Horologist)
+    // Wear Tiles / ProtoLayout Material 3 与 Complications
     implementation(libs.androidx.tiles)
     implementation(libs.androidx.tiles.tooling.preview)
+    implementation(libs.androidx.protolayout.material3)
     implementation(libs.androidx.watchface.complications.data.source.ktx)
-    implementation(libs.horologist.compose.tools)
-    implementation(libs.horologist.tiles)
 
     // 依赖注入 (Hilt)
     implementation(libs.hilt.android)

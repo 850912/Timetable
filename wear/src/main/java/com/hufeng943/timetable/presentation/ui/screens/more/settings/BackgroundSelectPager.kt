@@ -8,6 +8,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.ColorLens
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.RadioButtonChecked
@@ -45,6 +46,7 @@ private const val BACKGROUND_MAX_SIDE_PX = 720
 fun BackgroundSelectPager(
     config: AppConfig,
     onBackgroundSelected: (TimetableBackgroundMode, String?) -> Unit,
+    onBlurClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -170,6 +172,20 @@ fun BackgroundSelectPager(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
                     },
+                    modifier = Modifier.fillMaxWidth()
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+            item {
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.settings_background_image_blur),
+                    subtitle = stringResource(
+                        R.string.settings_background_image_blur_summary,
+                        config.customImageBlurRadius.toInt(),
+                    ),
+                    icon = Icons.Rounded.BlurOn,
+                    selected = config.timetableBackgroundMode == TimetableBackgroundMode.IMAGE && config.customImageBlurRadius > 0f,
+                    onClick = onBlurClick,
                     modifier = Modifier.fillMaxWidth()
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                 )

@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import java.nio.ByteBuffer
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -40,6 +41,9 @@ internal class ChinaWearBleClient(private val context: Context) {
         requirePermissions()
         val session = GattSession.connect(context, scanForPhone())
         try {
+            // User-initiated sync/export should favor a short reliable transfer over background
+            // power saving. This also improves interoperability with Xiaomi/China-ROM GATT stacks.
+            session.requestHighPriority()
             session.enableNotifications()
             session.requestMtu(REQUESTED_MTU)
             session.write(envelope)
@@ -72,7 +76,7 @@ internal class ChinaWearBleClient(private val context: Context) {
         }
         try {
             scanner.startScan(listOf(ScanFilter.Builder().setServiceUuid(ParcelUuid(ChinaWearBleProtocol.SERVICE_UUID)).build()),
-                ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build(), cb)
+                ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), cb)
             return withTimeout(SCAN_TIMEOUT_MS) { found.await() }
         } finally { runCatching { scanner.stopScan(cb) } }
     }
@@ -95,10 +99,21 @@ internal class ChinaWearBleClient(private val context: Context) {
             finally { if (state.descriptorWaiter === waiter) state.descriptorWaiter = null }
         }
 
+        fun requestHighPriority() {
+            runCatching { gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH) }
+        }
+
         suspend fun requestMtu(requested: Int) {
             val waiter = CompletableDeferred<Unit>(); state.mtuWaiter = waiter
-            try { if (!gatt.requestMtu(requested)) return; withTimeout(OP_TIMEOUT_MS) { waiter.await() }; mtu = state.mtu }
-            finally { if (state.mtuWaiter === waiter) state.mtuWaiter = null }
+            try {
+                if (!gatt.requestMtu(requested)) return
+                // Some vendor stacks negotiate successfully but fail to deliver the callback.
+                // Continue with the safe 23-byte MTU rather than failing the whole transfer.
+                val completed = withTimeoutOrNull(OP_TIMEOUT_MS) { waiter.await(); true } ?: false
+                if (completed) mtu = state.mtu
+            } finally {
+                if (state.mtuWaiter === waiter) state.mtuWaiter = null
+            }
         }
 
         suspend fun write(envelope: ByteArray) {

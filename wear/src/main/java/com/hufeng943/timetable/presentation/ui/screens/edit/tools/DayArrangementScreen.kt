@@ -30,6 +30,7 @@ import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.popSafe
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.WearDatePickerPage
+import com.hufeng943.timetable.presentation.ui.components.WearWheelPickerPage
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.presentation.viewmodel.edit.tools.ScheduleAdjustmentState
 import com.hufeng943.timetable.presentation.viewmodel.edit.tools.ScheduleAdjustmentViewModel
@@ -157,28 +158,12 @@ private fun DayOfWeekPicker(
     excluded: DayOfWeek,
     onSelect: (DayOfWeek) -> Unit,
 ) {
-    val state = rememberTransformingLazyColumnState()
-    val transform = rememberTransformationSpec()
-    ScreenScaffold(scrollState = state, timeText = {}) { padding ->
-        TransformingLazyColumn(state = state, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
-            item {
-                ListHeader(
-                    modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
-                    transformation = SurfaceTransformation(transform),
-                ) { Text("选择来源星期") }
-            }
-            DayOfWeek.entries.filter { it != excluded }.forEach { day ->
-                item(key = day) {
-                    OneUiCapsuleSurface(
-                        title = day.toDisplayString(TextStyle.FULL),
-                        selected = day == initial,
-                        onClick = { onSelect(day) },
-                        modifier = Modifier.fillMaxWidth()
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    )
-                }
-            }
-        }
-    }
+    val values = remember(excluded) { DayOfWeek.entries.filter { it != excluded } }
+    WearWheelPickerPage(
+        title = "选择来源星期",
+        values = values,
+        initial = initial.takeIf { it in values } ?: values.first(),
+        label = { it.toDisplayString(TextStyle.FULL) },
+        onConfirm = onSelect,
+    )
 }

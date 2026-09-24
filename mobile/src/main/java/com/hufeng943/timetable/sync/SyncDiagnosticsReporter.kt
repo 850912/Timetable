@@ -24,16 +24,6 @@ object SyncDiagnosticsReporter {
         )
     }
 
-    fun recordProfile(context: Context, message: String) {
-        SyncDiagnosticStore.append(
-            context,
-            SyncDiagnosticEvent(
-                SyncDiagnosticType.PROFILE_OPEN,
-                message
-            )
-        )
-    }
-
     fun recordError(context: Context, message: String) {
         SyncDiagnosticStore.append(
             context,

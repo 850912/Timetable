@@ -14,11 +14,11 @@ import com.hufeng943.timetable.shared.model.Timetable
 import com.hufeng943.timetable.shared.export.BackupManager
 import com.hufeng943.timetable.shared.export.CsvExporter
 import com.hufeng943.timetable.shared.export.IcsExporter
+import com.hufeng943.timetable.shared.export.ExportTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.coroutines.guava.await
 import java.io.ByteArrayOutputStream
 import java.util.Locale
@@ -28,13 +28,14 @@ object WearFileTransfer {
     suspend fun exportToPhone(
         context: Context,
         format: ExportFormatForPhone,
+        target: ExportTarget,
         timetables: List<Timetable>
     ) = withContext(Dispatchers.IO) {
         val googleAvailable = runCatching {
             GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context) == 0
         }.getOrDefault(false)
         if (!googleAvailable) {
-            exportToPhoneOverChinaBle(context, format, timetables)
+            exportToPhoneOverChinaBle(context, format, target, timetables)
             return@withContext
         }
         // A DataItem can be written locally even when no phone is reachable.
@@ -85,6 +86,14 @@ object WearFileTransfer {
                 WearFileTransferProtocol.KEY_APP_IMPORT_ASSET,
                 Asset.createFromBytes(appImportBytes)
             )
+            dataMap.putBoolean(
+                WearFileTransferProtocol.KEY_IMPORT_TO_PHONE_APP,
+                target.importsIntoPhoneApp,
+            )
+            dataMap.putBoolean(
+                WearFileTransferProtocol.KEY_SAVE_TO_PHONE_FILES,
+                target.savesFileOnPhone,
+            )
         }.asPutDataRequest().setUrgent()
 
         LegacyWearIo.putDataItem(context, request)
@@ -93,6 +102,7 @@ object WearFileTransfer {
     private suspend fun exportToPhoneOverChinaBle(
         context: Context,
         format: ExportFormatForPhone,
+        target: ExportTarget,
         timetables: List<Timetable>,
     ) {
         val bytes = ByteArrayOutputStream().use { output ->
@@ -116,6 +126,8 @@ object WearFileTransfer {
             mimeType = format.mimeType,
             exportBytesBase64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP),
             backupBytesBase64 = android.util.Base64.encodeToString(backupBytes, android.util.Base64.NO_WRAP),
+            importToPhoneApp = target.importsIntoPhoneApp,
+            saveToPhoneFiles = target.savesFileOnPhone,
         )
         val envelope = com.hufeng943.timetable.shared.importexport.ChinaWearEnvelope(
             requestId = UUID.randomUUID().toString(),

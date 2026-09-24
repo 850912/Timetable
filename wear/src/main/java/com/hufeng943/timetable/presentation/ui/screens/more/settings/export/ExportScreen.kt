@@ -1,8 +1,6 @@
 package com.hufeng943.timetable.presentation.ui.screens.more.settings.export
 
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,14 +14,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -35,7 +34,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
-import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.ListHeader
@@ -52,14 +50,10 @@ import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
 import com.hufeng943.timetable.presentation.ui.theme.AppTheme
 import com.hufeng943.timetable.shared.export.ExportTarget
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun ExportScreen(
     viewModel: ExportViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val scrollState = rememberTransformingLazyColumnState()
@@ -70,21 +64,12 @@ fun ExportScreen(
     var selectedFormat by remember { mutableStateOf(ExportFormat.ICS) }
     var selectedScope by remember { mutableStateOf(ExportScope.CURRENT) }
     var selectedTarget by remember { mutableStateOf(ExportTarget.PHONE_APP) }
-    var pendingTarget by remember { mutableStateOf<ExportTarget?>(null) }
     val scope = rememberCoroutineScope()
-
-    val createDocument = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
-        val target = pendingTarget
-        pendingTarget = null
-        if (uri != null && target != null) {
-            viewModel.exportWithTarget(context, target, selectedFormat, selectedScope, uri)
-        }
-    }
 
     LaunchedEffect(state) {
         when (val s = state) {
             is ExportState.Success -> {
-                Toast.makeText(context, s.fileName, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, s.message, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
             }
             is ExportState.Error -> {
@@ -119,21 +104,24 @@ fun ExportScreen(
                         .padding(12.dp)
                 ) {
                     Column {
-                        Text("导出目标", color = AppTheme.colors.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("导出目标（手机）", color = AppTheme.colors.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(4.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             OneUiCapsuleSurface(
-                                title = "手机 App", subtitle = "发送到手机", modifier = Modifier.weight(1f),
-                                selected = selectedTarget == ExportTarget.PHONE_APP, emphasize = selectedTarget == ExportTarget.PHONE_APP,
+                                title = "App", subtitle = "导入手机", modifier = Modifier.weight(1f),
+                                selected = selectedTarget == ExportTarget.PHONE_APP,
+                                emphasize = selectedTarget == ExportTarget.PHONE_APP,
+                                icon = Icons.Rounded.PhoneAndroid,
                                 onClick = { selectedTarget = ExportTarget.PHONE_APP },
                             )
                             OneUiCapsuleSurface(
-                                title = "下载", subtitle = "保存文件", modifier = Modifier.weight(1f),
-                                selected = selectedTarget == ExportTarget.DOWNLOAD, icon = Icons.Rounded.Save,
-                                onClick = { selectedTarget = ExportTarget.DOWNLOAD },
+                                title = "文件", subtitle = "保存手机", modifier = Modifier.weight(1f),
+                                selected = selectedTarget == ExportTarget.PHONE_FILE,
+                                icon = Icons.Rounded.Save,
+                                onClick = { selectedTarget = ExportTarget.PHONE_FILE },
                             )
                             OneUiCapsuleSurface(
-                                title = "两者", subtitle = "手机 + 本地", modifier = Modifier.weight(1f),
+                                title = "两者", subtitle = "App + 文件", modifier = Modifier.weight(1f),
                                 selected = selectedTarget == ExportTarget.BOTH,
                                 onClick = { selectedTarget = ExportTarget.BOTH },
                             )
@@ -156,8 +144,8 @@ fun ExportScreen(
                     }
                 }
             }
-            item { OneUiCapsuleSurface(title = "日历 (.ics)", subtitle = "可导入系统日历", modifier = Modifier.fillMaxWidth(), selected = selectedFormat == ExportFormat.ICS, emphasize = selectedFormat == ExportFormat.ICS, onClick = { selectedFormat = ExportFormat.ICS }) }
-            item { OneUiCapsuleSurface(title = "表格 (.csv)", subtitle = "适合 Excel / Numbers", modifier = Modifier.fillMaxWidth(), selected = selectedFormat == ExportFormat.CSV, onClick = { selectedFormat = ExportFormat.CSV }) }
+            item { OneUiCapsuleSurface(title = "日历 (.ics)", subtitle = "保存到手机时可导入系统日历", modifier = Modifier.fillMaxWidth(), selected = selectedFormat == ExportFormat.ICS, emphasize = selectedFormat == ExportFormat.ICS, onClick = { selectedFormat = ExportFormat.ICS }) }
+            item { OneUiCapsuleSurface(title = "表格 (.csv)", subtitle = "保存到手机，适合 Excel / Numbers", modifier = Modifier.fillMaxWidth(), selected = selectedFormat == ExportFormat.CSV, onClick = { selectedFormat = ExportFormat.CSV }) }
             item { OneUiCapsuleSurface(title = "完整备份 (.json)", subtitle = "完整课表备份", modifier = Modifier.fillMaxWidth(), selected = selectedFormat == ExportFormat.JSON_BACKUP, onClick = { selectedFormat = ExportFormat.JSON_BACKUP }) }
             item {
                 OneUiCapsuleSurface(
@@ -174,35 +162,20 @@ fun ExportScreen(
             item {
                 val busy = state is ExportState.Exporting
                 OneUiCapsuleSurface(
-                    title = if (busy) "正在导出…" else when (selectedTarget) {
-                        ExportTarget.PHONE_APP -> "发送到手机 App"
-                        ExportTarget.DOWNLOAD -> "保存到本地"
-                        ExportTarget.BOTH -> "发送 + 保存"
+                    title = if (busy) "正在发送到手机…" else when (selectedTarget) {
+                        ExportTarget.PHONE_APP -> "导出到手机 App"
+                        ExportTarget.PHONE_FILE -> "导出文件到手机"
+                        ExportTarget.BOTH -> "同时导出到手机 App 与文件"
                     },
-                    subtitle = if (busy) "请保持设备连接" else "Build12：目标由一次操作完整执行",
+                    subtitle = if (busy) "请保持手表与手机连接" else "文件由手机端写入 Downloads/Timetable，不会保存在手表",
                     icon = Icons.Rounded.FileDownload,
                     emphasize = true,
                     onClick = if (busy) null else ({
-                        when (selectedTarget) {
-                            ExportTarget.PHONE_APP -> viewModel.exportWithTarget(context, selectedTarget, selectedFormat, selectedScope)
-                            ExportTarget.DOWNLOAD, ExportTarget.BOTH -> {
-                                pendingTarget = selectedTarget
-                                createDocument.launch(defaultFileName(selectedFormat))
-                            }
-                        }
+                        viewModel.exportWithTarget(context, selectedTarget, selectedFormat, selectedScope)
                     }),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         }
-    }
-}
-
-private fun defaultFileName(format: ExportFormat): String {
-    val stamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
-    return when (format) {
-        ExportFormat.ICS -> "Timetable-$stamp.ics"
-        ExportFormat.CSV -> "Timetable-$stamp.csv"
-        ExportFormat.JSON_BACKUP -> "Timetable-$stamp.json"
     }
 }

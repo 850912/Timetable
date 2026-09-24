@@ -25,6 +25,8 @@ object WearFileTransferProtocol {
     const val KEY_MIME_TYPE = "mimeType"
     const val KEY_ASSET = "asset"
     const val KEY_APP_IMPORT_ASSET = "appImportAsset"
+    const val KEY_IMPORT_TO_PHONE_APP = "importToPhoneApp"
+    const val KEY_SAVE_TO_PHONE_FILES = "saveToPhoneFiles"
     const val KEY_ERROR_MESSAGE = "errorMessage"
 
     const val KIND_WEAR_EXPORT = "wear_export"

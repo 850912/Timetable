@@ -40,6 +40,7 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
+import androidx.wear.remote.interactions.RemoteActivityHelper
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Code
@@ -47,7 +48,6 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.Star
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
@@ -55,6 +55,7 @@ import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.OneUiInfoCapsule
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.guava.await
 
 @Composable
 fun AboutScreen() {
@@ -130,22 +131,23 @@ fun AboutScreen() {
             item {
                 OneUiCapsuleSurface(
                     title = "个人主页",
-                    subtitle = "由手机打开酷安 / 抖音",
+                    subtitle = "使用 Wear OS 官方 RemoteActivity 在手机打开",
                     icon = Icons.Rounded.Person,
                     onClick = {
                         scope.launch {
                             runCatching {
-                                val ok = com.hufeng943.timetable.data.WearProfileTransfer.openProfile(
-                                    context,
-                                    com.hufeng943.timetable.shared.importexport.ChinaWearProfilePayload(
-                                        target = "coolapk",
-                                        appUri = "coolmarket://u/22532694",
-                                        fallbackUrl = "https://www.coolapk.com/u/22532694",
-                                    ),
-                                )
-                                Toast.makeText(context, if (ok) "已请求手机打开个人主页" else "手机未确认主页请求", Toast.LENGTH_SHORT).show()
+                                val profileIntent = Intent(Intent.ACTION_VIEW)
+                                    .setData(Uri.parse("https://www.coolapk.com/u/22532694"))
+                                    .addCategory(Intent.CATEGORY_BROWSABLE)
+                                // nodeId omitted intentionally: when invoked from a watch, the
+                                // official RemoteActivity API targets the paired phone.
+                                RemoteActivityHelper(context, context.mainExecutor)
+                                    .startRemoteActivity(profileIntent)
+                                    .await()
+                            }.onSuccess {
+                                Toast.makeText(context, "已请求手机打开个人主页", Toast.LENGTH_SHORT).show()
                             }.onFailure {
-                                Toast.makeText(context, it.message ?: "无法请求手机打开主页", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, it.message ?: "无法在手机打开个人主页", Toast.LENGTH_SHORT).show()
                             }
                         }
                     },

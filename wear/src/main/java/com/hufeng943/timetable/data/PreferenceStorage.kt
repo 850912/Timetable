@@ -56,6 +56,7 @@ class PreferenceStorage @Inject constructor(
         val BACKGROUND_BRIGHTNESS = floatPreferencesKey("background_brightness")
         val TIMETABLE_BACKGROUND_MODE = stringPreferencesKey("timetable_background_mode")
         val TIMETABLE_BACKGROUND_IMAGE_PATH = stringPreferencesKey("timetable_background_image_path")
+        val CUSTOM_IMAGE_BLUR_RADIUS = floatPreferencesKey("custom_image_blur_radius")
     }
 
     val appConfigFlow: Flow<AppConfig> = context.dataStore.data.map { prefs ->
@@ -109,7 +110,8 @@ class PreferenceStorage @Inject constructor(
             timetableBackgroundMode = runCatching {
                 TimetableBackgroundMode.valueOf(prefs[Keys.TIMETABLE_BACKGROUND_MODE] ?: TimetableBackgroundMode.THEME.name)
             }.getOrDefault(TimetableBackgroundMode.THEME),
-            timetableBackgroundImagePath = prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH]
+            timetableBackgroundImagePath = prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH],
+            customImageBlurRadius = (prefs[Keys.CUSTOM_IMAGE_BLUR_RADIUS] ?: 0f).coerceIn(0f, 24f),
         )
     }
 
@@ -177,6 +179,10 @@ class PreferenceStorage @Inject constructor(
             if (imagePath.isNullOrBlank()) prefs.remove(Keys.TIMETABLE_BACKGROUND_IMAGE_PATH)
             else prefs[Keys.TIMETABLE_BACKGROUND_IMAGE_PATH] = imagePath
         }
+    }
+
+    suspend fun setCustomImageBlurRadius(value: Float) {
+        context.dataStore.edit { it[Keys.CUSTOM_IMAGE_BLUR_RADIUS] = value.coerceIn(0f, 24f) }
     }
 }
 

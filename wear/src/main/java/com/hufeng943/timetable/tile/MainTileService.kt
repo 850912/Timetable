@@ -1,24 +1,21 @@
 package com.hufeng943.timetable.tile
 
-import android.content.Context
 import androidx.wear.protolayout.ActionBuilders
-import androidx.wear.protolayout.ColorBuilders.argb
-import androidx.wear.protolayout.DimensionBuilders.dp
 import androidx.wear.protolayout.DimensionBuilders.expand
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.ModifiersBuilders
-import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
-import androidx.wear.protolayout.material.Text
-import androidx.wear.protolayout.material.Typography
-import androidx.wear.protolayout.material.layouts.PrimaryLayout
+import androidx.wear.protolayout.material3.CardDefaults.filledVariantCardColors
+import androidx.wear.protolayout.material3.MaterialScope
+import androidx.wear.protolayout.material3.primaryLayout
+import androidx.wear.protolayout.material3.text
+import androidx.wear.protolayout.material3.titleCard
+import androidx.wear.protolayout.modifiers.LayoutModifier
+import androidx.wear.protolayout.modifiers.contentDescription
+import androidx.wear.protolayout.types.layoutString
+import androidx.wear.tiles.Material3TileService
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
-import androidx.wear.tiles.tooling.preview.Preview
-import androidx.wear.tiles.tooling.preview.TilePreviewData
-import androidx.wear.tooling.preview.devices.WearDevices
-import com.google.android.horologist.annotations.ExperimentalHorologistApi
-import com.google.android.horologist.tiles.SuspendingTileService
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.data.PreferenceStorage
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
@@ -29,20 +26,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
 import java.time.ZoneId
-
-private const val RESOURCES_VERSION = "6"
-private const val SURFACE = 0xFF17181B.toInt()
-private const val SURFACE_ALT = 0xFF202228.toInt()
-private const val PRIMARY = 0xFF5B8CFF.toInt()
-private const val AI_PURPLE = 0xFF8B5CF6.toInt()
-private const val TEXT_PRIMARY = 0xFFF7F8FC.toInt()
-private const val TEXT_SECONDARY = 0xFFAFB4C0.toInt()
+import kotlin.time.Clock
 
 private data class TileCourse(
     val name: String,
@@ -52,270 +39,203 @@ private data class TileCourse(
     val endMinutes: Int,
     val location: String?,
     val teacher: String?,
-    val color: Int?,
     val startEpochMillis: Long = 0L,
     val endEpochMillis: Long = 0L,
     val position: Int = 0,
     val total: Int = 0,
 )
 
-@OptIn(ExperimentalHorologistApi::class)
+/**
+ * Responsive Material 3 tile. Material3TileService owns resource registration and dynamic color,
+ * while primaryLayout applies the official round/square safe margins so content is not cropped on
+ * smaller watches and larger devices such as Xiaomi Watch 5.
+ */
 @AndroidEntryPoint
-class MainTileService : SuspendingTileService() {
+class MainTileService : Material3TileService() {
 
     @Inject lateinit var repository: TimetableRepository
     @Inject lateinit var preferenceStorage: PreferenceStorage
 
-    override suspend fun resourcesRequest(
-        requestParams: RequestBuilders.ResourcesRequest
-    ) = resources()
-
-    override suspend fun tileRequest(
-        requestParams: RequestBuilders.TileRequest
+    override suspend fun MaterialScope.tileResponse(
+        requestParams: RequestBuilders.TileRequest,
     ): TileBuilders.Tile {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val is24Hour = runCatching { preferenceStorage.appConfigFlow.first().is24HourFormat }.getOrDefault(true)
+        val is24Hour = runCatching {
+            preferenceStorage.appConfigFlow.first().is24HourFormat
+        }.getOrDefault(true)
         val courses = runCatching {
             repository.getAllTimetables().first().coursesForDate(today, is24Hour)
         }.getOrDefault(emptyList())
 
-        return tile(requestParams, this, courses)
+        return buildTile(courses)
     }
-}
 
-private fun resources(): ResourceBuilders.Resources =
-    ResourceBuilders.Resources.Builder()
-        .setVersion(RESOURCES_VERSION)
-        .build()
+    private fun MaterialScope.buildTile(courses: List<TileCourse>): TileBuilders.Tile {
+        val timeline = TimelineBuilders.Timeline.Builder()
+        timeline.addTimelineEntry(
+            TimelineBuilders.TimelineEntry.Builder()
+                .setLayout(
+                    LayoutElementBuilders.Layout.Builder()
+                        .setRoot(tileLayout(courses.currentAndUpcoming(), courses.isNotEmpty()))
+                        .build()
+                )
+                .build()
+        )
 
-private fun tile(
-    requestParams: RequestBuilders.TileRequest,
-    context: Context,
-    courses: List<TileCourse>,
-): TileBuilders.Tile {
-    val timeline = TimelineBuilders.Timeline.Builder()
-    val fallback = courses.currentAndUpcoming()
-    timeline.addTimelineEntry(
-        TimelineBuilders.TimelineEntry.Builder()
-            .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, fallback, hadCoursesToday = courses.isNotEmpty())).build())
-            .build()
-    )
+        val timelineReady = courses.isNotEmpty() && courses.all {
+            it.startEpochMillis > 0L && it.endEpochMillis > it.startEpochMillis
+        }
+        if (timelineReady) {
+            val zone = ZoneId.systemDefault()
+            val javaToday = java.time.LocalDate.now(zone)
+            val dayStart = javaToday.atStartOfDay(zone).toInstant().toEpochMilli()
+            val dayEnd = javaToday.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            var cursor = dayStart
 
-    val timelineReady = courses.isNotEmpty() && courses.all { it.startEpochMillis > 0L && it.endEpochMillis > it.startEpochMillis }
-    if (timelineReady) {
-        val zone = ZoneId.systemDefault()
-        val javaToday = java.time.LocalDate.now(zone)
-        val dayStart = javaToday.atStartOfDay(zone).toInstant().toEpochMilli()
-        val dayEnd = javaToday.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        var cursor = dayStart
-        courses.forEachIndexed { index, course ->
-            if (cursor < course.startEpochMillis) {
-                val upcoming = courses.drop(index).take(2)
-                timeline.addTimelineEntry(
-                    TimelineBuilders.TimelineEntry.Builder()
-                        .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, upcoming, hadCoursesToday = true)).build())
-                        .setValidity(
-                            TimelineBuilders.TimeInterval.Builder()
-                                .setStartMillis(cursor)
-                                .setEndMillis(course.startEpochMillis)
-                                .build()
-                        ).build()
+            courses.forEachIndexed { index, course ->
+                if (cursor < course.startEpochMillis) {
+                    addTimelineEntry(
+                        timeline = timeline,
+                        start = cursor,
+                        end = course.startEpochMillis,
+                        visibleCourses = courses.drop(index).take(2),
+                        hadCoursesToday = true,
+                    )
+                }
+                addTimelineEntry(
+                    timeline = timeline,
+                    start = course.startEpochMillis,
+                    end = course.endEpochMillis,
+                    visibleCourses = listOf(course) + courses.drop(index + 1).take(1),
+                    hadCoursesToday = true,
+                )
+                cursor = maxOf(cursor, course.endEpochMillis)
+            }
+            if (cursor < dayEnd) {
+                addTimelineEntry(
+                    timeline = timeline,
+                    start = cursor,
+                    end = dayEnd,
+                    visibleCourses = emptyList(),
+                    hadCoursesToday = true,
                 )
             }
-            val during = listOf(course) + courses.drop(index + 1).take(1)
-            timeline.addTimelineEntry(
-                TimelineBuilders.TimelineEntry.Builder()
-                    .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, during, hadCoursesToday = true)).build())
-                    .setValidity(
-                        TimelineBuilders.TimeInterval.Builder()
-                            .setStartMillis(course.startEpochMillis)
-                            .setEndMillis(course.endEpochMillis)
-                            .build()
-                    ).build()
-            )
-            cursor = maxOf(cursor, course.endEpochMillis)
         }
-        if (cursor < dayEnd) {
-            timeline.addTimelineEntry(
-                TimelineBuilders.TimelineEntry.Builder()
-                    .setLayout(LayoutElementBuilders.Layout.Builder().setRoot(tileLayout(requestParams, context, emptyList(), hadCoursesToday = true)).build())
-                    .setValidity(
-                        TimelineBuilders.TimeInterval.Builder()
-                            .setStartMillis(cursor)
-                            .setEndMillis(dayEnd)
-                            .build()
-                    ).build()
-            )
-        }
+
+        return TileBuilders.Tile.Builder()
+            .setTileTimeline(timeline.build())
+            .setFreshnessIntervalMillis(30 * 60 * 1000L)
+            .build()
     }
 
-    return TileBuilders.Tile.Builder()
-        .setResourcesVersion(RESOURCES_VERSION)
-        .setTileTimeline(timeline.build())
-        .setFreshnessIntervalMillis(60 * 60 * 1000L)
-        .build()
-}
+    private fun MaterialScope.addTimelineEntry(
+        timeline: TimelineBuilders.Timeline.Builder,
+        start: Long,
+        end: Long,
+        visibleCourses: List<TileCourse>,
+        hadCoursesToday: Boolean,
+    ) {
+        timeline.addTimelineEntry(
+            TimelineBuilders.TimelineEntry.Builder()
+                .setLayout(
+                    LayoutElementBuilders.Layout.Builder()
+                        .setRoot(tileLayout(visibleCourses, hadCoursesToday))
+                        .build()
+                )
+                .setValidity(
+                    TimelineBuilders.TimeInterval.Builder()
+                        .setStartMillis(start)
+                        .setEndMillis(end)
+                        .build()
+                )
+                .build()
+        )
+    }
 
-private fun tileLayout(
-    requestParams: RequestBuilders.TileRequest,
-    context: Context,
-    courses: List<TileCourse>,
-    hadCoursesToday: Boolean,
-): LayoutElementBuilders.LayoutElement {
-    val nowMillis = System.currentTimeMillis()
-    val firstIsCurrent = courses.firstOrNull()?.let {
-        it.startEpochMillis > 0L && nowMillis in it.startEpochMillis until it.endEpochMillis
-    } == true
-    val firstCourse = courses.firstOrNull()
-    val status = when {
-        courses.isEmpty() && hadCoursesToday -> context.getString(R.string.tile_status_finished)
-        courses.isEmpty() -> context.getString(R.string.tile_status_today)
-        firstIsCurrent -> buildString {
-            append(context.getString(R.string.tile_status_current))
-            if (firstCourse != null && firstCourse.position > 0) append(" · 第${firstCourse.position}/${firstCourse.total}节")
-            if (firstCourse != null) {
-                val left = ((firstCourse.endEpochMillis - nowMillis) / 60000L).coerceAtLeast(1L)
+    private fun MaterialScope.tileLayout(
+        courses: List<TileCourse>,
+        hadCoursesToday: Boolean,
+    ): LayoutElementBuilders.LayoutElement {
+        val nowMillis = System.currentTimeMillis()
+        val course = courses.firstOrNull()
+        val next = courses.getOrNull(1)
+        val isCurrent = course?.let {
+            it.startEpochMillis > 0L && nowMillis in it.startEpochMillis until it.endEpochMillis
+        } == true
+
+        val status = when {
+            course == null && hadCoursesToday -> getString(R.string.tile_status_finished)
+            course == null -> getString(R.string.tile_status_today)
+            isCurrent -> buildString {
+                append(getString(R.string.tile_status_current))
+                val left = ((course.endEpochMillis - nowMillis) / 60_000L).coerceAtLeast(1L)
                 append(" · 余${left}分")
             }
-        }
-        else -> buildString {
-            append(context.getString(R.string.tile_status_next))
-            if (firstCourse != null) {
-                val wait = ((firstCourse.startEpochMillis - nowMillis) / 60000L).coerceAtLeast(0L)
+            else -> buildString {
+                append(getString(R.string.tile_status_next))
+                val wait = ((course.startEpochMillis - nowMillis) / 60_000L).coerceAtLeast(0L)
                 append(" · ${wait}分后")
-                if (firstCourse.position > 0) append(" · 第${firstCourse.position}/${firstCourse.total}节")
             }
         }
-    }
 
-    val column = LayoutElementBuilders.Column.Builder()
-        .setWidth(expand())
-        .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-        .addContent(
-            Text.Builder(context, status)
-                .setColor(argb(if (firstIsCurrent) AI_PURPLE else PRIMARY))
-                .setTypography(Typography.TYPOGRAPHY_CAPTION1)
-                .setMaxLines(1)
-                .build()
-        )
-        .addContent(spacer(5f))
+        val title = course?.name?.ifBlank { getString(R.string.tile_unnamed_course) }
+            ?: if (hadCoursesToday) getString(R.string.home_day_finished_free_title)
+            else getString(R.string.tile_no_courses)
 
-    if (courses.isEmpty()) {
-        column.addContent(
-            capsule(
-                context = context,
-                title = if (hadCoursesToday) context.getString(R.string.home_day_finished_free_title) else context.getString(R.string.tile_no_courses),
-                subtitle = if (hadCoursesToday) context.getString(R.string.home_day_finished_title) else context.getString(R.string.tile_tap_to_open),
-                accent = PRIMARY,
-                clickId = "tile_empty",
-                hero = true,
-            )
-        )
-    } else {
-        val visibleCourses = courses.take(2)
-        visibleCourses.forEachIndexed { index, course ->
-            val detail = buildString {
-                append(course.start)
-                if (course.end.isNotBlank()) append("–${course.end}")
-                course.location?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
-                course.teacher?.takeIf { it.isNotBlank() }?.let { append("\n$it") }
-                if (course.position > 0) {
-                    if (!course.teacher.isNullOrBlank()) append(" · ") else append("\n")
-                    append("第${course.position}/${course.total}节")
+        val detail = course?.let {
+            buildString {
+                append(it.start)
+                if (it.end.isNotBlank()) append("–${it.end}")
+                it.location?.takeIf { value -> value.isNotBlank() }?.let { location -> append(" · $location") }
+                it.teacher?.takeIf { value -> value.isNotBlank() }?.let { teacher -> append("\n$teacher") }
+                if (it.position > 0) {
+                    append(if (it.teacher.isNullOrBlank()) "\n" else " · ")
+                    append("第${it.position}/${it.total}节")
                 }
             }
-            column.addContent(
-                capsule(
-                    context = context,
-                    title = course.name.ifBlank { context.getString(R.string.tile_unnamed_course) },
-                    subtitle = detail,
-                    accent = course.color ?: if (index == 0) PRIMARY else AI_PURPLE,
-                    clickId = "tile_course_$index",
-                    compact = index > 0,
-                    hero = index == 0,
-                )
-            )
-            if (index < visibleCourses.lastIndex) column.addContent(spacer(4f))
+        } ?: if (hadCoursesToday) getString(R.string.home_day_finished_title)
+        else getString(R.string.tile_tap_to_open)
+
+        val bottom = next?.let { "下一节 ${it.start} · ${it.name}" }
+            ?: getString(R.string.tile_tap_to_open)
+        val clickable = launchAppClickable("open_timetable")
+        val timeSlot: (MaterialScope.() -> LayoutElementBuilders.LayoutElement)? = course?.let { selected ->
+            { text(selected.start.layoutString) }
         }
+
+        return primaryLayout(
+            titleSlot = { text(status.layoutString) },
+            mainSlot = {
+                titleCard(
+                    onClick = clickable,
+                    modifier = LayoutModifier.contentDescription("$title，$detail"),
+                    height = expand(),
+                    colors = filledVariantCardColors(),
+                    title = { text(title.layoutString) },
+                    time = timeSlot,
+                    content = { text(detail.layoutString) },
+                )
+            },
+            bottomSlot = { text(bottom.layoutString) },
+            onClick = clickable,
+        )
     }
 
-    return PrimaryLayout.Builder(requestParams.deviceConfiguration)
-        .setResponsiveContentInsetEnabled(true)
-        .setContent(column.build())
-        .build()
+    private fun launchAppClickable(id: String): ModifiersBuilders.Clickable {
+        val action = ActionBuilders.LaunchAction.Builder()
+            .setAndroidActivity(
+                ActionBuilders.AndroidActivity.Builder()
+                    .setPackageName(packageName)
+                    .setClassName("com.hufeng943.timetable.presentation.MainActivity")
+                    .build()
+            )
+            .build()
+        return ModifiersBuilders.Clickable.Builder()
+            .setId(id)
+            .setOnClick(action)
+            .build()
+    }
 }
-
-private fun capsule(
-    context: Context,
-    title: String,
-    subtitle: String,
-    accent: Int,
-    clickId: String,
-    compact: Boolean = false,
-    hero: Boolean = false,
-): LayoutElementBuilders.LayoutElement {
-    val corner = ModifiersBuilders.Corner.Builder()
-        .setRadius(dp(if (compact) 18f else 24f))
-        .build()
-    val background = ModifiersBuilders.Background.Builder()
-        .setColor(argb(if (hero) SURFACE_ALT else SURFACE))
-        .setCorner(corner)
-        .build()
-    val padding = ModifiersBuilders.Padding.Builder()
-        .setStart(dp(12f))
-        .setEnd(dp(12f))
-        .setTop(dp(if (compact) 6f else if (hero) 11f else 9f))
-        .setBottom(dp(if (compact) 6f else if (hero) 11f else 9f))
-        .build()
-
-    val content = LayoutElementBuilders.Column.Builder()
-        .setWidth(expand())
-        .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_START)
-        .addContent(
-            Text.Builder(context, title)
-                .setColor(argb(if (hero) TEXT_PRIMARY else accent))
-                .setTypography(if (hero) Typography.TYPOGRAPHY_TITLE2 else Typography.TYPOGRAPHY_TITLE3)
-                .setMaxLines(if (hero) 2 else 1)
-                .build()
-        )
-        .addContent(spacer(2f))
-        .addContent(
-            Text.Builder(context, subtitle)
-                .setColor(argb(TEXT_SECONDARY))
-                .setTypography(Typography.TYPOGRAPHY_CAPTION1)
-                .setMaxLines(if (compact) 1 else 2)
-                .build()
-        )
-        .build()
-
-    val launchApp = ActionBuilders.LaunchAction.Builder()
-        .setAndroidActivity(
-            ActionBuilders.AndroidActivity.Builder()
-                .setPackageName("com.hufeng943.timetable")
-                .setClassName("com.hufeng943.timetable.presentation.MainActivity")
-                .build()
-        )
-        .build()
-    val clickable = ModifiersBuilders.Clickable.Builder()
-        .setId(clickId)
-        .setOnClick(launchApp)
-        .build()
-
-    return LayoutElementBuilders.Box.Builder()
-        .setWidth(expand())
-        .setModifiers(
-            ModifiersBuilders.Modifiers.Builder()
-                .setBackground(background)
-                .setPadding(padding)
-                .setClickable(clickable)
-                .build()
-        )
-        .addContent(content)
-        .build()
-}
-
-private fun spacer(heightDp: Float): LayoutElementBuilders.LayoutElement =
-    LayoutElementBuilders.Spacer.Builder().setHeight(dp(heightDp)).build()
 
 private fun List<Timetable>.coursesForDate(date: LocalDate, is24Hour: Boolean): List<TileCourse> = flatMap { table ->
     table.resolveDate(date).map { occurrence ->
@@ -334,8 +254,6 @@ private fun List<Timetable>.coursesForDate(date: LocalDate, is24Hour: Boolean): 
             endMinutes = end.hour * 60 + end.minute,
             location = occurrence.location,
             teacher = occurrence.course.teacher,
-            color = occurrence.course.color.takeIf { it != -1L }?.toInt()
-                ?: table.color.takeIf { it != -1L }?.toInt(),
             startEpochMillis = startEpoch,
             endEpochMillis = endEpoch,
         )
@@ -346,41 +264,8 @@ private fun List<Timetable>.coursesForDate(date: LocalDate, is24Hour: Boolean): 
 
 private fun List<TileCourse>.currentAndUpcoming(): List<TileCourse> {
     if (isEmpty()) return emptyList()
-    val localNow = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
-    val nowMinutes = localNow.hour * 60 + localNow.minute
-    val activeOrUpcoming = mapNotNull { course ->
-        val current = isWithinSlot(nowMinutes, course.startMinutes, course.endMinutes)
-        val startsLaterToday = course.startMinutes - nowMinutes
-        when {
-            current -> course to 0
-            startsLaterToday > 0 -> course to startsLaterToday
-            else -> null
-        }
-    }.sortedBy { it.second }.map { it.first }
-    return activeOrUpcoming.take(3)
-}
-
-private fun isWithinSlot(nowMinutes: Int, startMinutes: Int, endMinutes: Int): Boolean {
-    if (startMinutes == Int.MAX_VALUE || endMinutes == Int.MAX_VALUE) return false
-    return if (startMinutes <= endMinutes) {
-        nowMinutes in startMinutes until endMinutes
-    } else {
-        nowMinutes >= startMinutes || nowMinutes < endMinutes
-    }
-}
-
-private fun minutesUntil(nowMinutes: Int, targetMinutes: Int): Int =
-    if (targetMinutes >= nowMinutes) targetMinutes - nowMinutes else (24 * 60 - nowMinutes) + targetMinutes
-
-@Preview(device = WearDevices.SMALL_ROUND)
-@Preview(device = WearDevices.LARGE_ROUND)
-fun tilePreview(context: Context) = TilePreviewData({ _: RequestBuilders.ResourcesRequest -> resources() }) {
-    tile(
-        it,
-        context,
-        listOf(
-            TileCourse("高等数学", "08:00", "09:40", 480, 580, "A301", "张老师", PRIMARY),
-            TileCourse("大学英语", "10:20", "12:00", 620, 720, "B205", null, AI_PURPLE),
-        )
-    )
+    val now = System.currentTimeMillis()
+    return filter { it.endEpochMillis > now }
+        .sortedBy { it.startEpochMillis }
+        .take(2)
 }

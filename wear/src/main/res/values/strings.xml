@@ -138,7 +138,7 @@
     <string name="about_open_source_data">Data: Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">Tools: Coroutines 1.11.0 · AboutLibraries 15.0.3 · MaterialKolor 4.1.1. Open the license list below for full notices.</string>
     <string name="about_changelog_part1">3.5.3 focuses on Wear OS 6 reliability: nested-page motion no longer drags the parent screen away, Xiaomi/China-ROM haptics use a safe runtime fallback, and liquid glass now uses one tuned low-cost optical path.</string>
-    <string name="about_changelog_part2">Backgrounds add image-tone fluid color generation, course cards are consolidated, phone-to-watch legacy transfer compatibility remains available, and a separate Nacho Cat Watch Face Format module includes AOD.</string>
+    <string name="about_changelog_part2">Backgrounds add image-tone fluid color generation, course cards are consolidated, and phone-to-watch legacy transfer compatibility remains available.</string>
     <string name="about_declaration_title">Declaration</string>
     <string name="about_declaration_subtitle" translatable="false">https://github.com/HuFeng943/Timetable</string>
     <string name="about_declaration_text">
@@ -256,4 +256,6 @@
     <string name="settings_background_fluid_image_summary">Extract the image palette and generate an ambient fluid glow without showing the source image.</string>
     <string name="home_period_morning">Morning</string>
     <string name="home_period_afternoon">Afternoon</string>
+    <string name="settings_background_image_blur">Custom image blur</string>
+    <string name="settings_background_image_blur_summary">Blur radius: %1$d dp · 0 disables blur</string>
 </resources>

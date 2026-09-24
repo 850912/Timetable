@@ -38,7 +38,6 @@ import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.PowerManager
-import android.os.Build
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -75,8 +74,6 @@ import com.hufeng943.timetable.presentation.viewmodel.edit.tools.ScheduleToolsVi
 import com.hufeng943.timetable.presentation.viewmodel.edit.tools.ScheduleAdjustmentViewModel
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.foundation.LocalSwipeToDismissBackgroundScrimColor
-import androidx.wear.compose.foundation.LocalSwipeToDismissContentScrimColor
 
 private fun decodeWearBackground(path: String, maxSide: Int = 512): android.graphics.Bitmap? {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -159,7 +156,18 @@ private fun AppBackground(
                 TimetableBackgroundMode.IMAGE -> {
                     val bitmap = backgroundBitmap
                     if (bitmap != null) {
-                        Image(bitmap = bitmap.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(
+                                    if (config.customImageBlurRadius > 0.01f) {
+                                        Modifier.blur(config.customImageBlurRadius.dp)
+                                    } else Modifier
+                                ),
+                            contentScale = ContentScale.Crop,
+                        )
                     } else {
                         GalaxyAiAmbientLayer(RectangleShape, strength = 1f)
                     }
@@ -224,14 +232,9 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         liquidGlassEffect = com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect.SOFT,
     ) else storedConfig
     val globalGlassBackdrop = rememberLayerBackdrop()
-    // Xiaomi Watch 5 / China-ROM devices have shown vendor GPU crashes in RuntimeShader-heavy
-    // backdrop paths. Keep the same visual language but route Xiaomi watches through the cheap
-    // translucent renderer; other devices retain the shared real-time backdrop.
-    val conservativeVendorRenderer = remember {
-        Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true) ||
-            Build.BRAND.equals("Xiaomi", ignoreCase = true)
-    }
-    val useBackdropEffects = config.isLiquidGlassEnabled && !conservativeVendorRenderer
+    // Keep the same renderer on Xiaomi and other Wear OS devices. Device-specific visual
+    // downgrades made the UI inconsistent and are unnecessary when the shared backdrop is smooth.
+    val useBackdropEffects = config.isLiquidGlassEnabled
 
     AppScaffold(
         modifier = Modifier.clipToBounds(),
@@ -264,17 +267,15 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
                 )
             }
-            CompositionLocalProvider(
-                    LocalSwipeToDismissBackgroundScrimColor provides Color.Transparent,
-                    LocalSwipeToDismissContentScrimColor provides Color.Transparent,
-                ) {
-                    SwipeDismissableNavHost(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clipToBounds(),
-                        navController = navController,
-                        startDestination = NavRoutes.MAIN
-                    ) {
+            // Do not override the Wear navigation scrims to transparent. The default scrim
+            // keeps the outgoing destination visually contained during swipe-to-dismiss.
+            SwipeDismissableNavHost(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clipToBounds(),
+                navController = navController,
+                startDestination = NavRoutes.MAIN,
+            ) {
                 composable(NavRoutes.MAIN) { HomeScreen() }
 
                 composable(NavRoutes.COURSE_DETAIL) { CourseDetailScreen() }
@@ -484,6 +485,16 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                             onClose = { navController.popBackStack() },
                         )
                     }
+                    composable(NavRoutes.MORE_SETTINGS_BACKGROUND_IMAGE_BLUR) {
+                        LiquidGlassIntegerAdjustPager(
+                            title = "自定义图片模糊",
+                            value = config.customImageBlurRadius.toInt(),
+                            range = 0..24,
+                            suffix = "dp",
+                            onApply = { appConfigViewModel.updateCustomImageBlurRadius(it.toFloat()) },
+                            onClose = { navController.popBackStack() },
+                        )
+                    }
                 }
 
                 navigation(
@@ -536,5 +547,4 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
             }
         }
     }
-}
 }

@@ -9,6 +9,7 @@ import com.hufeng943.timetable.data.ThemePreference
 import com.hufeng943.timetable.presentation.ui.NavRoutes
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalNavController
+import com.hufeng943.timetable.presentation.ui.common.TimetableBackgroundMode
 import com.hufeng943.timetable.presentation.ui.common.navigateSingle
 import com.hufeng943.timetable.presentation.ui.common.popSafe
 import com.hufeng943.timetable.presentation.ui.screens.more.settings.export.ExportScreen
@@ -94,10 +95,16 @@ fun SettingsPowerSaveScreen(appConfigViewModel: AppConfigViewModel) {
 @Composable
 fun SettingsBackgroundScreen(appConfigViewModel: AppConfigViewModel) {
     val nav = LocalNavController.current
-    BackgroundSelectPager(LocalAppConfig.current) { mode, path ->
-        appConfigViewModel.updateTimetableBackground(mode, path)
-        nav.popSafe()
-    }
+    BackgroundSelectPager(
+        config = LocalAppConfig.current,
+        onBackgroundSelected = { mode, path ->
+            appConfigViewModel.updateTimetableBackground(mode, path)
+            // Preserve the original one-tap behavior for built-in backgrounds, but keep
+            // custom images on this page so blur can be tuned immediately after selection.
+            if (mode != TimetableBackgroundMode.IMAGE) nav.popSafe()
+        },
+        onBlurClick = { nav.navigateSingle(NavRoutes.MORE_SETTINGS_BACKGROUND_IMAGE_BLUR) },
+    )
 }
 
 @Composable
@@ -119,8 +126,7 @@ fun SettingsThemeScreen(
 
 @Composable
 fun SettingsExportScreen() {
-    val nav = LocalNavController.current
-    ExportScreen(onNavigateBack = { nav.popSafe() })
+    ExportScreen()
 }
 
 @Composable

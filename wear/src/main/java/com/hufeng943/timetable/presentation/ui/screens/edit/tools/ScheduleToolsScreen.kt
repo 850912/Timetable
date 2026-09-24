@@ -12,9 +12,6 @@ import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
@@ -37,6 +34,7 @@ import com.hufeng943.timetable.presentation.ui.common.popSafe
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.WearDatePickerPage
 import com.hufeng943.timetable.presentation.ui.components.WearTimePickerPage
+import com.hufeng943.timetable.presentation.ui.components.WearWheelPickerPage
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.presentation.viewmodel.edit.tools.BatchAction
 import com.hufeng943.timetable.presentation.viewmodel.edit.tools.ScheduleToolsState
@@ -293,41 +291,13 @@ private fun ValuePickerPage(
     label: (Int) -> String,
     onConfirm: (Int) -> Unit,
 ) {
-    var selected by remember(initial) { mutableIntStateOf(initial) }
-    val state = rememberTransformingLazyColumnState(
-        initialAnchorItemIndex = values.indexOf(initial).coerceAtLeast(0) + 1,
+    WearWheelPickerPage(
+        title = title,
+        values = values,
+        initial = initial,
+        label = label,
+        onConfirm = onConfirm,
     )
-    val transform = rememberTransformationSpec()
-    ScreenScaffold(
-        scrollState = state,
-        timeText = {},
-        edgeButton = {
-            EdgeButton(onClick = { onConfirm(selected) }) {
-                Icon(Icons.Rounded.Check, "确认")
-            }
-        },
-    ) { padding ->
-        TransformingLazyColumn(state = state, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
-            item {
-                ListHeader(
-                    modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
-                    transformation = SurfaceTransformation(transform),
-                ) { Text(title) }
-            }
-            values.forEach { value ->
-                item(key = value) {
-                    OneUiCapsuleSurface(
-                        title = label(value),
-                        selected = value == selected,
-                        onClick = { selected = value },
-                        modifier = Modifier.fillMaxWidth()
-                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable

@@ -24,16 +24,18 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.hufeng943.timetable.R
 import com.hufeng943.timetable.TimetableDatabaseProvider
+import com.hufeng943.timetable.reminder.CourseReminderScheduler
 import com.hufeng943.timetable.shared.importexport.ChinaWearBleProtocol
 import com.hufeng943.timetable.shared.importexport.ChinaWearExportPayload
 import com.hufeng943.timetable.shared.importexport.ChinaWearPacketCodec
 import com.hufeng943.timetable.shared.importexport.ChinaWearProtocol
-import com.hufeng943.timetable.shared.importexport.WearProfileRequest
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
+import com.hufeng943.timetable.widget.TodayWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
@@ -175,20 +177,7 @@ class ChinaWearBleReceiverService : Service() {
         if (envelope.version != ChinaWearProtocol.VERSION) return
         when (envelope.type) {
             "EXPORT_REQUEST" -> handleExport(device, envelope)
-            "PROFILE_OPEN_REQUEST" -> handleProfileOpen(device, envelope)
             "PING" -> sendEnvelope(device, envelope.requestId, "PONG", "ok")
-        }
-    }
-
-    private suspend fun handleProfileOpen(device: BluetoothDevice, envelope: com.hufeng943.timetable.shared.importexport.ChinaWearEnvelope) {
-        runCatching {
-            val payload = json.decodeFromString<com.hufeng943.timetable.shared.importexport.ChinaWearProfilePayload>(envelope.payload)
-            WearProfileIntentRouter.open(this, WearProfileRequest(payload.target, payload.appUri, payload.fallbackUrl))
-            sendEnvelope(device, envelope.requestId, "PROFILE_OPEN_ACK", "queued")
-            SyncDiagnosticsReporter.recordProfile(this, "profile_open_queued:${payload.target}:china_ble")
-        }.onFailure {
-            SyncDiagnosticsReporter.recordError(this, "profile_open_failed:${it.message}")
-            sendEnvelope(device, envelope.requestId, "SYNC_ERROR", it.message ?: "主页打开失败")
         }
     }
 
@@ -199,11 +188,20 @@ class ChinaWearBleReceiverService : Service() {
             val backupBytes = android.util.Base64.decode(payload.backupBytesBase64, android.util.Base64.DEFAULT)
             require(exportBytes.size <= 512 * 1024) { "导出文件过大" }
             require(backupBytes.size <= 512 * 1024) { "课表备份过大" }
-            val timetables = TimetableFileParser.parse(backupBytes)
-            importService.importReplacingMatchesAtomic(timetables, envelope.requestId, "wear-ble")
-            saveDownload(payload.fileName, payload.mimeType, exportBytes)
+            require(payload.importToPhoneApp || payload.saveToPhoneFiles) { "未选择手机端导出目标" }
+            if (payload.importToPhoneApp) {
+                val timetables = TimetableFileParser.parse(backupBytes)
+                importService.importReplacingMatchesAtomic(timetables, envelope.requestId, "wear-ble")
+                refreshLocalSurfaces()
+            }
+            if (payload.saveToPhoneFiles) {
+                saveDownload(payload.fileName, payload.mimeType, exportBytes)
+            }
             sendEnvelope(device, envelope.requestId, "EXPORT_ACK", "ok")
-            SyncDiagnosticsReporter.recordExport(this, "china_ble_export_success:${envelope.requestId}:${payload.fileName}")
+            SyncDiagnosticsReporter.recordExport(
+                this,
+                "china_ble_export_success:${envelope.requestId}:${payload.fileName}:import=${payload.importToPhoneApp}:file=${payload.saveToPhoneFiles}",
+            )
         }.onFailure {
             SyncDiagnosticsReporter.recordError(this, "china_ble_export_failed:${it.message}")
             sendEnvelope(device, envelope.requestId, "SYNC_ERROR", it.message ?: "导出失败")
@@ -229,6 +227,14 @@ class ChinaWearBleReceiverService : Service() {
     }
 
     private fun sanitizeFileName(name: String): String = name.replace(Regex("[\\\\/:*?\"<>|]"), "_").ifBlank { "Timetable_Export" }
+
+    private suspend fun refreshLocalSurfaces() {
+        runCatching {
+            val tables = TimetableDatabaseProvider.repository(this).getAllTimetables().first()
+            CourseReminderScheduler.schedule(this, tables)
+            TodayWidgetProvider.requestRefresh(this)
+        }
+    }
 
     private suspend fun sendEnvelope(device: BluetoothDevice, requestId: String, type: String, payload: String) {
         val bytes = ChinaWearPacketCodec.encode(

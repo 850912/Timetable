@@ -8,4 +8,6 @@ data class ChinaWearExportPayload(
     val mimeType: String,
     val exportBytesBase64: String,
     val backupBytesBase64: String,
+    val importToPhoneApp: Boolean = true,
+    val saveToPhoneFiles: Boolean = true,
 )

@@ -107,7 +107,7 @@
     <string name="event_type_lab">实验</string>
     <string name="event_type_other">待办</string>
     <!-- About -->
-    <string name="about_description">一款面向 Wear OS 与 Galaxy Watch 的课程表助手，支持手机同步、离线课表、课程提醒、学业待办、Tile 与表盘复杂功能。</string>
+    <string name="about_description">一款面向 Wear OS 与 Galaxy Watch 的课程表助手，支持手机同步、离线课表、课程提醒、学业待办、Tile 与复杂功能数据源。</string>
     <string name="about_features_title">主要功能</string>
     <string name="about_features_text">
         " · 多课表管理与手机 ↔ 手表同步\n"
@@ -129,7 +129,7 @@
     <string name="about_open_source_data">数据：Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">工具：Coroutines 1.11.0 · AboutLibraries 15.0.3 · MaterialKolor 4.1.1。完整许可证见下方入口。</string>
     <string name="about_changelog_part1">3.5.3：重点优化 Wear OS 6 稳定性；子页面不再带动父页面左移消失；小米/中国版设备触觉改为安全兼容回退；液态玻璃收敛为一套低负载、实际可见的光学效果。</string>
-    <string name="about_changelog_part2">新增“图片取色流体背景”；整理 Wear 自定义课程卡；保留手机与手表互传旧接口兼容；新增独立 Nacho Cat WFF 表盘并支持 AOD。</string>
+    <string name="about_changelog_part2">新增“图片取色流体背景”；整理 Wear 自定义课程卡；保留手机与手表互传旧接口兼容。</string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
         " · 当前版本采用语义化版本号 3.5.3\n"
@@ -245,4 +245,6 @@
     <string name="settings_background_fluid_image_summary">仅提取图片色调生成流体光晕，不直接显示原图。</string>
     <string name="home_period_morning">上午</string>
     <string name="home_period_afternoon">下午</string>
+    <string name="settings_background_image_blur">自定义图片模糊</string>
+    <string name="settings_background_image_blur_summary">模糊半径：%1$d dp · 0 为关闭</string>
 </resources>

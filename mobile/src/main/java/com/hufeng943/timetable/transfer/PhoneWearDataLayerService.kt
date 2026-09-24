@@ -11,24 +11,18 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
 import com.hufeng943.timetable.shared.importexport.WearBridgeProtocol
-import com.hufeng943.timetable.shared.importexport.WearTransportMessageProtocol
-import com.hufeng943.timetable.shared.importexport.ChinaWearProfilePayload
-import com.hufeng943.timetable.shared.importexport.WearProfileRequest
-import com.hufeng943.timetable.sync.WearProfileIntentRouter
 import com.hufeng943.timetable.shared.importexport.WearFileTransferProtocol
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
 import com.hufeng943.timetable.TimetableDatabaseProvider
 import com.hufeng943.timetable.sync.LegacyWearIo
 import com.hufeng943.timetable.sync.AutoSyncJobService
 import com.hufeng943.timetable.sync.WearConnectionState
-import com.hufeng943.timetable.sync.WearOsTransport
 import com.hufeng943.timetable.sync.SyncAckTracker
 import com.hufeng943.timetable.sync.SyncDiagnosticsReporter
 import com.hufeng943.timetable.reminder.CourseReminderScheduler
 import com.hufeng943.timetable.widget.TodayWidgetProvider
 import com.hufeng943.timetable.shared.sync.SyncAck
 import com.hufeng943.timetable.shared.sync.SyncApplier
-import com.hufeng943.timetable.shared.sync.SyncRecordPayload
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
@@ -56,27 +50,6 @@ class PhoneWearDataLayerService : WearableListenerService() {
         encodeDefaults = true
     }
     override fun onMessageReceived(messageEvent: MessageEvent) {
-        if (messageEvent.path == WearTransportMessageProtocol.PROFILE_OPEN_PATH) {
-            serviceScope.launch {
-                runCatching {
-                    val payload = json.decodeFromString<ChinaWearProfilePayload>(messageEvent.data.toString(Charsets.UTF_8))
-                    WearProfileIntentRouter.open(
-                        this@PhoneWearDataLayerService,
-                        WearProfileRequest(payload.target, payload.appUri, payload.fallbackUrl),
-                    )
-                    LegacyWearIo.sendMessage(
-                        this@PhoneWearDataLayerService,
-                        messageEvent.sourceNodeId,
-                        WearTransportMessageProtocol.PROFILE_RESULT_PATH,
-                        "queued".toByteArray(),
-                    )
-                    SyncDiagnosticsReporter.recordProfile(this@PhoneWearDataLayerService, "profile_open_queued:${payload.target}:google")
-                }.onFailure {
-                    SyncDiagnosticsReporter.recordError(this@PhoneWearDataLayerService, "profile_open_request_failed:${it.message}")
-                }
-            }
-            return
-        }
         if (messageEvent.path != WearBridgeProtocol.HELLO_PATH) return
 
         getSharedPreferences(WearBridgeProtocol.PREFS, android.content.Context.MODE_PRIVATE)
@@ -189,55 +162,69 @@ class PhoneWearDataLayerService : WearableListenerService() {
         val mimeType = dataMap.getString(WearFileTransferProtocol.KEY_MIME_TYPE)
             ?: "application/octet-stream"
 
-        // Keep the user's selected export bytes for Downloads, but prefer the
-        // canonical JSON backup asset for importing into the companion app.
-        // Falling back to the primary asset keeps compatibility with older Wear
-        // builds that only send KEY_ASSET.
+        // Destination flags are carried by the request. Older watch builds did not
+        // send them and historically performed both operations, so that remains the
+        // compatibility default.
+        val importToPhoneApp = if (dataMap.containsKey(WearFileTransferProtocol.KEY_IMPORT_TO_PHONE_APP)) {
+            dataMap.getBoolean(WearFileTransferProtocol.KEY_IMPORT_TO_PHONE_APP)
+        } else true
+        val saveToPhoneFiles = if (dataMap.containsKey(WearFileTransferProtocol.KEY_SAVE_TO_PHONE_FILES)) {
+            dataMap.getBoolean(WearFileTransferProtocol.KEY_SAVE_TO_PHONE_FILES)
+        } else true
+        require(importToPhoneApp || saveToPhoneFiles) { "未选择手机端导出目标" }
+
         val bytes = readAsset(asset).use { it.readBytes() }
-        val appImportAsset = dataMap.getAsset(WearFileTransferProtocol.KEY_APP_IMPORT_ASSET)
-        val appImportBytes = if (appImportAsset != null) {
-            readAsset(appImportAsset).use { it.readBytes() }
-        } else {
-            bytes
-        }
-        val timetables = TimetableFileParser.parse(appImportBytes)
-        TimetableDatabaseProvider.importService(this@PhoneWearDataLayerService)
-            .importReplacingMatchesAtomic(
-                timetables,
-                dataMap.getString(WearFileTransferProtocol.KEY_REQUEST_ID),
-                dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID),
-            )
-        refreshLocalSurfaces()
-
-        bytes.inputStream().use {
-            val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                put(MediaStore.Downloads.MIME_TYPE, mimeType)
-                put(
-                    MediaStore.Downloads.RELATIVE_PATH,
-                    Environment.DIRECTORY_DOWNLOADS + File.separator + "Timetable"
+        if (importToPhoneApp) {
+            val appImportAsset = dataMap.getAsset(WearFileTransferProtocol.KEY_APP_IMPORT_ASSET)
+            val appImportBytes = if (appImportAsset != null) {
+                readAsset(appImportAsset).use { it.readBytes() }
+            } else {
+                bytes
+            }
+            val timetables = TimetableFileParser.parse(appImportBytes)
+            TimetableDatabaseProvider.importService(this@PhoneWearDataLayerService)
+                .importReplacingMatchesAtomic(
+                    timetables,
+                    dataMap.getString(WearFileTransferProtocol.KEY_REQUEST_ID),
+                    dataMap.getString(WearFileTransferProtocol.KEY_SOURCE_NODE_ID),
                 )
-                put(MediaStore.Downloads.IS_PENDING, 1)
-            }
+            refreshLocalSurfaces()
+        }
 
-            val resolver = contentResolver
-            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: throw IOException("无法创建手机端下载文件")
+        if (saveToPhoneFiles) {
+            bytes.inputStream().use {
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                    put(MediaStore.Downloads.MIME_TYPE, mimeType)
+                    put(
+                        MediaStore.Downloads.RELATIVE_PATH,
+                        Environment.DIRECTORY_DOWNLOADS + File.separator + "Timetable"
+                    )
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
 
-            try {
-                resolver.openOutputStream(uri)?.use { output ->
-                    it.copyTo(output)
-                } ?: throw IOException("无法写入手机端下载文件")
+                val resolver = contentResolver
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: throw IOException("无法创建手机端下载文件")
 
-                values.clear()
-                values.put(MediaStore.Downloads.IS_PENDING, 0)
-                resolver.update(uri, values, null, null)
-                SyncDiagnosticsReporter.recordExport(this@PhoneWearDataLayerService, "google_export_success:$requestId:$fileName")
-            } catch (error: Exception) {
-                resolver.delete(uri, null, null)
-                throw error
+                try {
+                    resolver.openOutputStream(uri)?.use { output ->
+                        it.copyTo(output)
+                    } ?: throw IOException("无法写入手机端下载文件")
+
+                    values.clear()
+                    values.put(MediaStore.Downloads.IS_PENDING, 0)
+                    resolver.update(uri, values, null, null)
+                } catch (error: Exception) {
+                    resolver.delete(uri, null, null)
+                    throw error
+                }
             }
         }
+        SyncDiagnosticsReporter.recordExport(
+            this@PhoneWearDataLayerService,
+            "google_export_success:$requestId:$fileName:import=$importToPhoneApp:file=$saveToPhoneFiles",
+        )
     }
 
     private suspend fun refreshLocalSurfaces() {
