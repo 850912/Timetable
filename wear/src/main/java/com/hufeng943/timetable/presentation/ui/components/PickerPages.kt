@@ -1,6 +1,8 @@
 package com.hufeng943.timetable.presentation.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -67,31 +69,33 @@ fun <T> WearWheelPickerPage(
             .collect { haptics.tick() }
     }
 
+    // Picker owns its own scroll state, so it cannot be wired to ScreenScaffold's
+    // edgeButton overload (which requires a Lazy/Transforming list scroll state).
+    // Keep ScreenScaffold only for app-level time-text coordination, then anchor the
+    // EdgeButton directly to the bottom of this non-list picker screen.
     ScreenScaffold(
         timeText = {},
-        edgeButton = {
-            EdgeButton(
-                onClick = {
-                    haptics.confirm()
-                    onConfirm(selected)
-                },
-            ) {
-                Icon(Icons.Rounded.Check, contentDescription = "确认")
-            }
-        },
-    ) { contentPadding ->
+        scrollIndicator = null,
+    ) { _ ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(contentPadding),
+                .scrollable(
+                    state = state,
+                    orientation = Orientation.Vertical,
+                    reverseDirection = true,
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Picker(
                 state = state,
                 contentDescription = { label(selected) },
                 gradientColor = MaterialTheme.colorScheme.background,
-                modifier = Modifier.size(width = 132.dp, height = 124.dp),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(bottom = 20.dp)
+                    .size(width = 132.dp, height = 112.dp),
             ) { index ->
                 val item = values[index]
                 val isSelected = index == state.selectedOptionIndex
@@ -115,6 +119,18 @@ fun <T> WearWheelPickerPage(
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.82f),
                 textAlign = TextAlign.Center,
             )
+
+            EdgeButton(
+                onClick = {
+                    haptics.confirm()
+                    onConfirm(selected)
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+            ) {
+                Icon(Icons.Rounded.Check, contentDescription = "确认")
+            }
         }
     }
 }
