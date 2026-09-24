@@ -288,9 +288,9 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
             // left during *forward* navigation on API 36+. That spatial transition is exactly
             // the source of the "old page leaks from the left, stalls, then disappears" artifact
             // on round displays. Do not hide it with a black scrim. Instead, use Navigation
-            // Compose for destination transitions (no forward spatial motion), while retaining
-            // Wear swipe-to-dismiss on API <= 35 via BasicSwipeToDismissBox. Navigation Compose
-            // 2.9.x owns platform predictive-back on API 36+.
+            // Compose for destination transitions (cross-fade only; no horizontal motion), while
+            // retaining Wear swipe-to-dismiss on API <= 35 via BasicSwipeToDismissBox. Navigation
+            // Compose 2.9.x owns platform predictive-back on API 36+.
             val currentEntry by navController.currentBackStackEntryAsState()
             val canNavigateBack = currentEntry != null && navController.previousBackStackEntry != null
             val legacySwipeState = rememberSwipeToDismissBoxState()
@@ -310,23 +310,31 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 contentKey = "app-nav-host",
             ) { isBackground ->
                 if (!isBackground) {
-                    val backEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                    val navigationEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
                     NavHost(
                         modifier = Modifier.fillMaxSize(),
                         navController = navController,
                         startDestination = NavRoutes.MAIN,
-                        // Forward navigation is an immediate destination swap. This is the key
-                        // fix: the previous page never translates left underneath the new page.
-                        enterTransition = { EnterTransition.None },
-                        exitTransition = { ExitTransition.None },
-                        // Back navigation may still cross-fade (or become instant when the user's
-                        // UI-animation setting is disabled), but never performs lateral motion.
+                        // Google Navigation Compose uses a cross-fade as the default in-app
+                        // predictive-back transition. Use the same non-spatial language for forward
+                        // navigation as well: it keeps hierarchy changes legible without reviving
+                        // the horizontal old-page translation that produced the round-screen leak.
+                        // Wear Material 3 owns the timing through MotionScheme instead of a hard-coded
+                        // duration. Power-save / disabled-animation mode still swaps immediately.
+                        enterTransition = {
+                            if (config.uiAnimationsEnabled) fadeIn(animationSpec = navigationEffectsSpec)
+                            else EnterTransition.None
+                        },
+                        exitTransition = {
+                            if (config.uiAnimationsEnabled) fadeOut(animationSpec = navigationEffectsSpec)
+                            else ExitTransition.None
+                        },
                         popEnterTransition = {
-                            if (config.uiAnimationsEnabled) fadeIn(animationSpec = backEffectsSpec)
+                            if (config.uiAnimationsEnabled) fadeIn(animationSpec = navigationEffectsSpec)
                             else EnterTransition.None
                         },
                         popExitTransition = {
-                            if (config.uiAnimationsEnabled) fadeOut(animationSpec = backEffectsSpec)
+                            if (config.uiAnimationsEnabled) fadeOut(animationSpec = navigationEffectsSpec)
                             else ExitTransition.None
                         },
                     ) {
