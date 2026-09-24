@@ -9,9 +9,10 @@ object NavArgs {
 /**
  * App-level routes for the Wear app.
  *
- * Wear OS swipe-to-dismiss works best when every visible page participates in the same
- * SwipeDismissableNavHost. Feature flows below therefore use nested navigation *graphs* inside
- * the app host, rather than creating child NavHosts inside screens.
+ * All visible destinations live in one Navigation Compose graph. Forward transitions are kept
+ * non-spatial to avoid the round-screen old-page/left-edge artifact. On API 36+ Navigation
+ * Compose handles platform predictive back; older Wear versions use a BasicSwipeToDismissBox
+ * around the graph. Nested graphs below are state/lifecycle scopes, not nested NavHosts.
  */
 object NavRoutes {
     const val MAIN = "main"

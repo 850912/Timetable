@@ -143,7 +143,10 @@ dependencies {
     implementation(libs.play.services.wearable)
     implementation(libs.androidx.wear.compose.material3)
     implementation(libs.androidx.wear.compose.foundation)
-    implementation(libs.androidx.wear.compose.navigation)
+    // Generic Navigation Compose is used intentionally for the app graph so forward
+    // destination changes never inherit Wear SwipeDismissableNavHost's left-translation.
+    // BasicSwipeToDismissBox below API 36 preserves Wear swipe-back behavior.
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.wear.tooling.preview)
     implementation(libs.androidx.wear.remote)
 

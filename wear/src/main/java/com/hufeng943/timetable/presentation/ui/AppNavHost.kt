@@ -26,9 +26,14 @@ import androidx.navigation.NavType
 import androidx.navigation.navigation
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.wear.compose.material3.AppScaffold
+import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.TimeText
 import androidx.wear.compose.material3.TimeTextDefaults.rememberTimeSource
 import androidx.compose.ui.graphics.Color
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -38,12 +43,18 @@ import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.PowerManager
+import android.os.Build
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import androidx.wear.compose.navigation.SwipeDismissableNavHost
-import androidx.wear.compose.navigation.composable
-import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.wear.compose.foundation.BasicSwipeToDismissBox
+import androidx.wear.compose.foundation.rememberSwipeToDismissBoxState
+import androidx.wear.compose.foundation.LocalSwipeToDismissBackgroundScrimColor
+import androidx.wear.compose.foundation.LocalSwipeToDismissContentScrimColor
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
 import com.hufeng943.timetable.presentation.ui.common.AppPowerSaveMode
@@ -188,9 +199,8 @@ private fun AppBackground(
                 }
             }
         }
-        // Do not place a full-screen black scrim above SwipeDismissableNavHost.
-        // It causes the previous screen to be visible briefly during the pop animation.
-        // Keep dimming subtle and behind navigation transitions.
+        // Keep global dimming behind destination content. Navigation must never depend on a
+        // black full-screen cover to hide transition artifacts.
         val scrimAlpha = ((1f - config.backgroundBrightness) * 0.18f).coerceIn(0f, 0.18f)
         if (scrimAlpha > 0f) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = scrimAlpha)))
@@ -200,7 +210,7 @@ private fun AppBackground(
 
 @Composable
 fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
-    val navController = rememberSwipeDismissableNavController()
+    val navController = rememberNavController()
     val storedConfig by appConfigViewModel.appConfig.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val powerManager = remember(context) { context.getSystemService(Context.POWER_SERVICE) as PowerManager }
@@ -237,7 +247,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
     val useBackdropEffects = config.isLiquidGlassEnabled
 
     AppScaffold(
-        modifier = Modifier.clipToBounds(),
+        modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
         timeText = {
             if (config.isShowTopTime) {
@@ -255,7 +265,13 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         CompositionLocalProvider(
             LocalNavController provides navController,
             LocalAppConfig provides config,
-            LocalLiquidGlassBackdrop provides globalGlassBackdrop.takeIf { useBackdropEffects }
+            LocalLiquidGlassBackdrop provides globalGlassBackdrop.takeIf { useBackdropEffects },
+            // The app owns a single full-screen background. Black swipe scrims hide that background
+            // and were previously masking, rather than fixing, navigation artifacts. Keep the
+            // platform/Wear navigation layers transparent so the real configured background remains
+            // visible during back gestures.
+            LocalSwipeToDismissBackgroundScrimColor provides Color.Transparent,
+            LocalSwipeToDismissContentScrimColor provides Color.Transparent,
         ) {
             Box(
                 modifier = Modifier
@@ -267,15 +283,53 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
                 )
             }
-            // Do not override the Wear navigation scrims to transparent. The default scrim
-            // keeps the outgoing destination visually contained during swipe-to-dismiss.
-            SwipeDismissableNavHost(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clipToBounds(),
-                navController = navController,
-                startDestination = NavRoutes.MAIN,
-            ) {
+            // Root-cause navigation fix:
+            // Wear SwipeDismissableNavHost 1.6.x intentionally translates the outgoing page
+            // left during *forward* navigation on API 36+. That spatial transition is exactly
+            // the source of the "old page leaks from the left, stalls, then disappears" artifact
+            // on round displays. Do not hide it with a black scrim. Instead, use Navigation
+            // Compose for destination transitions (no forward spatial motion), while retaining
+            // Wear swipe-to-dismiss on API <= 35 via BasicSwipeToDismissBox. Navigation Compose
+            // 2.9.x owns platform predictive-back on API 36+.
+            val currentEntry by navController.currentBackStackEntryAsState()
+            val canNavigateBack = currentEntry != null && navController.previousBackStackEntry != null
+            val legacySwipeState = rememberSwipeToDismissBoxState()
+
+            BasicSwipeToDismissBox(
+                onDismissed = { navController.popBackStack() },
+                state = legacySwipeState,
+                modifier = Modifier.fillMaxSize(),
+                // API 36+ uses the platform predictive-back path implemented by Navigation
+                // Compose. Enabling a second horizontal gesture detector there would compete
+                // with the system gesture.
+                userSwipeEnabled = Build.VERSION.SDK_INT < 36 && canNavigateBack,
+                // Keep the host under a stable key so route changes do not recreate the whole
+                // NavHost state. The swipe background is deliberately transparent: the app's
+                // real global background remains visible instead of a black masking layer.
+                backgroundKey = "app-background",
+                contentKey = "app-nav-host",
+            ) { isBackground ->
+                if (!isBackground) {
+                    val backEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                    NavHost(
+                        modifier = Modifier.fillMaxSize(),
+                        navController = navController,
+                        startDestination = NavRoutes.MAIN,
+                        // Forward navigation is an immediate destination swap. This is the key
+                        // fix: the previous page never translates left underneath the new page.
+                        enterTransition = { EnterTransition.None },
+                        exitTransition = { ExitTransition.None },
+                        // Back navigation may still cross-fade (or become instant when the user's
+                        // UI-animation setting is disabled), but never performs lateral motion.
+                        popEnterTransition = {
+                            if (config.uiAnimationsEnabled) fadeIn(animationSpec = backEffectsSpec)
+                            else EnterTransition.None
+                        },
+                        popExitTransition = {
+                            if (config.uiAnimationsEnabled) fadeOut(animationSpec = backEffectsSpec)
+                            else ExitTransition.None
+                        },
+                    ) {
                 composable(NavRoutes.MAIN) { HomeScreen() }
 
                 composable(NavRoutes.COURSE_DETAIL) { CourseDetailScreen() }
@@ -283,7 +337,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 composable(NavRoutes.LIST_COURSE) { CourseListScreen() }
                 composable(NavRoutes.LIST_TIMESLOT) { TimeSlotListScreen() }
 
-                // Batch tools: one graph inside the single app SwipeDismissableNavHost.
+                // Batch tools: nested graph used only for ViewModel/back-stack scoping.
                 navigation(
                     startDestination = NavRoutes.SCHEDULE_TOOLS_MAIN,
                     route = NavRoutes.SCHEDULE_TOOLS,
@@ -542,6 +596,8 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     composable(NavRoutes.MORE_COURSE_ADJUSTMENT_B_SLOTS) { entry ->
                         val parent = remember(entry) { navController.getBackStackEntry(NavRoutes.MORE_COURSE_ADJUSTMENT) }
                         CourseAdjustmentBSlotsScreen(hiltViewModel(parent))
+                    }
+                }
                     }
                 }
             }

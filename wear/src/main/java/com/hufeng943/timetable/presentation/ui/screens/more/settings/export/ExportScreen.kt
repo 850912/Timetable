@@ -5,17 +5,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.PhoneAndroid
-import androidx.compose.material.icons.rounded.Save
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -106,22 +107,25 @@ fun ExportScreen(
                     Column {
                         Text("导出目标（手机）", color = AppTheme.colors.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(4.dp))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            OneUiCapsuleSurface(
-                                title = "App", subtitle = "导入手机", modifier = Modifier.weight(1f),
+                        // A three-column row cannot reliably fit on 192–220dp round displays:
+                        // the icon/padding/checkmark alone consume most of each third. Use full-width
+                        // compact rows so text never clips and selection does not reflow the label.
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            ExportTargetOption(
+                                title = "导入手机 App",
+                                subtitle = "发送后直接导入",
                                 selected = selectedTarget == ExportTarget.PHONE_APP,
-                                emphasize = selectedTarget == ExportTarget.PHONE_APP,
-                                icon = Icons.Rounded.PhoneAndroid,
                                 onClick = { selectedTarget = ExportTarget.PHONE_APP },
                             )
-                            OneUiCapsuleSurface(
-                                title = "文件", subtitle = "保存手机", modifier = Modifier.weight(1f),
+                            ExportTargetOption(
+                                title = "保存手机文件",
+                                subtitle = "保存到下载目录",
                                 selected = selectedTarget == ExportTarget.PHONE_FILE,
-                                icon = Icons.Rounded.Save,
                                 onClick = { selectedTarget = ExportTarget.PHONE_FILE },
                             )
-                            OneUiCapsuleSurface(
-                                title = "两者", subtitle = "App + 文件", modifier = Modifier.weight(1f),
+                            ExportTargetOption(
+                                title = "两者都执行",
+                                subtitle = "导入 App + 保存文件",
                                 selected = selectedTarget == ExportTarget.BOTH,
                                 onClick = { selectedTarget = ExportTarget.BOTH },
                             )
@@ -179,3 +183,48 @@ fun ExportScreen(
         }
     }
 }
+
+@Composable
+private fun ExportTargetOption(
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    OneUiCapsuleSurface(
+        title = title,
+        subtitle = subtitle,
+        selected = selected,
+        emphasize = selected,
+        titleMaxLines = 1,
+        subtitleMaxLines = 1,
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        // Reserve the same trailing width in both states. The old component only inserted the
+        // checkmark when selected, causing a second text measurement and visible label jump/clipping.
+        trailing = {
+            Box(
+                modifier = Modifier.size(25.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (selected) {
+                    Box(
+                        modifier = Modifier
+                            .size(25.dp)
+                            .clip(CircleShape)
+                            .background(AppTheme.colors.primary.copy(alpha = 0.24f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = "已选择",
+                            tint = AppTheme.colors.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
+        },
+    )
+}
+

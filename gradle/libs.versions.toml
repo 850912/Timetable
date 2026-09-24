@@ -20,10 +20,6 @@ navigationCompose = "2.9.8"
 
 # Wear OS 体系 (Compose/Tiles/ProtoLayout)
 wearComposeM3 = "1.6.2"
-# Keep navigation on the last stable pre-API-36 PredictiveBackNavHost implementation.
-# Newer 1.5+/1.6 forward navigation intentionally translates the previous destination,
-# which is the visible "old page leaks left, sticks, then disappears" regression here.
-wearComposeNavigation = "1.4.1"
 wearToolingPreview = "1.0.0"
 playServicesWearable = "20.0.1"
 tiles = "1.6.2"
@@ -80,7 +76,6 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 ## Wear OS 体系 (Compose/Tiles/ProtoLayout)
 androidx-wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wearComposeM3" }
 androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wearComposeM3" }
-androidx-wear-compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "wearComposeNavigation" }
 androidx-wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
 androidx-wear-remote = { group = "androidx.wear", name = "wear-remote-interactions", version.ref = "wearRemote" }
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
