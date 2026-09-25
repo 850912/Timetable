@@ -1,0 +1,100 @@
+package com.hufeng943.timetable.presentation.ui.screens.common
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnDefaults
+import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
+import androidx.wear.compose.foundation.rotary.RotaryScrollableDefaults
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.EdgeButton
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.ListHeader
+import androidx.wear.compose.material3.ListHeaderDefaults
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.SurfaceTransformation
+import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.lazy.rememberTransformationSpec
+import com.hufeng943.timetable.R
+import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleShape
+import com.hufeng943.timetable.presentation.ui.components.globalLiquidGlass
+import com.hufeng943.timetable.presentation.ui.theme.AppTheme
+import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
+import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
+import com.hufeng943.timetable.presentation.ui.theme.GalaxyAiAmbientLayer
+
+@Composable
+fun TextEditScreen(label: String, initialText: String, onSave: (String) -> Unit) {
+    val scrollState = rememberTransformingLazyColumnState(initialAnchorItemIndex = 1)
+    val transformationSpec = rememberTransformationSpec()
+    var textValue by remember { mutableStateOf(initialText) }
+
+    ScreenScaffold(
+        scrollState = scrollState,
+        edgeButton = {
+            EdgeButton(onClick = { onSave(textValue.trim()) }) {
+                Icon(Icons.Rounded.Check, contentDescription = stringResource(R.string.check))
+            }
+        }
+    ) { contentPadding ->
+        TransformingLazyColumn(
+            state = scrollState,
+            contentPadding = contentPadding,
+            flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
+            rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            item {
+                ListHeader(
+                    modifier = Modifier.fillMaxWidth()
+                        
+                        .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
+                    transformation = SurfaceTransformation(transformationSpec)
+                ) { Text(label) }
+            }
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                        
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
+                        .clip(OneUiCapsuleShape)
+                        .globalLiquidGlass(OneUiCapsuleShape, AppTheme.colors.surfaceContainer)
+                        .background(AppTheme.colors.surfaceContainer.copy(alpha = if (LocalLiquidGlassBackdrop.current != null && (LocalAppConfig.current.isLiquidGlassEnabled)) 0f else 1f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    GalaxyAiAmbientLayer(shape = OneUiCapsuleShape, strength = 0.22f)
+                    BasicTextField(
+                        value = textValue,
+                        onValueChange = { textValue = it.replace("\n", "") },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.titleMedium.copy(
+                            color = AppTheme.colors.textPrimary,
+                            textAlign = TextAlign.Center,
+                        ),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 14.dp),
+                        cursorBrush = SolidColor(AppTheme.colors.primary),
+                    )
+                }
+            }
+        }
+    }
+}

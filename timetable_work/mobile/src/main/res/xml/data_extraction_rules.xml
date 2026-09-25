@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Keep user timetable/settings data eligible for backup, but never restore
+             device-specific Wear Data Layer routing state onto another device. -->
+        <exclude domain="sharedpref" path="wear_bridge_state.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="wear_bridge_state.xml" />
+    </device-transfer>
+</data-extraction-rules>

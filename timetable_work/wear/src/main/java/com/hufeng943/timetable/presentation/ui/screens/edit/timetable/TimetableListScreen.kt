@@ -1,0 +1,34 @@
+package com.hufeng943.timetable.presentation.ui.screens.edit.timetable
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.hufeng943.timetable.presentation.ui.NavRoutes.editTimetable
+import com.hufeng943.timetable.presentation.ui.NavRoutes.listCourse
+import com.hufeng943.timetable.presentation.ui.NavRoutes
+import com.hufeng943.timetable.presentation.ui.common.LocalNavController
+import com.hufeng943.timetable.presentation.ui.common.navigateSingle
+import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
+import com.hufeng943.timetable.presentation.viewmodel.edit.timetable.TimetableListViewModel
+
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+@Composable
+fun TimetableListScreen(
+    viewModel: TimetableListViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val navController = LocalNavController.current
+
+
+    HandleEditUiState(uiState, emptyList()) { data ->
+        TimetableListPager(timetables = data, onAddTimetable = {
+            navController.navigateSingle(editTimetable())
+        }, onTimetableClick = { id ->
+            navController.navigateSingle(listCourse(id))
+        }, onTimetableLongClick = { id ->
+            navController.navigateSingle(editTimetable(id))
+        }, onScheduleToolsClick = {
+            navController.navigateSingle(NavRoutes.SCHEDULE_TOOLS)
+        })
+    }
+}

@@ -1,0 +1,25 @@
+/mnt/data/glasswork/wear/src/main/java/com/hufeng943/timetable/presentation/ui/screens/home/TimetablePager.kt:144:                while (true) {
+/mnt/data/glasswork/wear/src/main/java/com/hufeng943/timetable/presentation/ui/screens/home/TimetablePager.kt:335:                            while (true) {
+/mnt/data/glasswork/wear/src/main/java/com/hufeng943/timetable/sync/WearOsSyncReceiverService.kt:25:import kotlinx.coroutines.runBlocking
+/mnt/data/glasswork/wear/src/main/java/com/hufeng943/timetable/sync/WearOsSyncReceiverService.kt:92:            if (ack.appliedRecordIds.isNotEmpty()) kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+/mnt/data/glasswork/wear/src/main/java/com/hufeng943/timetable/sync/WearOsSyncReceiverService.kt:110:            val applied = kotlinx.coroutines.runBlocking(Dispatchers.IO) { SyncApplier(database).applyOnce(envelope.requestId, envelope.sourceDeviceId, envelope.records) }
+/mnt/data/glasswork/wear/src/main/java/com/hufeng943/timetable/sync/WearOsSyncReceiverService.kt:111:            val localRecords = kotlinx.coroutines.runBlocking(Dispatchers.IO) { database.syncRecordDao().pending().map { com.hufeng943.timetable.shared.sync.SyncRecordPayload(it.id, it.entityId, it.entityType, it.operation, it.revision, it.updatedAt, it.deviceId, it.payloadJson) } }
+/mnt/data/glasswork/wear/src/main/java/com/hufeng943/timetable/sync/WearOsSyncReceiverService.kt:175:        runBlocking(Dispatchers.IO) {
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/transfer/PhoneWearSyncManager.kt:10:import kotlinx.coroutines.runBlocking
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/transfer/PhoneWearSyncManager.kt:14:    fun send(context: Context, timetables: List<Timetable>): String = runBlocking {
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/transfer/PhoneWearDataLayerService.kt:32:import kotlinx.coroutines.runBlocking
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/transfer/PhoneWearDataLayerService.kt:105:            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { db.syncRecordDao().markSynced(ack.appliedRecordIds) }
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/transfer/PhoneWearDataLayerService.kt:109:            val applied = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { SyncApplier(db).applyOnce(ack.requestId, ack.sourceDeviceId, ack.records) }
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/transfer/PhoneWearDataLayerService.kt:159:        runBlocking(Dispatchers.IO) {
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/transfer/PhoneWearDataLayerService.kt:201:            val tables = runBlocking(Dispatchers.IO) {
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/reminder/CourseReminderReceiver.kt:19:import kotlinx.coroutines.runBlocking
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/reminder/CourseReminderReceiver.kt:147:                val tables = runBlocking(Dispatchers.IO) {
+/mnt/data/glasswork/mobile/src/main/java/com/hufeng943/timetable/reminder/CourseReminderReceiver.kt:193:                val tables = runBlocking(Dispatchers.IO) {
+/mnt/data/glasswork/shared/src/androidTest/kotlin/com/hufeng943/timetable/shared/importexport/ImportServiceInstrumentedTest.kt:10:import kotlinx.coroutines.runBlocking
+/mnt/data/glasswork/shared/src/androidTest/kotlin/com/hufeng943/timetable/shared/importexport/ImportServiceInstrumentedTest.kt:40:    fun repeatedFullImportRequestIsIdempotentAndKeepsStableIds() = runBlocking {
+/mnt/data/glasswork/shared/src/androidTest/kotlin/com/hufeng943/timetable/shared/sync/SyncApplierInstrumentedTest.kt:8:import kotlinx.coroutines.runBlocking
+/mnt/data/glasswork/shared/src/androidTest/kotlin/com/hufeng943/timetable/shared/sync/SyncApplierInstrumentedTest.kt:32:    fun semanticMatchDoesNotLetOlderRemoteRevisionOverwriteNewerLocal() = runBlocking {
+/mnt/data/glasswork/shared/src/androidTest/kotlin/com/hufeng943/timetable/shared/sync/SyncApplierInstrumentedTest.kt:65:    fun deleteForUnknownEntityCreatesTombstoneAndBlocksOlderResurrection() = runBlocking {
+/mnt/data/glasswork/shared/src/androidTest/kotlin/com/hufeng943/timetable/shared/sync/SyncApplierInstrumentedTest.kt:80:    fun duplicateRequestIdIsAppliedExactlyOnce() = runBlocking {
+/mnt/data/glasswork/shared/src/test/kotlin/com/hufeng943/timetable/shared/sync/SyncManagerTest.kt:9:    fun retriesAfterFailureAndEventuallySucceeds() = kotlinx.coroutines.runBlocking {
+/mnt/data/glasswork/shared/src/test/kotlin/com/hufeng943/timetable/shared/sync/SyncManagerTest.kt:19:    fun compactsOlderRevisionsOfSameEntityBeforeTransport() = kotlinx.coroutines.runBlocking {
