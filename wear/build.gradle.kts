@@ -8,8 +8,8 @@ plugins {
     alias(libs.plugins.aboutLibraries)
 }
 
-val versionPrefix = "3.5.3"
-val releaseVersionCode = 3050300
+val versionPrefix = "3.5.4"
+val releaseVersionCode = 3050400
 
 fun releaseSecret(name: String): String? =
     providers.gradleProperty(name)

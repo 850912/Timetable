@@ -46,7 +46,7 @@ data class WearCourseCardData(
 )
 
 /**
- * Shared custom course card surface for Wear OS. 3.5.3 moves presentation inputs into one immutable
+ * Shared custom course card surface for Wear OS. 3.5.4 keeps presentation inputs in one immutable
  * model so list callers can create/stabilize card data independently of Compose and so every card
  * uses the same glass, press and text layout path.
  */

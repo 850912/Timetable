@@ -123,16 +123,16 @@
     <string name="about_features_schedule">课程：多课表、日期例外、今日调课、手机 ↔ 手表同步。</string>
     <string name="about_features_wear">Wear：首页状态优先、Tile 时间线、当前课进度与下一节倒计时复杂功能。</string>
     <string name="about_features_tools">工具：学业待办与提醒、本周课表分享、ICS / CSV / JSON、系统日历同步。</string>
-    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.5.3。</string>
+    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.5.4。</string>
     <string name="about_declaration_development">维护：黑白君 (HeiBaiJun)；部分开发借助生成式 AI。连续点击版本号 7 次进入开发者选项。</string>
     <string name="about_open_source_wear">Wear UI：Wear Compose 1.6.2 · Horologist 0.7.15</string>
     <string name="about_open_source_data">数据：Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
     <string name="about_open_source_ui">工具：Coroutines 1.11.0 · AboutLibraries 15.0.3 · MaterialKolor 4.1.1。完整许可证见下方入口。</string>
-    <string name="about_changelog_part1">3.5.3：重点优化 Wear OS 6 稳定性；子页面不再带动父页面左移消失；小米/中国版设备触觉改为安全兼容回退；液态玻璃收敛为一套低负载、实际可见的光学效果。</string>
-    <string name="about_changelog_part2">新增“图片取色流体背景”；整理 Wear 自定义课程卡；保留手机与手表互传旧接口兼容。</string>
+    <string name="about_changelog_part1">3.5.4：全面增强手机与手表的液态玻璃视觉。Wear OS 新增柔和、平衡、流体三种光学档位，并支持玻璃模糊、折射与边缘色散设置；手机端加入动态主题环境光、半透明渐变卡片和课程色彩高光。</string>
+    <string name="about_changelog_part2">优化 Wear OS 首页触摸与滚动路径，缓存课程时间、详情和下一节课信息，减少重复计算；新增导入预览、重复课表识别、失败同步重试、通知延后和每日自动备份，并继续保留中国设备 Data Layer、BLE 与旧接口兼容。</string>
     <string name="about_declaration_title">声明</string>
     <string name="about_declaration_text">
-        " · 当前版本采用语义化版本号 3.5.3\n"
+        " · 当前版本采用语义化版本号 3.5.4\n"
         " · 原项目：HuFeng943 / Timetable\n"
         " · 二次开发与维护：黑白君 (HeiBaiJun)\n"
         " · 当前版本在原项目基础上持续维护与扩展\n"
@@ -144,17 +144,17 @@
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
     <string name="about_open_source_stack">核心开源组件：Wear Compose 1.6.2、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX Serialization 1.11.0 / Datetime 0.8.0、Coroutines 1.11.0、AboutLibraries 15.0.3、MaterialKolor 4.1.1。开源许可证页面由 AboutLibraries 根据实际构建依赖生成。</string>
-    <string name="about_changelog_title">3.5.3 更新</string>
+    <string name="about_changelog_title">3.5.4 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
-        " · 冷启动不再主动触发 Tile 数据读取，减少首次打开竞争\n"
-        " · 国行 Wear Data Layer bootstrap 延后到首屏稳定后执行\n"
-        " · 手表本地课程 / 课时 / 课表保存后立即刷新 Tile 与复杂功能\n"
-        " · Tile 继续使用课程 Timeline，周期刷新改为安全兜底而不是主要更新机制\n"
-        " · 当前课程卡新增实时课程进度条，保持静态高级感而不增加持续动画\n"
-        " · 手机端新增今日课表视觉区，正在上课课程会自动强化\n"
-        " · 有学期结束日期时显示第 N/总周数 周，查看学期进度更直观\n"
-        " · 保留 Hybrid Data Layer、中国版 Legacy fallback 与现有签名配置"
+        " · 手机与手表液态玻璃视觉全面增强，并保持可调节的清晰度与性能\n"
+        " · Wear OS 新增柔和、平衡、流体三种液态玻璃光学档位\n"
+        " · 手机端新增动态主题环境光、半透明渐变卡片和课程色彩高光\n"
+        " · 优化手表首页触摸、旋转滚动和课程信息缓存，减少重复计算\n"
+        " · 导入前可预览课程、时间段和重复课表，并支持新增或替换导入\n"
+        " · 同步中心支持失败记录重试与恢复，课程通知支持延后 5 分钟\n"
+        " · 新增每日自动 JSON 备份，提升课程数据的可恢复性\n"
+        " · 保留中国设备 Data Layer、BLE、Legacy fallback 与现有签名配置"
     </string>
     <string name="about_original_author_name">HuFeng943</string>
     <string name="about_original_author_subtitle">原作者 · 原始项目 Timetable</string>
