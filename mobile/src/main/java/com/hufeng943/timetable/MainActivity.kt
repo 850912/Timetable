@@ -1872,7 +1872,7 @@ class MainActivity : AppCompatActivity() {
             setGradientCenter(0.88f, 0.86f)
             colors = intArrayOf(withAlpha(secondary, 68), Color.TRANSPARENT)
         }
-        return LayerDrawable(arrayOf(base, topGlow, bottomGlow))
+        return LayerDrawable(arrayOf<Drawable>(base, topGlow, bottomGlow))
     }
 
     private fun resolveThemeColor(attribute: Int, fallback: Int): Int {
