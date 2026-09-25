@@ -190,11 +190,12 @@ fun TimetablePager(
                     )
                 }
             }
-            val nextCourseDisplayName = remember(coursesUi, statusSummary.nextId) {
+            val nextCourseUi = remember(coursesUi, statusSummary.nextId) {
                 statusSummary.nextId?.let { id ->
-                    coursesUi.firstOrNull { it.timeSlot.id == id }?.displayName
+                    coursesUi.firstOrNull { it.timeSlot.id == id }
                 }
             }
+            val nextCourseDisplayName = nextCourseUi?.displayName
 
             CourseListPager(
                 coursesUi = coursesUi,
