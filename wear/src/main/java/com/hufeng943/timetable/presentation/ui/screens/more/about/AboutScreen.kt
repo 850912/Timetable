@@ -92,7 +92,7 @@ fun AboutScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        color = MaterialTheme.colorScheme.surfaceContainer,
                         shape = RoundedCornerShape(24.dp),
                     )
                     .padding(16.dp),
