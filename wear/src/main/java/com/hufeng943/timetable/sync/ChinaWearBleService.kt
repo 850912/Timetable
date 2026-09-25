@@ -212,6 +212,10 @@ class ChinaWearBleService : Service() {
             if (frame.total !in 1..ChinaWearBleProtocol.MAX_FRAME_COUNT) return
             val key = "${device.address}:${frame.transferId}"
             val assembly = assemblies.getOrPut(key) { FrameAssembly(frame.total) }
+            if (assembly.total != frame.total) {
+                assemblies.remove(key)
+                return
+            }
             assembly.parts[frame.sequence] = frame.payload
             if (assembly.parts.values.sumOf { it.size } > MAX_ASSEMBLY_BYTES) {
                 assemblies.remove(key)
