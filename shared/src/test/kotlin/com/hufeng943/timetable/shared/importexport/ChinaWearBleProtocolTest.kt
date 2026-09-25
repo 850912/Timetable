@@ -29,4 +29,14 @@ class ChinaWearBleProtocolTest {
         val encoded = ChinaWearBleProtocol.encode(1L, 0, 1, byteArrayOf(1, 2, 3))
         assertEquals(ChinaWearBleProtocol.HEADER_SIZE + 3, encoded.size)
     }
+
+    @Test
+    fun checkedFrameRoundTripsAndRejectsCorruption() {
+        val encoded = ChinaWearBleProtocol.encodeChecked(1L, 0, 1, byteArrayOf(1, 2, 3))
+        assertArrayEquals(byteArrayOf(1, 2, 3), ChinaWearBleProtocol.decode(encoded).payload)
+        encoded[encoded.lastIndex - 1] = (encoded[encoded.lastIndex - 1].toInt() xor 1).toByte()
+        assertThrows(IllegalArgumentException::class.java) {
+            ChinaWearBleProtocol.decode(encoded)
+        }
+    }
 }

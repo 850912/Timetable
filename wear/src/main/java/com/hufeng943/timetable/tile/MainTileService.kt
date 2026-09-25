@@ -24,7 +24,7 @@ import com.hufeng943.timetable.shared.model.NextCourseEngine
 import com.hufeng943.timetable.shared.model.NextCourseOccurrence
 import com.hufeng943.timetable.shared.model.Timetable
 import dagger.hilt.android.AndroidEntryPoint
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone

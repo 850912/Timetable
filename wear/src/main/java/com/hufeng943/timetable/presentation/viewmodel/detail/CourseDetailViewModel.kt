@@ -11,7 +11,7 @@ import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.toSafeStateFlow
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map

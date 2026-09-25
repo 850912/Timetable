@@ -311,7 +311,7 @@ class ChinaWearBleService : Service() {
             )
         )
         val mtu = currentMtu[device] ?: 23
-        val chunkSize = (mtu - 3 - ChinaWearBleProtocol.HEADER_SIZE).coerceAtLeast(1)
+        val chunkSize = (mtu - 3 - ChinaWearBleProtocol.WIRE_OVERHEAD).coerceAtLeast(1)
         val total = (bytes.size + chunkSize - 1) / chunkSize
         val transferId = transferCounter.incrementAndGet()
         repeat(total) { sequence ->
