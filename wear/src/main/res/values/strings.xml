@@ -170,6 +170,11 @@
     <string name="about_original_author_subtitle">Original author · Timetable project</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
     <string name="about_developer_subtitle">Secondary development &amp; maintenance · Wear / Sync / Student Tools · 2026.09</string>
+    <string name="about_donation_title">Cyber Tip Jar</string>
+    <string name="about_donation_subtitle">Running out of token money. If Timetable helped you, you can buy the developer a drink.</string>
+    <string name="about_donation_dialog_text">Scan this WeChat Pay code with another device. Supporting the project is entirely optional and never affects app features.</string>
+    <string name="about_donation_qr_description">HeiBaiJun's WeChat Pay collection QR code</string>
+    <string name="about_donation_close">Close</string>
     <string name="developer_options_title">Developer Options</string>
     <string name="developer_version_title">App version</string>
     <string name="developer_runtime_title">Runtime</string>

@@ -160,6 +160,11 @@
     <string name="about_original_author_subtitle">原作者 · 原始项目 Timetable</string>
     <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
     <string name="about_developer_subtitle">二次开发与维护 · Wear / Sync / Student Tools · 2026.09</string>
+    <string name="about_donation_title">赛博乞讨</string>
+    <string name="about_donation_subtitle">没钱买 Token 了；如果这个项目帮到了你，可以请开发者喝杯饮料</string>
+    <string name="about_donation_dialog_text">请使用另一台设备扫描微信收款码。支持完全自愿，不影响任何功能。</string>
+    <string name="about_donation_qr_description">黑白君的微信收款二维码</string>
+    <string name="about_donation_close">关闭</string>
     <string name="developer_options_title">开发者选项</string>
     <string name="developer_version_title">应用版本</string>
     <string name="developer_runtime_title">运行环境</string>

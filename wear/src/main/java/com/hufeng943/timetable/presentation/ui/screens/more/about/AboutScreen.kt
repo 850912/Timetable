@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,9 +26,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.drawable.toBitmap
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
@@ -46,6 +50,7 @@ import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import com.hufeng943.timetable.R
@@ -65,6 +70,7 @@ fun AboutScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var changelogExpanded by remember { mutableStateOf(false) }
+    var donationDialogVisible by remember { mutableStateOf(false) }
     var versionTapCount by remember { mutableStateOf(0) }
 
     val versionName = remember {
@@ -78,6 +84,44 @@ fun AboutScreen() {
 
     val icon = remember {
         context.packageManager.getApplicationIcon(context.packageName).toBitmap().asImageBitmap()
+    }
+
+    if (donationDialogVisible) {
+        Dialog(onDismissRequest = { donationDialogVisible = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shape = RoundedCornerShape(24.dp),
+                    )
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.about_donation_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                )
+                Image(
+                    painter = painterResource(R.drawable.wechat_donation_qr),
+                    contentDescription = stringResource(R.string.about_donation_qr_description),
+                    modifier = Modifier.size(150.dp),
+                )
+                Text(
+                    text = stringResource(R.string.about_donation_dialog_text),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                )
+                androidx.wear.compose.material3.Button(
+                    onClick = { donationDialogVisible = false },
+                    shape = RoundedCornerShape(50),
+                ) {
+                    Text(stringResource(R.string.about_donation_close))
+                }
+            }
+        }
     }
 
     ScreenScaffold(
@@ -221,6 +265,20 @@ fun AboutScreen() {
                     subtitle = stringResource(R.string.about_developer_subtitle),
                     icon = Icons.Rounded.Person,
                     emphasize = true,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
+                    modifier = Modifier.fillMaxWidth()
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.about_donation_title),
+                    subtitle = stringResource(R.string.about_donation_subtitle),
+                    icon = Icons.Rounded.Favorite,
+                    emphasize = true,
+                    onClick = { donationDialogVisible = true },
                     titleMaxLines = Int.MAX_VALUE,
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth()
