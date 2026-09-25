@@ -139,6 +139,14 @@
                 android:text="课程提醒" />
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBackupSettings"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="自动备份" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

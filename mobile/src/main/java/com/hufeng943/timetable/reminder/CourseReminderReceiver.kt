@@ -39,6 +39,20 @@ class CourseReminderReceiver : BroadcastReceiver() {
             refreshScheduleAsync(context)
             return
         }
+        if (intent.action == ACTION_SNOOZE) {
+            val alarm = context.getSystemService(android.app.AlarmManager::class.java)
+            val reminder = Intent(context, CourseReminderReceiver::class.java).apply {
+                putExtras(intent)
+                action = ACTION_REMINDER
+            }
+            val pending = PendingIntent.getBroadcast(
+                context, eventKey xor 0x5A5A, reminder,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            alarm.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5 * 60_000L, pending)
+            manager.cancel(eventKey)
+            return
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             manager.createNotificationChannel(
@@ -57,6 +71,21 @@ class CourseReminderReceiver : BroadcastReceiver() {
         val openApp = PendingIntent.getActivity(
             context, 0, Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val snoozeIntent = PendingIntent.getBroadcast(
+            context,
+            eventKey xor 0x5A5A,
+            Intent(context, CourseReminderReceiver::class.java).apply {
+                action = ACTION_SNOOZE
+                putExtra(EXTRA_COURSE, course)
+                putExtra(EXTRA_LOCATION, location)
+                putExtra(EXTRA_START, start)
+                putExtra(EXTRA_END, end)
+                putExtra(EXTRA_OFFSET, 5)
+                putExtra(EXTRA_EVENT_KEY, eventKey)
+                putExtra(EXTRA_ACTION_TYPE, ACTION_PRE_START)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val detail = buildString {
             append("$start–$end")
@@ -77,6 +106,7 @@ class CourseReminderReceiver : BroadcastReceiver() {
                 .setOngoing(inProgress)
                 .setAutoCancel(!inProgress)
                 .setContentIntent(openApp)
+                .addAction(R.drawable.ic_course_notification, "延后 5 分钟", snoozeIntent)
                 .build()
         )
     }
@@ -172,6 +202,8 @@ class CourseReminderReceiver : BroadcastReceiver() {
         const val ACTION_END = "end"
         const val ACTION_REFRESH = "refresh"
         const val ACTION_ACADEMIC_EVENT = "academic_event"
+        const val ACTION_SNOOZE = "snooze"
+        const val ACTION_REMINDER = "reminder"
         private const val CHANNEL_ID = "course_reminders"
         private const val EVENT_CHANNEL_ID = "academic_event_reminders"
 

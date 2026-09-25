@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.AlarmManager
 import com.hufeng943.timetable.reminder.ReminderSettings
 import com.hufeng943.timetable.reminder.CourseReminderScheduler
+import com.hufeng943.timetable.backup.AutoBackupScheduler
 import android.widget.CheckBox
 import android.text.InputType
 import android.os.Build
@@ -38,6 +39,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.data.repository.TimeSlotMutation
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
+import com.hufeng943.timetable.shared.importexport.ImportPreviewBuilder
 import com.hufeng943.timetable.shared.model.AcademicEvent
 import com.hufeng943.timetable.shared.model.AcademicEventType
 import com.hufeng943.timetable.shared.model.Course
@@ -186,6 +188,9 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.buttonReminderSettings).setOnClickListener {
             showReminderSettingsDialog()
+        }
+        findViewById<MaterialButton>(R.id.buttonBackupSettings).setOnClickListener {
+            showAutoBackupSettingsDialog()
         }
 
         observeTimetables()
@@ -493,12 +498,17 @@ class MainActivity : AppCompatActivity() {
             AlertDialog.Builder(this@MainActivity)
                 .setTitle("同步诊断中心")
                 .setMessage(message)
-                .setItems(arrayOf("立即同步", "复制诊断", "导出 sync_log.txt", "清除日志", "关闭")) { dialog, which ->
+                .setItems(arrayOf("立即同步", "重试失败变更", "复制诊断", "导出 sync_log.txt", "清除日志", "关闭")) { dialog, which ->
                     when (which) {
                         0 -> syncToWatch(forceFullSnapshot = true)
-                        1 -> copyDiagnostic()
-                        2 -> exportDiagnosticDocument.launch("sync_log.txt")
-                        3 -> { SyncDiagnosticCenter.clear(this@MainActivity); toast("诊断日志已清除") }
+                        1 -> uiScope.launch {
+                            val count = withContext(Dispatchers.IO) { TimetableDatabaseProvider.database(this@MainActivity).syncRecordDao().retryFailed() }
+                            if (count > 0) { AutoSyncJobService.scheduleNow(this@MainActivity); toast("已重新加入 $count 条变更") }
+                            else toast("没有需要重试的变更")
+                        }
+                        2 -> copyDiagnostic()
+                        3 -> exportDiagnosticDocument.launch("sync_log.txt")
+                        4 -> { SyncDiagnosticCenter.clear(this@MainActivity); toast("诊断日志已清除") }
                         else -> dialog.dismiss()
                     }
                 }
@@ -770,14 +780,45 @@ class MainActivity : AppCompatActivity() {
                         ?: throw IllegalStateException("无法读取所选文件")
                 }
                 val timetables = withContext(Dispatchers.Default) { TimetableFileParser.parse(bytes) }
-                withContext(Dispatchers.IO) {
-                    TimetableDatabaseProvider.importService(this@MainActivity).importAtomic(timetables)
-                    val snapshot = repository.getAllTimetables().first()
-                    enqueueSnapshotForIncrementalSync(snapshot)
+                ImportPreviewBuilder.build(timetables, repository.getAllTimetables().first())
+            }.onSuccess { preview ->
+                val details = preview.items.joinToString("\n") { item ->
+                    val status = when (item.disposition) {
+                        com.hufeng943.timetable.shared.importexport.ImportDisposition.NEW -> "新增"
+                        com.hufeng943.timetable.shared.importexport.ImportDisposition.UNCHANGED -> "相同"
+                        com.hufeng943.timetable.shared.importexport.ImportDisposition.CHANGED -> "已有不同内容"
+                    }
+                    "${item.timetable.semesterName} · $status · ${item.courseCount} 门课程 · ${item.eventCount} 项待办"
                 }
-                timetables.size
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("导入预览")
+                    .setMessage(details)
+                    .setNegativeButton("取消", null)
+                    .setNeutralButton("仅新增") { _, _ -> applyImportPreview(preview, false) }
+                    .setPositiveButton("新增并替换不同课表") { _, _ -> applyImportPreview(preview, true) }
+                    .show()
+            }.onFailure { toast(it.message ?: "导入失败") }
+        }
+    }
+
+    private fun applyImportPreview(
+        preview: com.hufeng943.timetable.shared.importexport.ImportPreview,
+        replaceExisting: Boolean,
+    ) {
+        val selected = preview.selected(replaceExisting)
+        if (selected.isEmpty()) {
+            toast("没有需要导入的课表")
+            return
+        }
+        uiScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    TimetableDatabaseProvider.importService(this@MainActivity)
+                        .importReplacingMatchesAtomic(selected)
+                    enqueueSnapshotForIncrementalSync(repository.getAllTimetables().first())
+                }
             }.onSuccess {
-                toast("成功导入 $it 个课表，已加入自动同步队列")
+                toast("已导入 ${selected.size} 个课表，等待同步")
                 AutoSyncJobService.scheduleNow(this@MainActivity)
             }.onFailure { toast(it.message ?: "导入失败") }
         }
@@ -1615,6 +1656,23 @@ class MainActivity : AppCompatActivity() {
                 if (enabled.isChecked) requestExactAlarmAccessIfNeeded()
                 toast(if (enabled.isChecked) "已启用：提前 $offset 分钟提醒" else "课程提醒已关闭")
             }.show()
+    }
+
+    private fun showAutoBackupSettingsDialog() {
+        val enabled = CheckBox(this).apply {
+            text = "每天自动备份到应用存储"
+            isChecked = AutoBackupScheduler.enabled(this@MainActivity)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("自动备份")
+            .setMessage("保留最近 7 份 JSON 备份。备份位于应用专属存储，卸载应用时会被系统删除。")
+            .setView(dialogColumn(enabled))
+            .setNegativeButton("取消", null)
+            .setPositiveButton("保存") { _, _ ->
+                AutoBackupScheduler.setEnabled(this, enabled.isChecked)
+                toast(if (enabled.isChecked) "已开启每日自动备份" else "自动备份已关闭")
+            }
+            .show()
     }
 
     private fun requestExactAlarmAccessIfNeeded() {

@@ -5,31 +5,33 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hufeng943.timetable.data.LocalBackupManager
-import com.hufeng943.timetable.shared.export.BackupManager
-import com.hufeng943.timetable.shared.export.CsvImporter
-import com.hufeng943.timetable.shared.export.IcsImporter
+import com.hufeng943.timetable.shared.data.repository.TimetableRepository
+import com.hufeng943.timetable.shared.importexport.ImportPreview
+import com.hufeng943.timetable.shared.importexport.ImportPreviewBuilder
+import com.hufeng943.timetable.shared.importexport.TimetableFileParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import java.io.ByteArrayInputStream
 import java.io.File
 import javax.inject.Inject
 
 sealed interface ImportState {
     object Idle : ImportState
     object Importing : ImportState
+    data class Preview(val preview: ImportPreview) : ImportState
     data class Success(val count: Int) : ImportState
     data class Error(val message: String) : ImportState
 }
 
 @HiltViewModel
 class ImportViewModel @Inject constructor(
-    private val importService: com.hufeng943.timetable.shared.importexport.ImportService
+    private val importService: com.hufeng943.timetable.shared.importexport.ImportService,
+    private val repository: TimetableRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<ImportState>(ImportState.Idle)
@@ -57,10 +59,10 @@ class ImportViewModel @Inject constructor(
                         ?.use { it.readBytes() }
                         ?: throw IllegalArgumentException("无法读取所选文件")
 
-                    parseBytes(bytes)
+                    TimetableFileParser.parse(bytes)
                 }
 
-                importTimetables(timetables)
+                showPreview(timetables)
             } catch (e: Exception) {
                 _state.value = ImportState.Error(
                     e.message ?: "导入失败"
@@ -75,10 +77,10 @@ class ImportViewModel @Inject constructor(
 
             try {
                 val timetables = withContext(Dispatchers.IO) {
-                    parseBytes(file.readBytes())
+                    TimetableFileParser.parse(file.readBytes())
                 }
 
-                importTimetables(timetables)
+                showPreview(timetables)
             } catch (e: Exception) {
                 _state.value = ImportState.Error(
                     e.message ?: "导入失败"
@@ -87,62 +89,25 @@ class ImportViewModel @Inject constructor(
         }
     }
 
-    private suspend fun importTimetables(
-        timetables: List<com.hufeng943.timetable.shared.model.Timetable>
-    ) {
-        if (timetables.isEmpty()) {
-            throw IllegalStateException("未在文件中解析到有效课程")
-        }
-
-        importService.importAtomic(timetables)
-        _state.value = ImportState.Success(timetables.size)
+    private suspend fun showPreview(timetables: List<com.hufeng943.timetable.shared.model.Timetable>) {
+        val existing = repository.getAllTimetables().first()
+        _state.value = ImportState.Preview(ImportPreviewBuilder.build(timetables, existing))
     }
 
-    private fun parseBytes(bytes: ByteArray): List<com.hufeng943.timetable.shared.model.Timetable> {
-        val content = bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF")
-        val trimmed = content.trimStart()
-
-        return when {
-            trimmed.startsWith("{") || trimmed.startsWith("[") -> parseJsonBackup(content, bytes)
-
-            content.contains("BEGIN:VCALENDAR", ignoreCase = true) -> {
-                IcsImporter.parseIcs(content)
-            }
-
-            content.contains("学期,课程名称") || content.contains("星期") -> {
-                CsvImporter.parseCsv(content)
-            }
-
-            else -> {
-                throw IllegalArgumentException(
-                    "无法识别的文件格式，仅支持 .json/.ics/.csv"
-                )
-            }
+    fun confirmImport(replaceExisting: Boolean) {
+        val preview = (_state.value as? ImportState.Preview)?.preview ?: return
+        val selected = preview.selected(replaceExisting)
+        if (selected.isEmpty()) {
+            _state.value = ImportState.Idle
+            return
         }
-    }
-
-    private fun parseJsonBackup(
-        content: String,
-        bytes: ByteArray
-    ): List<com.hufeng943.timetable.shared.model.Timetable> {
-        val json = Json { ignoreUnknownKeys = true }
-
-        // 2.0.0 格式：版本化容器，内部可以包含多个课表。
-        runCatching { BackupManager.restore(ByteArrayInputStream(bytes)) }
-            .getOrNull()
-            ?.let { return it }
-
-        // 兼容早期直接导出的 Timetable 数组。
-        runCatching {
-            json.decodeFromString<List<com.hufeng943.timetable.shared.model.Timetable>>(content)
-        }.getOrNull()?.let { return it }
-
-        // 再兼容早期只保存单个 Timetable 对象的格式。
-        runCatching {
-            json.decodeFromString<com.hufeng943.timetable.shared.model.Timetable>(content)
-        }.getOrNull()?.let { return listOf(it) }
-
-        throw IllegalArgumentException("JSON 课表文件格式不受支持或文件已损坏")
+        viewModelScope.launch {
+            _state.value = ImportState.Importing
+            runCatching {
+                withContext(Dispatchers.IO) { importService.importReplacingMatchesAtomic(selected) }
+            }.onSuccess { _state.value = ImportState.Success(selected.size) }
+                .onFailure { _state.value = ImportState.Error(it.message ?: "导入失败") }
+        }
     }
 
     fun resetState() {

@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FileOpen
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -145,6 +147,51 @@ fun ImportScreen(
                         
                         .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding)
                 )
+            }
+
+            val preview = (importState as? ImportState.Preview)?.preview
+            if (preview != null) {
+                item {
+                    ListHeader(
+                        modifier = Modifier.fillMaxWidth(),
+                        transformation = SurfaceTransformation(transformationSpec),
+                    ) { Text("导入预览") }
+                }
+                item {
+                    Text("新增 ${preview.newCount} · 不同 ${preview.changedCount} · 相同 ${preview.unchangedCount}")
+                }
+                items(preview.items) { item ->
+                    val status = when (item.disposition) {
+                        com.hufeng943.timetable.shared.importexport.ImportDisposition.NEW -> "新增"
+                        com.hufeng943.timetable.shared.importexport.ImportDisposition.CHANGED -> "已有不同内容"
+                        com.hufeng943.timetable.shared.importexport.ImportDisposition.UNCHANGED -> "相同，跳过"
+                    }
+                    OneUiCapsuleSurface(
+                        title = item.timetable.semesterName,
+                        subtitle = "$status · ${item.courseCount} 门课 · ${item.eventCount} 项待办",
+                        icon = Icons.Rounded.FileOpen,
+                        onClick = {},
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item {
+                    OneUiCapsuleSurface(
+                        title = "仅导入新增",
+                        subtitle = "已有课表保持原样",
+                        icon = Icons.Rounded.Check,
+                        onClick = { viewModel.confirmImport(false) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (preview.changedCount > 0) item {
+                    OneUiCapsuleSurface(
+                        title = "替换不同课表",
+                        subtitle = "新增并替换已有的不同版本",
+                        icon = Icons.Rounded.Refresh,
+                        onClick = { viewModel.confirmImport(true) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
 
             if (backupFiles.isNotEmpty()) {

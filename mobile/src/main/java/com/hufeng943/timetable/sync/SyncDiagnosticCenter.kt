@@ -60,6 +60,8 @@ object SyncDiagnosticCenter {
             append("China BLE：${when { !c.chinaBleSupported -> "不支持"; !c.chinaBlePermissionGranted -> "缺少权限"; !c.bluetoothEnabled -> "蓝牙关闭"; else -> "可用" }}\n")
             append("当前 Transport：${c.selected}\n")
             append("判定：${c.reason}\n\n")
+            val latest = SyncDiagnosticStore.latest(context).lastOrNull()
+            if (latest != null) append("最近状态：${latest.type} · ${latest.message}\n\n")
             append("最近诊断：\n")
             if (recent.isEmpty()) append("暂无事件")
             else recent.forEach { append("${it.type} · ${it.message}\n") }
