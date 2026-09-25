@@ -168,12 +168,23 @@ jobs:
           cp "${wear_arm64[0]}" "$RUNNER_TEMP/wear-arm64-v8a-release.apk"
           cp "${wear_arm32[0]}" "$RUNNER_TEMP/wear-armeabi-v7a-release.apk"
 
-          gh release create "$GITHUB_REF_NAME" \
-            "$RUNNER_TEMP/mobile-release.apk" \
-            "$RUNNER_TEMP/wear-universal-release.apk" \
-            "$RUNNER_TEMP/wear-arm64-v8a-release.apk" \
-            "$RUNNER_TEMP/wear-armeabi-v7a-release.apk" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Timetable 3.5.4" \
-            --notes-file "$RUNNER_TEMP/release-notes.md" \
-            --verify-tag
+          assets=(
+            "$RUNNER_TEMP/mobile-release.apk"
+            "$RUNNER_TEMP/wear-universal-release.apk"
+            "$RUNNER_TEMP/wear-arm64-v8a-release.apk"
+            "$RUNNER_TEMP/wear-armeabi-v7a-release.apk"
+          )
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Timetable 3.5.4" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Timetable 3.5.4" \
+              --notes-file "$RUNNER_TEMP/release-notes.md" \
+              --verify-tag
+          fi
