@@ -1,6 +1,9 @@
 package com.hufeng943.timetable.presentation.ui.screens.home
 
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
@@ -187,6 +190,11 @@ fun TimetablePager(
                     )
                 }
             }
+            val nextCourseDisplayName = remember(coursesUi, statusSummary.nextId) {
+                statusSummary.nextId?.let { id ->
+                    coursesUi.firstOrNull { it.timeSlot.id == id }?.displayName
+                }
+            }
 
             CourseListPager(
                 coursesUi = coursesUi,
@@ -209,7 +217,7 @@ fun TimetablePager(
                     isNext = statusSummary.nextId == courseId,
                     minutesLeft = if (statusSummary.currentId == courseId) statusSummary.minutesLeft else null,
                     nextCourseName = if (statusSummary.currentId == courseId) {
-                        coursesUi.firstOrNull { it.timeSlot.id == statusSummary.nextId }?.displayName
+                        nextCourseDisplayName
                     } else null,
                     minutesUntilNext = if (statusSummary.currentId == courseId) statusSummary.minutesUntilNext else null,
                     is24HourFormat = config.is24HourFormat,
@@ -378,10 +386,13 @@ private fun CourseListPager(
                     .focusRequester(focusRequester)
                     .onPreRotaryScrollEvent { state.dragOffset > 0 }
                     .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                isTouching.set(event.changes.any { it.pressed })
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                            isTouching.set(true)
+                            try {
+                                waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                            } finally {
+                                isTouching.set(false)
                             }
                         }
                     }

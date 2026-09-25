@@ -23,7 +23,7 @@ data class AppConfig(
     val isShowTopTime: Boolean = false,
     val uiAnimationsEnabled: Boolean = true,
     val powerSaveMode: AppPowerSaveMode = AppPowerSaveMode.FOLLOW_SYSTEM,
-    val isLiquidGlassEnabled: Boolean = false,
+    val isLiquidGlassEnabled: Boolean = true,
     val glassOpacity: Float = 0.42f,
     val glassClarity: Float = 0.70f,
     val liquidGlassEffect: LiquidGlassEffect = LiquidGlassEffect.BALANCED,

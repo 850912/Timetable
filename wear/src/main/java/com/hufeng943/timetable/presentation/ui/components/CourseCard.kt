@@ -63,6 +63,19 @@ fun CourseCard(
     val courseColor = course.displayColor
     val slot = course.timeSlot
     val order = course.dailyOrder?.toString() ?: "•"
+    val timeRangeText = remember(slot.startTime, slot.endTime) {
+        buildString {
+            slot.startTime?.let { append(it.toScheduleCompactString()) }
+            if (slot.startTime != null && slot.endTime != null) append(" – ")
+            slot.endTime?.let { append(it.toScheduleCompactString()) }
+        }
+    }
+    val detailText = remember(course.location, course.teacher) {
+        listOfNotNull(
+            course.location?.takeIf { it.isNotBlank() },
+            course.teacher?.takeIf { it.isNotBlank() },
+        ).joinToString(" · ")
+    }
     val classProgress = if (isCurrent && minutesLeft != null && slot.startTime != null && slot.endTime != null) {
         val startMinutes = slot.startTime.hour * 60 + slot.startTime.minute
         val endMinutes = slot.endTime.hour * 60 + slot.endTime.minute
@@ -159,11 +172,7 @@ fun CourseCard(
                     )
 
                     Text(
-                        text = buildString {
-                            slot.startTime?.let { append(it.toScheduleCompactString()) }
-                            if (slot.startTime != null && slot.endTime != null) append(" – ")
-                            slot.endTime?.let { append(it.toScheduleCompactString()) }
-                        },
+                        text = timeRangeText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.textSecondary,
                         maxLines = 1,
@@ -205,13 +214,9 @@ fun CourseCard(
                         )
                     }
 
-                    val detail = listOfNotNull(
-                        course.location?.takeIf { it.isNotBlank() },
-                        course.teacher?.takeIf { it.isNotBlank() },
-                    ).joinToString(" · ")
-                    if (detail.isNotEmpty()) {
+                    if (detailText.isNotEmpty()) {
                         Text(
-                            text = detail,
+                            text = detailText,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.textSecondary.copy(alpha = 0.82f),
                             maxLines = 1,

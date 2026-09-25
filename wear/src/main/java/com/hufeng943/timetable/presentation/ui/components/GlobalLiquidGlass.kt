@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.hufeng943.timetable.presentation.ui.common.LocalAppConfig
 import com.hufeng943.timetable.presentation.ui.common.LocalLiquidGlassBackdrop
+import com.hufeng943.timetable.presentation.ui.common.LiquidGlassEffect
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -26,9 +27,8 @@ import com.kyant.backdrop.shadow.Shadow
  * WYS App Market-inspired liquid glass.
  *
  * Uses Kyant Backdrop on Android 13+ and a cheap translucent fallback elsewhere.
- * 3.5.3 intentionally exposes only opacity/clarity to the UI; blur/refraction are fixed to a
- * conservative Wear OS profile so vendor GPUs do not receive combinations that appear inert or
- * trigger excessive shader work.
+ * The optical profiles share one renderer, so switching between soft, balanced and fluid changes
+ * refraction/highlight character without replacing the material or rebuilding the UI hierarchy.
  */
 @Composable
 fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
@@ -54,12 +54,18 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
     }
 
     val liquid = config.isLiquidGlassEnabled
-    // The old UI exposed profile / chromatic / blur / lens controls whose visible delta was tiny
-    // on a 1.2–1.5 inch display and whose GPU cost varied greatly by vendor. 3.5.3 keeps one tuned
-    // optical path: a small blur on capable watches plus restrained refraction. Low-RAM devices
-    // skip blur and depth entirely, avoiding the most common shader pressure point on China ROMs.
-    val blurDp = if (!lowRamDevice) 0.70f else 0f
-    val lensAmount = if (lowRamDevice) 0.16f else 0.24f
+    val profile = when (config.liquidGlassEffect) {
+        LiquidGlassEffect.SOFT -> Triple(0.78f, 0.72f, 0.84f)
+        LiquidGlassEffect.BALANCED -> Triple(1f, 1f, 1f)
+        LiquidGlassEffect.FLUID -> Triple(1.18f, 1.34f, 1.18f)
+    }
+    // Every profile remains visibly liquid. Profiles tune the optical character instead of
+    // replacing glass with a flat surface; only low-RAM devices skip the blur pass itself.
+    val requestedBlurDp = config.glassBlurRadius.coerceIn(0.35f, 3.5f) * profile.first
+    val blurDp = if (config.glassBlurEnabled && !lowRamDevice) requestedBlurDp else 0f
+    val requestedLens = (config.glassLensDistortion.coerceIn(0.08f, 0.75f) * profile.second)
+        .coerceIn(0.08f, 0.82f)
+    val lensAmount = if (lowRamDevice) requestedLens.coerceAtMost(0.26f) else requestedLens
     val clarity = config.glassClarity.coerceIn(0f, 1f)
     // Tint density and optical clarity are independent. Higher clarity preserves the low-opacity
     // liquid look without forcing the tint control to an extreme.
@@ -75,26 +81,25 @@ fun Modifier.globalLiquidGlass(shape: Shape, surfaceColor: Color): Modifier {
                 // rather than a plain frosted panel.
                 vibrancy()
                 if (lensAmount > 0.02f) {
-                    val effectiveLens = if (lowRamDevice) lensAmount.coerceAtMost(0.24f) else lensAmount
-                    val height = (3.5f + 6f * effectiveLens).dp.toPx()
-                    val radius = (7f + 11f * effectiveLens).dp.toPx()
+                    val height = (3.8f + 7.5f * lensAmount).dp.toPx()
+                    val radius = (7.5f + 13f * lensAmount).dp.toPx()
                     lens(
                         refractionHeight = height,
                         refractionAmount = radius,
                         depthEffect = !lowRamDevice,
-                        chromaticAberration = false,
+                        chromaticAberration = config.glassChromaticAberration && !lowRamDevice,
                     )
                 }
             }
         },
         highlight = {
-            Highlight.Ambient.copy(alpha = if (liquid) 0.34f else 0.16f)
+            Highlight.Ambient.copy(alpha = if (liquid) 0.34f * profile.third else 0.16f)
         },
         shadow = {
             Shadow(radius = 1.dp, color = Color.Black.copy(alpha = 0.14f))
         },
         innerShadow = {
-            InnerShadow(radius = 0.8.dp, alpha = if (liquid) 0.12f else 0.07f)
+            InnerShadow(radius = 0.8.dp, alpha = if (liquid) 0.12f * profile.third else 0.07f)
         },
         onDrawSurface = {
             drawRect(surfaceColor.copy(alpha = surfaceAlpha))

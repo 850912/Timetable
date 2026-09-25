@@ -32,12 +32,15 @@
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardConnection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:padding="12dp"
             app:cardCornerRadius="24dp"
-            app:cardElevation="0dp">
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:strokeWidth="1dp">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
                 <ProgressBar android:id="@+id/syncProgress" style="?android:attr/progressBarStyleSmall" android:layout_width="24dp" android:layout_height="24dp" android:visibility="gone" />
                 <TextView android:id="@+id/connectionStatus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="正在检测手表连接…" android:textAppearance="?attr/textAppearanceBodyMedium" />
@@ -53,11 +56,14 @@
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardQuickActions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             app:cardCornerRadius="24dp"
-            app:cardElevation="0dp">
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"

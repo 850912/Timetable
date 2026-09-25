@@ -12,7 +12,9 @@ import android.Manifest
 import android.app.TimePickerDialog
 import android.graphics.Color
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -33,6 +35,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
@@ -146,6 +149,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        findViewById<View>(R.id.main).background = createLiquidAmbientBackground()
+        applyLiquidGlassTheme()
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
@@ -221,8 +227,14 @@ class MainActivity : AppCompatActivity() {
                 setPadding(dp(16), dp(16), dp(16), dp(12))
                 background = GradientDrawable().apply {
                     cornerRadius = dp(24).toFloat()
-                    setColor(resolveSurfaceColor())
-                    setStroke(dp(1), 0x22000000)
+                    setColor(withAlpha(resolveSurfaceColor(), 210))
+                    setStroke(dp(1), withAlpha(resolvePrimaryColor(), 82))
+                    setGradientType(GradientDrawable.LINEAR_GRADIENT)
+                    orientation = GradientDrawable.Orientation.TOP_BOTTOM
+                    colors = intArrayOf(
+                        withAlpha(Color.WHITE, 24),
+                        withAlpha(resolveSurfaceColor(), 210),
+                    )
                 }
             }
             card.layoutParams = LinearLayout.LayoutParams(
@@ -283,6 +295,12 @@ class MainActivity : AppCompatActivity() {
                             cornerRadius = dp(18).toFloat()
                             setColor(withAlpha(accent, if (isCurrent) 46 else 22))
                             setStroke(dp(if (isCurrent) 2 else 1), withAlpha(accent, if (isCurrent) 220 else 92))
+                            setGradientType(GradientDrawable.LINEAR_GRADIENT)
+                            orientation = GradientDrawable.Orientation.TOP_BOTTOM
+                            colors = intArrayOf(
+                                withAlpha(Color.WHITE, if (isCurrent) 20 else 12),
+                                withAlpha(accent, if (isCurrent) 42 else 20),
+                            )
                         }
                     }
                     row.layoutParams = LinearLayout.LayoutParams(
@@ -1813,6 +1831,62 @@ class MainActivity : AppCompatActivity() {
         return if (theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainer, value, true)) {
             value.data
         } else Color.WHITE
+    }
+
+    /** Applies a lightweight glass treatment to the XML shell and keeps the content readable. */
+    private fun applyLiquidGlassTheme() {
+        val connection = findViewById<MaterialCardView>(R.id.cardConnection)
+        val quickActions = findViewById<MaterialCardView>(R.id.cardQuickActions)
+        listOf(connection, quickActions).forEach { card ->
+            card.setCardBackgroundColor(withAlpha(resolveSurfaceColor(), 190))
+            card.strokeColor = withAlpha(resolvePrimaryColor(), 82)
+            card.strokeWidth = dp(1)
+        }
+    }
+
+    /** Dynamic-color ambient light behind translucent surfaces, shared with the Wear visual tone. */
+    private fun createLiquidAmbientBackground(): Drawable {
+        val surface = resolveThemeColor(com.google.android.material.R.attr.colorSurface, Color.BLACK)
+        val primary = resolvePrimaryColor()
+        val secondary = resolveThemeColor(
+            com.google.android.material.R.attr.colorSecondary,
+            primary,
+        )
+        val base = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(
+                blendColors(surface, primary, 0.16f),
+                surface,
+                blendColors(surface, secondary, 0.12f),
+            ),
+        )
+        val topGlow = GradientDrawable().apply {
+            gradientType = GradientDrawable.RADIAL_GRADIENT
+            gradientRadius = dp(420).toFloat()
+            setGradientCenter(0.14f, 0.06f)
+            colors = intArrayOf(withAlpha(primary, 88), Color.TRANSPARENT)
+        }
+        val bottomGlow = GradientDrawable().apply {
+            gradientType = GradientDrawable.RADIAL_GRADIENT
+            gradientRadius = dp(480).toFloat()
+            setGradientCenter(0.88f, 0.86f)
+            colors = intArrayOf(withAlpha(secondary, 68), Color.TRANSPARENT)
+        }
+        return LayerDrawable(arrayOf(base, topGlow, bottomGlow))
+    }
+
+    private fun resolveThemeColor(attribute: Int, fallback: Int): Int {
+        val value = android.util.TypedValue()
+        return if (theme.resolveAttribute(attribute, value, true)) value.data else fallback
+    }
+
+    private fun blendColors(background: Int, foreground: Int, amount: Float): Int {
+        val ratio = amount.coerceIn(0f, 1f)
+        return Color.rgb(
+            (Color.red(background) * (1f - ratio) + Color.red(foreground) * ratio).toInt(),
+            (Color.green(background) * (1f - ratio) + Color.green(foreground) * ratio).toInt(),
+            (Color.blue(background) * (1f - ratio) + Color.blue(foreground) * ratio).toInt(),
+        )
     }
 
     private fun resolvePrimaryColor(): Int {

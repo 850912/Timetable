@@ -83,6 +83,41 @@ fun LiquidGlassAdvancedPager(
             }
             if (config.isLiquidGlassEnabled) {
                 item {
+                    val nextEffect = when (config.liquidGlassEffect) {
+                        LiquidGlassEffect.SOFT -> LiquidGlassEffect.BALANCED
+                        LiquidGlassEffect.BALANCED -> LiquidGlassEffect.FLUID
+                        LiquidGlassEffect.FLUID -> LiquidGlassEffect.SOFT
+                    }
+                    val effectLabel = when (config.liquidGlassEffect) {
+                        LiquidGlassEffect.SOFT -> "柔和"
+                        LiquidGlassEffect.BALANCED -> "平衡"
+                        LiquidGlassEffect.FLUID -> "流体"
+                    }
+                    OneUiCapsuleSurface(
+                        title = "玻璃效果 · $effectLabel",
+                        subtitle = "点击切换；流体档折射与高光更明显",
+                        icon = Icons.Rounded.BlurOn,
+                        onClick = {
+                            onEffectChange(nextEffect)
+                            when (nextEffect) {
+                                LiquidGlassEffect.SOFT -> {
+                                    onLensDistortionChange(0.16f)
+                                    onBlurRadiusChange(0.8f)
+                                }
+                                LiquidGlassEffect.BALANCED -> {
+                                    onLensDistortionChange(0.24f)
+                                    onBlurRadiusChange(1.1f)
+                                }
+                                LiquidGlassEffect.FLUID -> {
+                                    onLensDistortionChange(0.36f)
+                                    onBlurRadiusChange(1.4f)
+                                }
+                            }
+                        },
+                        modifier = itemModifier(this),
+                    )
+                }
+                item {
                     OneUiCapsuleSurface(
                         title = "玻璃底色浓度",
                         subtitle = "${(config.glassOpacity * 100).toInt()}% · 越低越通透",
@@ -100,6 +135,26 @@ fun LiquidGlassAdvancedPager(
                         modifier = itemModifier(this),
                     )
                 }
+                item {
+                    OneUiSwitchCapsule(
+                        title = "玻璃模糊",
+                        subtitle = "保留背景细节，同时增加景深",
+                        icon = Icons.Rounded.BlurOn,
+                        checked = config.glassBlurEnabled,
+                        onCheckedChange = onBlurEnabledChange,
+                        modifier = itemModifier(this),
+                    )
+                }
+                item {
+                    OneUiSwitchCapsule(
+                        title = "边缘色散",
+                        subtitle = "在折射边缘加入细微彩色高光",
+                        icon = Icons.Rounded.Tune,
+                        checked = config.glassChromaticAberration,
+                        onCheckedChange = onChromaticAberrationChange,
+                        modifier = itemModifier(this),
+                    )
+                }
             }
             item {
                 OneUiCapsuleSurface(
@@ -113,7 +168,7 @@ fun LiquidGlassAdvancedPager(
             item {
                 OneUiCapsuleSurface(
                     title = stringResource(R.string.settings_glass_readability),
-                    subtitle = "Wear 已优化玻璃性能。",
+                    subtitle = "圆屏边缘、文字对比度与触控区域已优化",
                     icon = Icons.Rounded.Wallpaper,
                     modifier = itemModifier(this),
                 )

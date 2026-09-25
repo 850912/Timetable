@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,6 +67,11 @@ fun WearCourseCard(
         CourseStatus.IN_PROGRESS -> colors.badgeActive
         CourseStatus.NOT_STARTED -> colors.primary
         CourseStatus.FINISHED -> colors.textSecondary
+    }
+    val timeRangeText = remember(data.startTime, data.endTime) {
+        "%02d:%02d - %02d:%02d".format(
+            data.startTime.hour, data.startTime.minute, data.endTime.hour, data.endTime.minute
+        )
     }
     val (interactionSource, pressMotion) = rememberPressMotion()
 
@@ -121,9 +127,7 @@ fun WearCourseCard(
                 Icon(Icons.Rounded.AccessTime, contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(11.dp))
                 Spacer(Modifier.width(3.dp))
                 Text(
-                    text = "%02d:%02d - %02d:%02d".format(
-                        data.startTime.hour, data.startTime.minute, data.endTime.hour, data.endTime.minute
-                    ),
+                    text = timeRangeText,
                     color = colors.textSecondary,
                     fontSize = 10.sp,
                 )
