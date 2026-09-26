@@ -1,0 +1,116 @@
+package com.hufeng943.timetable.presentation.viewmodel.edit.course
+
+import android.content.Context
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.hufeng943.timetable.presentation.ui.NavArgs
+import com.hufeng943.timetable.presentation.ui.common.ui.CourseUi
+import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toCourse
+import com.hufeng943.timetable.presentation.ui.common.ui.mappers.toCourseUi
+import com.hufeng943.timetable.presentation.viewmodel.AppError
+import com.hufeng943.timetable.presentation.viewmodel.UiState
+import com.hufeng943.timetable.shared.data.repository.TimetableRepository
+import com.hufeng943.timetable.surface.WearSurfaceRefresher
+import com.hufeng943.timetable.shared.model.Course
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class EditCourseViewModel @Inject constructor(
+    private val repository: TimetableRepository,
+    @ApplicationContext private val appContext: Context,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+    private val cId: Long? =
+        savedStateHandle.longArg(NavArgs.COURSE_ID)?.takeUnless { it == -1L }
+    private val tId: Long? =
+        savedStateHandle.longArg(NavArgs.TABLE_ID)
+
+    // 暴露 tableId 供 UI 层使用（用于导航到子页面时携带参数）
+    val tableId: Long? = tId
+
+    private val _uiState = MutableStateFlow<UiState<CourseUi>>(UiState.Loading)
+    val uiState = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            try {
+                val domainData: Course = cId?.let { id ->
+                    repository.getCourseById(id).first() ?: Course()
+                } ?: Course()
+                _uiState.value = UiState.Success(domainData.toCourseUi())
+            } catch (e: Exception) {
+                _uiState.value = UiState.Error(e)
+            }
+        }
+    }
+
+    fun onAction(action: EditCourseAction) {
+        when (action) {
+            is EditCourseAction.UpdateName -> updateSuccessState { it.copy(name = action.name) }
+            is EditCourseAction.UpdateLocation -> updateSuccessState { it.copy(location = action.location) }
+            is EditCourseAction.UpdateTeacher -> updateSuccessState { it.copy(teacher = action.teacher) }
+            is EditCourseAction.UpdateColor -> updateSuccessState {
+                it.copy(color = action.color ?: Color.Unspecified)
+            }
+            EditCourseAction.Upsert -> upsertCourse()
+            EditCourseAction.Delete -> deleteCourse()
+        }
+    }
+
+    private inline fun updateSuccessState(crossinline transform: (CourseUi) -> CourseUi) {
+        val current = _uiState.value
+        if (current is UiState.Success) {
+            _uiState.value = UiState.Success(transform(current.data))
+        }
+    }
+
+    private fun upsertCourse() {
+        viewModelScope.launch {
+            try {
+                val currentUi =
+                    (uiState.value as? UiState.Success)?.data ?: throw AppError.UnexpectedEmpty()
+                val tableId = tId ?: throw AppError.InvalidParameter(NavArgs.TABLE_ID)
+                repository.upsertCourse(currentUi.toCourse(), tableId)
+                WearSurfaceRefresher.refresh(appContext)
+            } catch (e: Exception) {
+                _uiState.value = UiState.Error(e)
+            }
+        }
+    }
+
+    private fun deleteCourse() {
+        viewModelScope.launch {
+            try {
+                val courseId =
+                    (uiState.value as? UiState.Success)?.data?.id ?: throw AppError.CourseNotFound(
+                        null
+                    )
+                if (courseId != 0L) {
+                    repository.deleteCourse(courseId)
+                    WearSurfaceRefresher.refresh(appContext)
+                }
+            } catch (e: Exception) {
+                _uiState.value = UiState.Error(e)
+            }
+        }
+    }
+}
+
+
+private fun SavedStateHandle.longArg(key: String): Long? {
+    val value: Any? = get<Any?>(key)
+    return when (value) {
+        is Long -> value
+        is Int -> value.toLong()
+        is String -> value.toLongOrNull()
+        else -> null
+    }
+}

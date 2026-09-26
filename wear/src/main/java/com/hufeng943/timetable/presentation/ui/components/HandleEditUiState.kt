@@ -1,0 +1,76 @@
+package com.hufeng943.timetable.presentation.ui.components
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.hufeng943.timetable.presentation.ui.screens.common.ErrorScreen
+import com.hufeng943.timetable.presentation.ui.screens.common.LoadingScreen
+import com.hufeng943.timetable.presentation.viewmodel.AppError
+import com.hufeng943.timetable.presentation.viewmodel.UiState
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
+
+@Composable
+fun <T> HandleEditUiState(
+    uiState: UiState<T>,
+    emptyAsSuccess: T? = null,
+    emptyContent: @Composable () -> Unit = { ErrorScreen(AppError.UnexpectedEmpty()) },
+    successContent: @Composable (T) -> Unit
+) {
+    val delayDuration = 140.milliseconds
+    var showLoadingActual by remember { mutableStateOf(false) }
+
+    // 监听 uiState 的变化
+    LaunchedEffect(uiState) {
+        if (uiState is UiState.Loading) {
+            delay(delayDuration)
+            showLoadingActual = true
+        } else {
+            showLoadingActual = false
+        }
+    }
+
+    // Keep state swaps layout-stable on Wear OS 6. Scaling transitions can overlap
+    // with Lazy transformations while the item height is being recalculated.
+    AnimatedContent(
+        targetState = uiState,
+        contentKey = { state -> state::class },
+        transitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
+        label = "UiStateTransition"
+    ){ targetState ->
+        when (targetState) {
+            is UiState.Loading -> {
+                if (showLoadingActual) {
+                    LoadingScreen()
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Transparent)
+                    )
+                }
+            }
+
+            is UiState.Error -> ErrorScreen(targetState.throwable)
+            is UiState.Empty -> if (emptyAsSuccess != null) {
+                successContent(emptyAsSuccess)
+            } else {
+                emptyContent()
+            }
+
+            is UiState.Success -> successContent(targetState.data)
+        }
+    }
+}

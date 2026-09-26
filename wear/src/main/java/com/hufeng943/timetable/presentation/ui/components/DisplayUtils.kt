@@ -1,0 +1,61 @@
+package com.hufeng943.timetable.presentation.ui.components
+
+import android.text.format.DateFormat
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.hufeng943.timetable.R
+import com.hufeng943.timetable.shared.model.WeekPattern
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.number
+import kotlinx.datetime.toJavaDayOfWeek
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
+
+@Composable
+fun WeekPattern.toDisplayString() = when (this) {
+    WeekPattern.EVERY_WEEK -> stringResource(R.string.every_week)
+    WeekPattern.ODD_WEEK -> stringResource(R.string.odd_week)
+    WeekPattern.EVEN_WEEK -> stringResource(R.string.even_week)
+    WeekPattern.DATE_ONLY -> stringResource(R.string.date_only)
+}
+
+fun DayOfWeek.toDisplayString(textStyle: TextStyle): String =
+    this.toJavaDayOfWeek().getDisplayName(textStyle, Locale.getDefault())
+
+fun LocalTime.toDisplayString(is24Hour: Boolean): String {
+    val pattern = DateFormat.getBestDateTimePattern(
+        Locale.getDefault(), if (is24Hour) "Hm" else "hm"
+    )
+
+    return java.time.LocalTime.of(hour, minute).format(DateTimeFormatter.ofPattern(pattern))
+}
+
+fun LocalDate.toDisplayString(): String {
+    val pattern = DateFormat.getBestDateTimePattern(
+        Locale.getDefault(), "yMd"
+    )
+
+    return java.time.LocalDate.of(year, month.number, day)
+        .format(DateTimeFormatter.ofPattern(pattern))
+}
+
+
+/**
+ * Wear schedule display: the AM/PM context is supplied by the timetable section header,
+ * so individual cards stay compact on a small round display.
+ */
+fun LocalTime.toScheduleCompactString(): String =
+    java.time.LocalTime.of(hour, minute).format(DateTimeFormatter.ofPattern("HH:mm"))
+
+/**
+ * Wear editor display: editing needs an explicit period marker so users do not confuse
+ * morning and afternoon slots when changing a time.
+ */
+fun LocalTime.toScheduleEditorString(): String {
+    val period = if (hour < 12) "上午" else "下午"
+    val h = if (hour % 12 == 0) 12 else hour % 12
+    return "%s %02d:%02d".format(period, h, minute)
+}
