@@ -1,0 +1,275 @@
+<resources>
+    <string name="about_license_title">Open-source licenses</string>
+    <string name="about_license_subtitle">AndroidX, Horologist, KotlinX, and other dependency licenses</string>
+    <string name="app_name" translatable="false">Timetable</string>
+    <!--
+    This string is used for square devices and overridden by hello_world in
+    values-round/strings.xml for round devices.
+    -->
+    <string name="hello_world" translatable="false">From the Square world,\nHello, %1$s!</string>
+    <string name="tile_label">Today’s classes</string>
+    <string name="complication_label">Timetable</string>
+    <!-- Home -->
+    <string name="home_title">Today</string>
+    <string name="home_tomorrow_title">Tomorrow</string>
+    <string name="home_date_title">%1$d/%2$d classes</string>
+    <string name="home_empty_course_hint">No classes today. Enjoy!</string>
+    <string name="home_tomorrow_empty_course_hint">No classes tomorrow</string>
+    <string name="home_date_empty_course_hint">No classes on %1$d/%2$d</string>
+    <string name="home_no_timetable_hint">No timetable found. Add one to start!</string>
+    <string name="home_add_timetable">Add Timetable</string>
+    <string name="more_title">More</string>
+    <string name="more_menu_edit">Edit Timetable</string>
+    <string name="more_menu_settings">Settings</string>
+    <string name="more_menu_about">About</string>
+    <!-- Edit - Timetable -->
+    <string name="edit_timetable_title">Timetable List</string>
+    <string name="edit_timetable_edit">Edit Timetable</string>
+    <string name="edit_timetable_add">Add Timetable</string>
+    <string name="edit_timetable_empty">No timetables yet</string>
+    <string name="edit_timetable_number">%1$d Courses</string>
+    <string name="edit_timetable_name">Timetable Name</string>
+    <string name="edit_timetable_start">Start Date</string>
+    <string name="edit_timetable_end">End Date</string>
+    <string name="edit_timetable_color">Timetable Color</string>
+    <string name="edit_timetable_name_hint">Enter timetable name</string>
+    <string name="edit_timetable_display_name">Timetable \"%1$s\"</string>
+    <string name="edit_timetable_delete">Delete</string>
+    <string name="timetable_status_not_started">Not started</string>
+    <string name="timetable_status_in_progress">In progress</string>
+    <string name="timetable_status_ended">Ended</string>
+    <!-- Edit - Course -->
+    <string name="course_details_title">Course Details</string>
+    <string name="edit_course_title">Course List</string>
+    <string name="edit_course_add">Add Course</string>
+    <string name="edit_course_empty">No courses yet</string>
+    <string name="edit_course_number">%1$d time slots</string>
+    <string name="edit_course_name">Course Name</string>
+    <string name="edit_course_location">Location</string>
+    <string name="edit_course_teacher">Teacher</string>
+    <string name="edit_course_color">Course Color</string>
+    <string name="edit_course_name_hint">Enter course name</string>
+    <string name="edit_course_location_hint">Enter location</string>
+    <string name="edit_course_teacher_hint">Enter teacher name</string>
+    <string name="edit_course_display_name">Course \"%1$s\"</string>
+    <string name="edit_course_edit">Edit Course</string>
+    <string name="edit_course_long_press_hint">Long press to edit time slot</string>
+    <string name="edit_course_delete">Delete</string>
+    <!-- Edit - TimeSlot -->
+    <string name="edit_timeslot_title">Time Slot List</string>
+    <string name="edit_timeslot_edit">Edit Time Slot</string>
+    <string name="edit_timeslot_add">Add Time Slot</string>
+    <string name="edit_timeslot_empty">No time slots yet</string>
+    <string name="edit_timeslot_start">Start Time</string>
+    <string name="edit_timeslot_end">End Time</string>
+    <string name="edit_timeslot_week">Weekday</string>
+    <string name="edit_timeslot_repeat">Repeat Rule</string>
+    <string name="edit_timeslot_remark">Note</string>
+    <string name="edit_timeslot_remark_hint">Enter note</string>
+    <string name="edit_timeslot_display_name">Time Slot %1$s-%2$s</string>
+    <string name="edit_timeslot_delete">Delete</string>
+    <!-- Set -->
+    <string name="clear_long_press">Long press to clear</string>
+    <string name="set_current_date_long_press">Long press to set current date</string>
+    <string name="never_ends">Never ends</string>
+    <string name="set_never_ends_long_press">Long press to set never ends</string>
+    <string name="unknown">Unknown</string>
+    <string name="not_set">Not set</string>
+    <string name="check">Confirm</string>
+    <!-- Default -->
+    <string name="default_semester_name">Unnamed Timetable</string>
+    <string name="default_course_name">Unnamed Course</string>
+    <string name="info_separator" translatable="false">" · "</string>
+    <string name="list_separator" translatable="false">", "</string>
+    <!-- WeekPattern -->
+    <string name="every_week">Every week</string>
+    <string name="odd_week">Odd weeks</string>
+    <string name="even_week">Even weeks</string>
+    <string name="recurrence_title">Repeat Rule</string>
+    <string name="recurrence_odd_week">Odd weeks only</string>
+    <string name="recurrence_even_week">Even weeks only</string>
+    <!-- AppError -->
+    <string name="apperror">Unexpected condition!</string>
+    <string name="apperror_timetablenotfound">Timetable not found (ID: %1$s)</string>
+    <string name="apperror_coursenotfound">Course not found (ID: %1$s)</string>
+    <string name="apperror_timeslotnotfound">Time slot not found (ID: %1$s)</string>
+    <string name="apperror_invalidparameter">Invalid parameter: %1$s</string>
+    <string name="apperror_unexpectedempty">Unexpected empty state</string>
+    <string name="apperror_unknown">An unknown error occurred: %1$s</string>
+    <string name="home_week_title">%1$s · Week %2$d</string>
+    <string name="home_week_progress_title">%1$s · Week %2$d/%3$d</string>
+    <string name="home_academic_events_count">%1$d academic tasks</string>
+    <string name="home_summary_empty">0 classes</string>
+    <string name="home_summary_classes">%1$d classes · %2$s–%3$s</string>
+    <string name="home_until_minutes">Class in %1$d min</string>
+    <string name="home_until_hours">Class in %1$d hr</string>
+    <string name="home_until_hours_minutes">Class in %1$dh %2$02dm</string>
+    <string name="home_summary_in_class">In class · %1$d min left</string>
+    <string name="home_day_finished_title">Classes finished for today</string>
+    <string name="home_day_finished_message_1">Nice work. The rest of the day is yours.</string>
+    <string name="home_day_finished_message_2">Done for today. Take a little break.</string>
+    <string name="home_day_finished_message_3">Classes are over. Tasks can wait a moment.</string>
+    <string name="home_day_finished_message_4">All classes done. See you tomorrow.</string>
+    <string name="home_day_finished_scroll_hint">Scroll down to review today’s timetable</string>
+    <string name="event_type_assignment">Assignment</string>
+    <string name="event_type_exam">Exam</string>
+    <string name="event_type_lab">Lab</string>
+    <string name="event_type_other">Task</string>
+    <!-- About -->
+    <string name="about_description">A timetable companion for Wear OS and Galaxy Watch with phone sync, offline schedules, reminders, academic tasks, Tiles, and complications.</string>
+    <string name="about_features_title">Features</string>
+    <string name="about_features_text">
+        " · Multiple timetables with phone ↔ watch sync\n"
+        " · Course editing, date exceptions, and quick same-day changes\n"
+        " · Assignment / exam / lab tasks with reminders\n"
+        " · Current-class-first home, next-class countdown, and after-class state\n"
+        " · Wear Tile timeline and countdown / progress complications\n"
+        " · Weekly timetable image sharing and input suggestions\n"
+        " · ICS / CSV / JSON import, export, and system-calendar sync\n"
+        " · 12/24-hour format, themes, and Chinese / English UI"
+    </string>
+
+    <string name="about_features_schedule">Classes: multiple timetables, date exceptions, same-day changes, and phone ↔ watch sync.</string>
+    <string name="about_features_wear">Wear: status-first home, Tile timeline, current-class progress, and next-class countdown complications.</string>
+    <string name="about_features_tools">Tools: academic tasks and reminders, weekly image sharing, ICS / CSV / JSON, and system calendar sync.</string>
+    <string name="about_declaration_project">Project: continuously maintained from HuFeng943 / Timetable; current release 3.5.5.</string>
+    <string name="about_declaration_development">Maintained by HeiBaiJun; some development used generative AI. Tap the version 7 times for Developer Options.</string>
+    <string name="about_open_source_wear">Wear UI: Wear Compose 1.6.2 · Horologist 0.7.15</string>
+    <string name="about_open_source_data">Data: Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
+    <string name="about_open_source_ui">Tools: Coroutines 1.11.0 · AboutLibraries 15.0.3 · MaterialKolor 4.1.1. Open the license list below for full notices.</string>
+    <string name="about_changelog_part1">3.5.5 focuses on Wear OS 6 reliability: nested-page motion no longer drags the parent screen away, Xiaomi/China-ROM haptics use a safe runtime fallback, liquid glass stays enabled, and China BLE sync now requires encrypted paired links with replay and resource limits.</string>
+    <string name="about_changelog_part2">Backgrounds add image-tone fluid color generation, course cards are consolidated, and phone-to-watch legacy transfer compatibility remains available.</string>
+    <string name="about_declaration_title">Declaration</string>
+    <string name="about_declaration_subtitle" translatable="false">https://github.com/HuFeng943/Timetable</string>
+    <string name="about_declaration_text">
+        " · Current release uses semantic version 3.5.5\n"
+        " · Original project: HuFeng943 / Timetable\n"
+        " · Secondary development &amp; maintenance: 黑白君 (HeiBaiJun)\n"
+        " · This version continues development on top of the original project\n"
+        " · Some development and maintenance work is assisted by generative AI\n"
+        " · Tap the version 7 times to open Developer Options"
+    </string>
+    <string name="about_library">Third-party Libraries</string>
+    <string name="about_library_open_source">✔ Open Source</string>
+    <string name="about_library_version">v%1$s</string>
+    <string name="about_library_developers">By %1$s</string>
+    <string name="about_open_source_stack">Core open-source stack: Wear Compose 1.6.2, Horologist 0.7.15, Room 2.8.4, Hilt 2.60, KotlinX Serialization 1.11.0 / Datetime 0.8.0, Coroutines 1.11.0, AboutLibraries 15.0.3, and MaterialKolor 4.1.1. The license screen is generated by AboutLibraries from the actual build dependencies.</string>
+    <string name="about_changelog_title">3.5.5 highlights</string>
+    <string name="about_changelog_expand_hint">Tap to expand</string>
+    <string name="about_changelog">
+        " · Removed eager Tile data work from the Wear cold-start path\n"
+        " · Delayed China Wear Data Layer bootstrap until the first UI has settled\n"
+        " · Refreshes Tile and complications immediately after local timetable edits\n"
+        " · Keeps Tile Timeline as the primary time-bound update path with periodic refresh as fallback\n"
+        " · Added a live progress bar to the current-class card without continuous animation\n"
+        " · Added a richer Today timetable section on mobile with course-color emphasis\n"
+        " · Shows current/total semester week when an end date is available\n"
+        " · Preserved Hybrid Data Layer, China legacy fallback, and existing signing configuration"
+    </string>
+    <string name="about_original_author_name">HuFeng943</string>
+    <string name="about_original_author_subtitle">Original author · Timetable project</string>
+    <string name="about_developer_name">黑白君 (HeiBaiJun)</string>
+    <string name="about_developer_subtitle">Secondary development &amp; maintenance · Wear / Sync / Student Tools · 2026.09</string>
+    <string name="developer_options_title">Developer Options</string>
+    <string name="developer_version_title">App version</string>
+    <string name="developer_runtime_title">Runtime</string>
+    <string name="developer_database_title">Local database</string>
+    <string name="developer_database_subtitle">Room schema v10 · courses / exceptions / academic tasks / sync queue</string>
+    <string name="developer_transfer_title">File-transfer protocol</string>
+    <string name="developer_formats_title">Supported formats</string>
+    <string name="developer_core_title">Core components</string>
+    <string name="developer_core_subtitle">Wear Compose 1.6.2 · Horologist 0.7.15 · Room 2.8.4 · Hilt 2.60 · KotlinX 1.11 / 0.8</string>
+    <string name="developer_tile_title">Wear OS Tile</string>
+    <string name="developer_tile_subtitle">Course-boundary timeline · no polling for predictable updates</string>
+    <string name="developer_complication_title">Complication</string>
+    <string name="developer_complication_subtitle">Current-class progress + next-class countdown · system-time driven</string>
+    <string name="developer_home_title">Home scheduling</string>
+    <string name="developer_home_subtitle">Active class opens first · next-class countdown refreshes at minute boundaries · static after-class state</string>
+    <string name="developer_effects_title">Galaxy AI effects</string>
+    <string name="developer_effects_subtitle">Lightweight ambient gradient · static active/next emphasis avoids continuous animation and background work</string>
+    <!-- Common -->
+    <string name="today">Today</string>
+    <string name="delete_confirm">Are you sure you want to delete?</string>
+    <string name="delete_confirm_hint">Once deleted, %1$s cannot be recovered.</string>
+    <string name="selection_week">Select weekday</string>
+    <string name="back_to_top">Back to top</string>
+    <!-- Settings -->
+
+    <string name="settings_language">Language settings</string>
+    <string name="settings_time_format">Time Format</string>
+    <string name="settings_time_format_system">Follow system</string>
+    <string name="settings_time_format_12h">12-Hour</string>
+    <string name="settings_time_format_24h">24-Hour</string>
+    <string name="settings_first_day">First day of the week</string>
+    <string name="settings_first_day_system">Follow system</string>
+    <string name="settings_first_day_monday">Monday</string>
+    <string name="settings_first_day_sunday">Sunday</string>
+    <string name="settings_first_day_saturday">Saturday</string>
+    <string name="settings_dynamic_color">Material You dynamic color</string>
+    <string name="settings_dynamic_color_summary">Use colors derived from the current Wear OS watch face; course cards can also use course-color accents</string>
+    <!-- Language -->
+<string name="language_follow_system">Follow system</string>
+    <string name="language_simplified_chinese">Simplified Chinese</string>
+    <string name="language_english">English</string>
+<string name="home_no_course_today">No courses today</string>
+    <string name="course_in_progress">%1$d min left</string>
+    <string name="course_next">Next</string>
+    <string name="course_class_mode_next">Next · %1$s · in %2$d min</string>
+    <string name="complication_current_course_label">Current course</string>
+    <string name="complication_next_course_label">Next course</string>
+    <string name="home_day_finished_free_title">You’re free</string>
+    <string name="home_view_today_timetable">View today’s timetable</string>
+    <string name="home_hide_today_timetable">Hide today’s timetable</string>
+    <string name="tile_status_current">In class</string>
+    <string name="tile_status_next">Up next</string>
+    <string name="tile_status_finished">Finished</string>
+    <string name="tile_status_today">Today</string>
+    <string name="tile_no_courses">No classes today</string>
+    <string name="tile_tap_to_open">Tap to open Timetable</string>
+    <string name="tile_unnamed_course">Unnamed course</string>
+    <string name="date_only">Selected dates only</string>
+    <string name="settings_liquid_glass">Liquid Glass</string>
+    <string name="settings_liquid_glass_summary">Real-time refraction, blur and highlights for course cards. Off uses the lower-power glass style.</string>
+    <string name="settings_liquid_glass_unsupported">Requires Android 13 / Wear OS with RuntimeShader support. The standard glass style is used on this watch.</string>
+    <string name="settings_timetable_background">Timetable background</string>
+    <string name="settings_background_solid">Solid</string>
+    <string name="settings_background_solid_summary">Pure theme background with the lowest rendering cost.</string>
+    <string name="settings_background_theme">Theme glow</string>
+    <string name="settings_background_theme_summary">Static glow derived from the current theme colors; recommended for Liquid Glass.</string>
+    <string name="settings_background_image">Custom image</string>
+    <string name="settings_background_image_summary">Choose an image. It is resized and stored locally for efficient watch rendering.</string>
+
+    <string name="settings_liquid_glass_advanced">Liquid Glass advanced</string>
+    <string name="settings_liquid_glass_on">On · advanced settings</string>
+    <string name="settings_liquid_glass_off">Off · advanced settings</string>
+    <string name="settings_glass_opacity">Glass transparency</string>
+    <string name="settings_glass_opacity_value">Surface opacity %1$d%% · tap to adjust</string>
+    <string name="settings_liquid_effect">Liquid effect</string>
+    <string name="settings_liquid_effect_soft">Soft · lowest GPU load</string>
+    <string name="settings_liquid_effect_balanced">Balanced · recommended</string>
+    <string name="settings_liquid_effect_fluid">Fluid · stronger refraction</string>
+    <string name="settings_background_brightness">Background brightness</string>
+    <string name="settings_background_brightness_value">Brightness %1$d%% · tap to adjust</string>
+    <string name="settings_glass_readability">Readability protection</string>
+    <string name="settings_glass_readability_summary">A contrast scrim is applied automatically. Lower background brightness when text competes with photos or bright colors.</string>
+    <string name="settings_background_fluid_image">Fluid background (image colors)</string>
+    <string name="settings_background_fluid_image_summary">Extract the image palette and generate an ambient fluid glow without showing the source image.</string>
+    <string name="home_period_morning">Morning</string>
+    <string name="home_period_afternoon">Afternoon</string>
+    <string name="settings_background_image_blur">Custom image blur</string>
+    <string name="settings_background_image_blur_summary">Blur radius: %1$d dp · 0 disables blur</string>
+    <string name="settings_course_reminder">Course reminder</string>
+    <string name="settings_course_reminder_off">Off</string>
+    <string name="settings_course_reminder_off_summary">No course notifications</string>
+    <string name="settings_course_reminder_minutes">%1$d min before</string>
+    <string name="settings_course_reminder_minutes_summary">Notify %1$d minutes before each class</string>
+    <string name="reminder_channel_name">Course reminders</string>
+    <string name="reminder_channel_description">Upcoming course notifications</string>
+    <string name="reminder_body">Starts in %1$d min · %2$s</string>
+    <string name="reminder_open_action">Open timetable</string>
+    <string name="quick_view_title">Quick View</string>
+    <string name="quick_view_count">Today · %1$d classes</string>
+    <string name="quick_view_hint">Scroll once to see the whole day</string>
+    <string name="quick_view_next_summary">Next: %1$s · %2$s</string>
+    <string name="quick_view_unavailable">Schedule unavailable</string>
+</resources>
