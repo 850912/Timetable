@@ -56,21 +56,24 @@ fun rememberPullToDatePickerState(
 
 fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this.then(
     Modifier.pointerInput(state) {
+        var openingGesture = false
         detectVerticalDragGestures(onVerticalDrag = { _, dragAmount ->
             val currentOffset = state.dragOffset
             // The Wear home gesture is an upward swipe. The picker is rendered above
             // the page, so an upward finger delta increases its reveal offset. Once
             // open, a downward swipe collapses it again.
-            val delta = if (currentOffset <= 0f) {
-                (-dragAmount).coerceAtLeast(0f)
-            } else {
-                dragAmount.coerceAtLeast(0f)
-            }
+            val delta = if (openingGesture) -dragAmount else dragAmount
             val newOffset = (currentOffset + delta).coerceIn(0f, state.maxDragDistance)
             if (newOffset != currentOffset) {
                 state.snapTo(newOffset)
             }
-        }, onDragEnd = { state.animateToTarget() })
+        }, onDragStart = { openingGesture = state.dragOffset <= 0f }, onDragEnd = {
+            openingGesture = false
+            state.animateToTarget()
+        }, onDragCancel = {
+            openingGesture = false
+            state.animateToTarget()
+        })
     })
 
 @Composable
