@@ -102,7 +102,9 @@ fun rememberPullToRefreshConnection(
                         (currentOffset + delta).coerceIn(0f, state.maxDragDistance)
                     val consumed = newOffset - currentOffset
                     state.snapTo(newOffset)
-                    return Offset(0f, consumed)
+                    // Nested-scroll consumption must keep the same sign as the input:
+                    // upward input is negative, while dragOffset grows positively.
+                    return Offset(0f, if (isOpening) -consumed else consumed)
                 }
                 return Offset.Zero
             }
