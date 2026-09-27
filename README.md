@@ -1,8 +1,8 @@
-# Timetable 3.5.4
+# Timetable 3.5.7
 
 Timetable 是一个 Android 手机 + Wear OS 的本地优先课程表应用。课程数据保存在 Room 中，并通过 Wear Data Layer 在手机与手表之间同步。
 
-## 3.5.4 重点
+## 3.5.7 重点
 
 - 手机与 Wear OS 的液态玻璃视觉全面增强；手表端提供柔和、平衡、流体三种光学档位，并开放模糊、折射、清透度、底色浓度和边缘色散调节。
 - 手机端加入动态主题环境光、半透明渐变卡片和课程色彩高光，让手机与手表保持统一的视觉语言。
@@ -11,6 +11,8 @@ Timetable 是一个 Android 手机 + Wear OS 的本地优先课程表应用。�
 - 新增同步中心、失败记录重试与恢复、每日自动 JSON 备份，以及课程通知延后 5 分钟。
 - 继续保留旧 Wear Data Layer 路径、国行设备 BLE 兼容协议、CRC32 v2 可选协议及 Xiaomi / 中国 ROM 触觉安全回退。
 - 手机与手表 Release APK 继续使用同一签名证书，确保正式版本间可靠互传。
+- 新增节日祝福卡片：手机和 Wear OS 都可独立联网获取节假日信息，网络不可用时自动使用内置节日规则。
+- 覆盖中国常见节日、农历传统节日及国际常见节日；节日数据获取不会阻塞课表首页。
 
 ## 数据库
 
@@ -34,7 +36,7 @@ Timetable 是一个 Android 手机 + Wear OS 的本地优先课程表应用。�
 ./gradlew :wear:assembleRelease --no-daemon
 ```
 
-GitHub Actions 工作流位于 `.github/workflows/android-release.yml`，推送到 `main` / `master` 或手动触发即可构建手机端和手表端 APK。
+GitHub Actions 工作流位于 `.github/workflows/release.yml`。推送 `v*` 标签或手动触发即可构建并发布手机端和手表端 APK；Debug 验证工作流位于 `.github/workflows/debug.yml`。
 
 ### Release 签名
 
