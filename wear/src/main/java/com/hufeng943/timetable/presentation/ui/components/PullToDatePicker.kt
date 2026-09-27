@@ -65,6 +65,7 @@ fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this
             var lastY = down.position.y
             var totalY = 0f
             var active = false
+            val openingGesture = state.dragOffset <= 0f
             while (true) {
                 val event = awaitPointerEvent(PointerEventPass.Initial)
                 val change = event.changes.firstOrNull() ?: break
@@ -76,7 +77,7 @@ fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this
                 if (!active && kotlin.math.abs(totalY) >= 8f) active = true
                 if (active) {
                     // Upward finger motion opens; downward motion closes.
-                    val delta = if (state.dragOffset <= 0f) -deltaY else deltaY
+                    val delta = if (openingGesture) -deltaY else deltaY
                     val oldOffset = state.dragOffset
                     state.snapTo(oldOffset + delta)
                     if (state.dragOffset != oldOffset) change.consume()
