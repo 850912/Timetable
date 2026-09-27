@@ -58,7 +58,15 @@ fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this
     Modifier.pointerInput(state) {
         detectVerticalDragGestures(onVerticalDrag = { _, dragAmount ->
             val currentOffset = state.dragOffset
-            val newOffset = (currentOffset + dragAmount).coerceIn(0f, state.maxDragDistance)
+            // The Wear home gesture is an upward swipe. The picker is rendered above
+            // the page, so an upward finger delta increases its reveal offset. Once
+            // open, a downward swipe collapses it again.
+            val delta = if (currentOffset <= 0f) {
+                (-dragAmount).coerceAtLeast(0f)
+            } else {
+                dragAmount.coerceAtLeast(0f)
+            }
+            val newOffset = (currentOffset + delta).coerceIn(0f, state.maxDragDistance)
             if (newOffset != currentOffset) {
                 state.snapTo(newOffset)
             }
@@ -79,13 +87,16 @@ fun rememberPullToRefreshConnection(
                 }
                 val currentOffset = state.dragOffset
 
-                val isPullingDown =
-                    available.y > 0 && !scrollState.canScrollBackward && currentOffset < state.maxDragDistance
-                val isCollapsing = available.y < 0 && currentOffset > 0
+                // At the top of the timetable, an upward swipe reveals the picker.
+                // When it is already visible, a downward swipe dismisses it.
+                val isOpening =
+                    available.y < 0 && !scrollState.canScrollBackward && currentOffset < state.maxDragDistance
+                val isCollapsing = available.y > 0 && currentOffset > 0
 
-                if (isPullingDown || isCollapsing) {
+                if (isOpening || isCollapsing) {
+                    val delta = if (isOpening) -available.y else available.y
                     val newOffset =
-                        (currentOffset + available.y).coerceIn(0f, state.maxDragDistance)
+                        (currentOffset + delta).coerceIn(0f, state.maxDragDistance)
                     val consumed = newOffset - currentOffset
                     state.snapTo(newOffset)
                     return Offset(0f, consumed)
