@@ -265,6 +265,7 @@ private fun EmptyCoursePager(
 
     ScreenScaffold {
         PullToDatePicker(
+            state = state,
             dragOffset = state.dragOffset,
             refreshThreshold = state.refreshThreshold,
             selectedDate = selectedDate,
@@ -277,8 +278,7 @@ private fun EmptyCoursePager(
                     .focusable()
                     .onPreRotaryScrollEvent {
                         state.dragOffset > 0
-                    }
-                    .pullToDatePickerDrag(state),
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 androidx.compose.foundation.layout.Column(
@@ -384,6 +384,7 @@ private fun CourseListPager(
         }
     ) { contentPadding ->
         PullToDatePicker(
+            state = state,
             dragOffset = state.dragOffset,
             refreshThreshold = state.refreshThreshold,
             selectedDate = selectedDate,

@@ -119,6 +119,7 @@ fun rememberPullToRefreshConnection(
 
 @Composable
 fun PullToDatePicker(
+    state: PullToDatePickerState,
     dragOffset: Float,
     refreshThreshold: Float,
     selectedDate: LocalDate,
@@ -133,7 +134,11 @@ fun PullToDatePicker(
     val density = LocalDensity.current
     val offsetShiftPx = remember(density) { with(density) { 65.dp.toPx() } }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullToDatePickerDrag(state)
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
