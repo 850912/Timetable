@@ -55,7 +55,7 @@ private fun lunarHoliday(date: LocalDate): HolidayGreeting? = lunarDates[date.ye
 
 private fun fourthThursdayOfNovember(year: Int): LocalDate {
     var date = LocalDate(year, 11, 22)
-    while (date.dayOfWeek.isoDayNumber != 4) date = date.plus(DatePeriod(days = 1))
+    while (date.dayOfWeek.value != 4) date = date.plus(DatePeriod(days = 1))
     return date
 }
 

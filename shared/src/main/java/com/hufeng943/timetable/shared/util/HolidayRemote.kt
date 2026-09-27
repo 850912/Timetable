@@ -17,7 +17,7 @@ suspend fun fetchRemoteHolidayGreeting(date: LocalDate): HolidayGreeting? = runC
         val rows = Json.parseToJsonElement(reader.readText()).jsonArray
         rows.firstOrNull { it.jsonObject["date"]?.toString()?.trim('"') == date.toString() }?.jsonObject?.let { row ->
             val name = row["localName"]?.toString()?.trim('"') ?: row["name"]?.toString()?.trim('"') ?: return@let null
-            HolidayGreeting(name, "$name快乐，愿今天有温暖和好心情！")
+            HolidayGreeting(name, "${name}快乐，愿今天有温暖和好心情！")
         }
     }
 }.getOrNull()
