@@ -122,8 +122,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          cat > "$RUNNER_TEMP/release-notes.md" <<'EOF'
-          ## Timetable 3.5.4
+          cat > "$RUNNER_TEMP/release-notes.md" <<EOF
+          ## Timetable ${GITHUB_REF_NAME#v}
 
           本次更新重点提升手机与 Wear OS 的液态玻璃视觉、滚动流畅度和数据可靠性。
 
@@ -133,7 +133,7 @@ jobs:
           - 模糊、折射、清透度、底色浓度和边缘色散可调。
           - 手机端加入动态主题环境光、半透明玻璃卡片和课程色彩高光。
           - 优化 Wear OS 首页触摸检测、课程文本缓存和下一节课查找。
-          - About 页面更新为 3.5.4，并加入完全自愿的“赛博乞讨”支持入口。
+          - About 页面加入完全自愿的“赛博乞讨”支持入口。
 
           ### 课程与数据
 
@@ -177,14 +177,14 @@ jobs:
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release edit "$GITHUB_REF_NAME" \
               --repo "$GITHUB_REPOSITORY" \
-              --title "Timetable 3.5.4" \
+              --title "Timetable ${GITHUB_REF_NAME#v}" \
               --notes-file "$RUNNER_TEMP/release-notes.md"
             gh release upload "$GITHUB_REF_NAME" "${assets[@]}" \
               --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
               --repo "$GITHUB_REPOSITORY" \
-              --title "Timetable 3.5.4" \
+              --title "Timetable ${GITHUB_REF_NAME#v}" \
               --notes-file "$RUNNER_TEMP/release-notes.md" \
               --verify-tag
           fi
