@@ -2,7 +2,8 @@ package com.hufeng943.timetable.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +24,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -56,24 +60,30 @@ fun rememberPullToDatePickerState(
 
 fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this.then(
     Modifier.pointerInput(state) {
-        var openingGesture = false
-        detectVerticalDragGestures(onVerticalDrag = { _, dragAmount ->
-            val currentOffset = state.dragOffset
-            // The Wear home gesture is an upward swipe. The picker is rendered above
-            // the page, so an upward finger delta increases its reveal offset. Once
-            // open, a downward swipe collapses it again.
-            val delta = if (openingGesture) -dragAmount else dragAmount
-            val newOffset = (currentOffset + delta).coerceIn(0f, state.maxDragDistance)
-            if (newOffset != currentOffset) {
-                state.snapTo(newOffset)
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            var lastY = down.position.y
+            var totalY = 0f
+            var active = false
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                val change = event.changes.firstOrNull() ?: break
+                if (change.changedToUp()) break
+                val y = change.position.y
+                val deltaY = y - lastY
+                lastY = y
+                totalY += deltaY
+                if (!active && kotlin.math.abs(totalY) >= 8f) active = true
+                if (active) {
+                    // Upward finger motion opens; downward motion closes.
+                    val delta = if (state.dragOffset <= 0f) -deltaY else deltaY
+                    val oldOffset = state.dragOffset
+                    state.snapTo(oldOffset + delta)
+                    if (state.dragOffset != oldOffset) change.consume()
+                }
             }
-        }, onDragStart = { openingGesture = state.dragOffset <= 0f }, onDragEnd = {
-            openingGesture = false
             state.animateToTarget()
-        }, onDragCancel = {
-            openingGesture = false
-            state.animateToTarget()
-        })
+        }
     })
 
 @Composable
