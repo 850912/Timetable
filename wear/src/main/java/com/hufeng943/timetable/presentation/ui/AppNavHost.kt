@@ -43,7 +43,13 @@ import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.PowerManager
+import android.os.Build
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.navigation.compose.NavHost
@@ -282,22 +288,70 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
                 )
             }
-            // Navigation keeps the non-spatial cross-fade for route transitions, while the
-            // outer BasicSwipeToDismissBox owns the Wear edge-swipe back gesture on every API.
-            // Do not gate this gesture by SDK level: doing so made all in-app swipe-back paths
-            // unavailable on Wear OS 6 / API 36 devices.
+            // Keep the original non-spatial fade transitions intact. On API <= 35, Wear's
+            // BasicSwipeToDismissBox retains the original swipe-back behavior. On API 36+, the
+            // box stays visually disabled so it cannot replace the app's fade with a translating
+            // dismiss animation; a non-consuming gesture detector below only requests popBackStack
+            // after a completed rightward swipe, letting NavHost run the existing fadeIn/fadeOut.
             val currentEntry by navController.currentBackStackEntryAsState()
             val canNavigateBack = currentEntry != null && navController.previousBackStackEntry != null
             val legacySwipeState = rememberSwipeToDismissBoxState()
 
+            val api36FadePreservingBackGesture = if (Build.VERSION.SDK_INT >= 36 && canNavigateBack) {
+                Modifier.pointerInput(currentEntry?.destination?.route) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(
+                            requireUnconsumed = false,
+                            pass = PointerEventPass.Initial,
+                        )
+                        var lastX = down.position.x
+                        var lastY = down.position.y
+                        var totalX = 0f
+                        var totalY = 0f
+                        var horizontalBackGesture = false
+                        val touchSlop = viewConfiguration.touchSlop
+
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull() ?: break
+                            val x = change.position.x
+                            val y = change.position.y
+                            totalX += x - lastX
+                            totalY += y - lastY
+                            lastX = x
+                            lastY = y
+
+                            val absX = kotlin.math.abs(totalX)
+                            val absY = kotlin.math.abs(totalY)
+                            if (absY > touchSlop && absY > absX) {
+                                horizontalBackGesture = false
+                            } else if (totalX > touchSlop && absX > absY) {
+                                horizontalBackGesture = true
+                            }
+
+                            if (change.changedToUp() || !change.pressed) {
+                                val threshold = maxOf(touchSlop * 3f, size.width * 0.20f)
+                                if (horizontalBackGesture && totalX >= threshold && absX > absY) {
+                                    navController.popBackStack()
+                                }
+                                break
+                            }
+                        }
+                    }
+                }
+            } else {
+                Modifier
+            }
+
             BasicSwipeToDismissBox(
                 onDismissed = { navController.popBackStack() },
                 state = legacySwipeState,
-                modifier = Modifier.fillMaxSize(),
-                // Enable the app's Wear swipe-back whenever there is actually a destination
-                // to pop. Root/home remains disabled, so its HorizontalPager keeps full ownership
-                // of left/right paging gestures.
-                userSwipeEnabled = canNavigateBack,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(api36FadePreservingBackGesture),
+                // Preserve the original API split: enabling BasicSwipeToDismissBox on API 36
+                // changes the visual transition from the app's fade into a translating dismiss.
+                userSwipeEnabled = Build.VERSION.SDK_INT < 36 && canNavigateBack,
                 // Keep the host under a stable key so route changes do not recreate the whole
                 // NavHost state. The swipe background is deliberately transparent: the app's
                 // real global background remains visible instead of a black masking layer.
