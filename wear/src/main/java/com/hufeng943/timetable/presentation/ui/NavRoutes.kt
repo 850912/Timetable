@@ -10,9 +10,9 @@ object NavArgs {
  * App-level routes for the Wear app.
  *
  * All visible destinations live in one Navigation Compose graph. Forward transitions are kept
- * non-spatial to avoid the round-screen old-page/left-edge artifact. On API 36+ Navigation
- * Compose handles platform predictive back; older Wear versions use a BasicSwipeToDismissBox
- * around the graph. Nested graphs below are state/lifecycle scopes, not nested NavHosts.
+ * non-spatial to avoid the round-screen old-page/left-edge artifact. A single app-level
+ * BasicSwipeToDismissBox owns Wear swipe-back whenever the graph has a destination to pop.
+ * Nested graphs below are state/lifecycle scopes, not nested NavHosts.
  */
 object NavRoutes {
     const val MAIN = "main"

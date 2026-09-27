@@ -43,7 +43,6 @@ import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.PowerManager
-import android.os.Build
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -283,14 +282,10 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                     modifier = if (useBackdropEffects) Modifier.layerBackdrop(globalGlassBackdrop) else Modifier,
                 )
             }
-            // Root-cause navigation fix:
-            // Wear SwipeDismissableNavHost 1.6.x intentionally translates the outgoing page
-            // left during *forward* navigation on API 36+. That spatial transition is exactly
-            // the source of the "old page leaks from the left, stalls, then disappears" artifact
-            // on round displays. Do not hide it with a black scrim. Instead, use Navigation
-            // Compose for destination transitions (cross-fade only; no horizontal motion), while
-            // retaining Wear swipe-to-dismiss on API <= 35 via BasicSwipeToDismissBox. Navigation
-            // Compose 2.9.x owns platform predictive-back on API 36+.
+            // Navigation keeps the non-spatial cross-fade for route transitions, while the
+            // outer BasicSwipeToDismissBox owns the Wear edge-swipe back gesture on every API.
+            // Do not gate this gesture by SDK level: doing so made all in-app swipe-back paths
+            // unavailable on Wear OS 6 / API 36 devices.
             val currentEntry by navController.currentBackStackEntryAsState()
             val canNavigateBack = currentEntry != null && navController.previousBackStackEntry != null
             val legacySwipeState = rememberSwipeToDismissBoxState()
@@ -299,10 +294,10 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
                 onDismissed = { navController.popBackStack() },
                 state = legacySwipeState,
                 modifier = Modifier.fillMaxSize(),
-                // API 36+ uses the platform predictive-back path implemented by Navigation
-                // Compose. Enabling a second horizontal gesture detector there would compete
-                // with the system gesture.
-                userSwipeEnabled = Build.VERSION.SDK_INT < 36 && canNavigateBack,
+                // Enable the app's Wear swipe-back whenever there is actually a destination
+                // to pop. Root/home remains disabled, so its HorizontalPager keeps full ownership
+                // of left/right paging gestures.
+                userSwipeEnabled = canNavigateBack,
                 // Keep the host under a stable key so route changes do not recreate the whole
                 // NavHost state. The swipe background is deliberately transparent: the app's
                 // real global background remains visible instead of a black masking layer.

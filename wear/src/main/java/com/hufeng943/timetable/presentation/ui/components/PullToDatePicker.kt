@@ -62,26 +62,53 @@ fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this
     Modifier.pointerInput(state) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            var lastX = down.position.x
             var lastY = down.position.y
+            var totalX = 0f
             var totalY = 0f
-            var active = false
+            var verticalDragActive = false
+            var rejectedAsHorizontal = false
+            val touchSlop = viewConfiguration.touchSlop
+
             while (true) {
                 val event = awaitPointerEvent(PointerEventPass.Initial)
                 val change = event.changes.firstOrNull() ?: break
-                if (change.changedToUp()) break
+                if (change.changedToUp() || !change.pressed) break
+
+                val x = change.position.x
                 val y = change.position.y
+                val deltaX = x - lastX
                 val deltaY = y - lastY
+                lastX = x
                 lastY = y
-                totalY += deltaY
-                if (!active && kotlin.math.abs(totalY) >= 8f) active = true
-                if (active) {
-                    // Pulling down opens the picker; swiping up closes it.
-                    val oldOffset = state.dragOffset
-                    state.snapTo(oldOffset + deltaY)
-                    if (state.dragOffset != oldOffset) change.consumePositionChange()
+
+                if (!verticalDragActive) {
+                    totalX += deltaX
+                    totalY += deltaY
+                    val absX = kotlin.math.abs(totalX)
+                    val absY = kotlin.math.abs(totalY)
+                    if (absX < touchSlop && absY < touchSlop) continue
+
+                    // Axis-lock before consuming anything. A horizontal gesture belongs to the
+                    // home HorizontalPager (or another horizontal child) and must pass through.
+                    if (absX > absY) {
+                        rejectedAsHorizontal = true
+                        break
+                    }
+                    verticalDragActive = true
                 }
+
+                // Only a gesture that has been positively identified as vertical may move the
+                // date picker. This prevents slight Y jitter during a left/right swipe from
+                // stealing the whole pointer stream from HorizontalPager.
+                val oldOffset = state.dragOffset
+                state.snapTo(oldOffset + deltaY)
+                if (state.dragOffset != oldOffset) change.consumePositionChange()
             }
-            state.animateToTarget()
+
+            if (verticalDragActive && !rejectedAsHorizontal) {
+                state.animateToTarget()
+            }
         }
     })
 
@@ -98,6 +125,12 @@ fun rememberPullToRefreshConnection(
                     return Offset.Zero
                 }
                 val currentOffset = state.dragOffset
+
+                // Do not let tiny vertical jitter from a horizontal pager gesture open/close the
+                // date picker. Nested scroll should participate only when the delta is vertical.
+                if (kotlin.math.abs(available.x) > kotlin.math.abs(available.y)) {
+                    return Offset.Zero
+                }
 
                 // At the top of the timetable, pulling down reveals the picker.
                 // When it is already visible, swiping up dismisses it.
