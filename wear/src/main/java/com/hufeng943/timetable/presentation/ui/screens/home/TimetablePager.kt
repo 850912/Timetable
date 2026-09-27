@@ -79,6 +79,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
+import com.hufeng943.timetable.shared.util.holidayGreeting
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -403,6 +404,20 @@ private fun CourseListPager(
                 rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
+                holidayGreeting(selectedDate)?.let { greeting ->
+                    item {
+                        OneUiCapsuleSurface(
+                            title = "${greeting.name}快乐",
+                            subtitle = greeting.message,
+                            icon = Icons.Rounded.EventAvailable,
+                            emphasize = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
+                        )
+                    }
+                }
+
                 if (isToday && nextCourseState != null && !statusSummary.dayFinished) {
                     item {
                         NextCourseSummaryCard(
