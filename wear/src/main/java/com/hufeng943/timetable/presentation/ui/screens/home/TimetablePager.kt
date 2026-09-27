@@ -216,6 +216,7 @@ fun TimetablePager(
                 is24HourFormat = config.is24HourFormat,
                 statusSummary = statusSummary,
                 nextCourseState = nextCourseState,
+                onlineGreeting = onlineGreeting,
             ) { courseUi, transformationSpec ->
                 val courseId = courseUi.timeSlot.id
                 CourseCard(
@@ -326,6 +327,7 @@ private fun CourseListPager(
     is24HourFormat: Boolean = true,
     statusSummary: CourseStatusSummary = CourseStatusSummary(),
     nextCourseState: NextCourseState? = null,
+    onlineGreeting: com.hufeng943.timetable.shared.util.HolidayGreeting? = null,
     modifier: Modifier = Modifier,
     itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec) -> Unit
 ) {
