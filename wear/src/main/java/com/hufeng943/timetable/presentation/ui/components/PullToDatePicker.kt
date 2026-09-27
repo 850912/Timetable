@@ -26,7 +26,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUp
-import androidx.compose.ui.input.pointer.consume
+import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -80,7 +80,7 @@ fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this
                     val delta = if (openingGesture) -deltaY else deltaY
                     val oldOffset = state.dragOffset
                     state.snapTo(oldOffset + delta)
-                    if (state.dragOffset != oldOffset) change.consume()
+                    if (state.dragOffset != oldOffset) change.consumePositionChange()
                 }
             }
             state.animateToTarget()
