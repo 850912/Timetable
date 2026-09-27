@@ -29,6 +29,7 @@ import com.hufeng943.timetable.shared.importexport.ChinaWearBleProtocol
 import com.hufeng943.timetable.shared.importexport.ChinaWearExportPayload
 import com.hufeng943.timetable.shared.importexport.ChinaWearPacketCodec
 import com.hufeng943.timetable.shared.importexport.ChinaWearProtocol
+import com.hufeng943.timetable.shared.importexport.ChinaWearEnvelopeSecurity
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
 import com.hufeng943.timetable.widget.TodayWidgetProvider
 import kotlinx.coroutines.CoroutineScope
@@ -93,16 +94,16 @@ class ChinaWearBleReceiverService : Service() {
         val write = BluetoothGattCharacteristic(
             ChinaWearBleProtocol.WRITE_UUID,
             BluetoothGattCharacteristic.PROPERTY_WRITE,
-            BluetoothGattCharacteristic.PERMISSION_WRITE,
+            BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED,
         )
         notifyCharacteristic = BluetoothGattCharacteristic(
             ChinaWearBleProtocol.NOTIFY_UUID,
             BluetoothGattCharacteristic.PROPERTY_NOTIFY,
-            BluetoothGattCharacteristic.PERMISSION_READ,
+            BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED,
         ).also {
             it.addDescriptor(BluetoothGattDescriptor(
                 ChinaWearBleProtocol.CCCD_UUID,
-                BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE,
+                BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED or BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED,
             ))
         }
         service.addCharacteristic(write)
@@ -138,6 +139,7 @@ class ChinaWearBleReceiverService : Service() {
                 currentMtu.remove(device)
             } else if (newState == BluetoothProfile.STATE_CONNECTED) {
                 currentMtu[device] = 23
+                if (device.bondState != BluetoothDevice.BOND_BONDED) { gattServer?.cancelConnection(device); return }
             }
         }
 
@@ -146,18 +148,30 @@ class ChinaWearBleReceiverService : Service() {
         }
 
         override fun onDescriptorWriteRequest(device: BluetoothDevice, requestId: Int, descriptor: BluetoothGattDescriptor, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray) {
+            if (device.bondState != BluetoothDevice.BOND_BONDED) {
+                if (responseNeeded) gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_INSUFFICIENT_AUTHENTICATION, offset, null)
+                return
+            }
             if (responseNeeded) gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value)
         }
 
         override fun onCharacteristicWriteRequest(device: BluetoothDevice, requestId: Int, characteristic: BluetoothGattCharacteristic, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray) {
             if (characteristic.uuid != ChinaWearBleProtocol.WRITE_UUID) return
+            if (device.bondState != BluetoothDevice.BOND_BONDED) {
+                if (responseNeeded) gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_INSUFFICIENT_AUTHENTICATION, offset, null)
+                return
+            }
             if (responseNeeded) gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, null)
             val frame = runCatching { ChinaWearBleProtocol.decode(value) }.getOrNull() ?: return
             if (frame.total !in 1..ChinaWearBleProtocol.MAX_FRAME_COUNT) return
             val key = "${device.address}:${frame.transferId}"
-            val assembly = assemblies.getOrPut(key) { FrameAssembly(frame.total) }
+            cleanupAssemblies()
+            val assembly = synchronized(assemblies) {
+                assemblies[key] ?: if (assemblies.size >= MAX_ACTIVE_ASSEMBLIES || assemblies.keys.count { it.startsWith("${device.address}:") } >= MAX_ACTIVE_ASSEMBLIES_PER_DEVICE) null else FrameAssembly(frame.total).also { assemblies[key] = it }
+            } ?: return
             if (assembly.total != frame.total) { assemblies.remove(key); return }
             assembly.parts[frame.sequence] = frame.payload
+            assembly.lastUpdatedAt = System.currentTimeMillis()
             if (assembly.parts.values.sumOf { it.size } > MAX_ASSEMBLY_BYTES) {
                 assemblies.remove(key)
                 return
@@ -174,7 +188,7 @@ class ChinaWearBleReceiverService : Service() {
     }
 
     private suspend fun handleEnvelope(device: BluetoothDevice, envelope: com.hufeng943.timetable.shared.importexport.ChinaWearEnvelope) {
-        if (envelope.version != ChinaWearProtocol.VERSION) return
+        if (envelope.version != ChinaWearProtocol.VERSION || !ChinaWearEnvelopeSecurity.isFresh(envelope)) return
         when (envelope.type) {
             "EXPORT_REQUEST" -> handleExport(device, envelope)
             "PING" -> sendEnvelope(device, envelope.requestId, "PONG", "ok")
@@ -285,12 +299,20 @@ class ChinaWearBleReceiverService : Service() {
         super.onDestroy()
     }
 
-    private data class FrameAssembly(val total: Int, val parts: MutableMap<Int, ByteArray> = HashMap())
+    private data class FrameAssembly(val total: Int, val parts: MutableMap<Int, ByteArray> = HashMap(), var lastUpdatedAt: Long = System.currentTimeMillis())
+
+    private fun cleanupAssemblies() {
+        val cutoff = System.currentTimeMillis() - ASSEMBLY_TIMEOUT_MS
+        assemblies.entries.removeIf { it.value.lastUpdatedAt < cutoff }
+    }
 
     companion object {
         private const val CHANNEL_ID = "china_phone_ble"
         private const val NOTIFICATION_ID = 305321
         private const val MAX_ASSEMBLY_BYTES = 2 * 1024 * 1024
+        private const val MAX_ACTIVE_ASSEMBLIES_PER_DEVICE = 4
+        private const val MAX_ACTIVE_ASSEMBLIES = 16
+        private const val ASSEMBLY_TIMEOUT_MS = 15_000L
         fun start(context: android.content.Context) {
             val intent = Intent(context, ChinaWearBleReceiverService::class.java)
             if (android.os.Build.VERSION.SDK_INT >= 26) context.startForegroundService(intent) else context.startService(intent)

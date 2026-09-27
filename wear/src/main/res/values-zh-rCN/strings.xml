@@ -123,7 +123,7 @@
     <string name="about_features_schedule">课程：多课表、日期例外、今日调课、手机 ↔ 手表同步。</string>
     <string name="about_features_wear">Wear：首页状态优先、Tile 时间线、当前课进度与下一节倒计时复杂功能。</string>
     <string name="about_features_tools">工具：学业待办与提醒、本周课表分享、ICS / CSV / JSON、系统日历同步。</string>
-    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.5.4。</string>
+    <string name="about_declaration_project">项目：基于 HuFeng943 / Timetable 持续维护；当前版本 3.5.6。</string>
     <string name="about_declaration_development">维护：黑白君 (HeiBaiJun)；部分开发借助生成式 AI。连续点击版本号 7 次进入开发者选项。</string>
     <string name="about_open_source_wear">Wear UI：Wear Compose 1.6.2 · Horologist 0.7.15</string>
     <string name="about_open_source_data">数据：Room 2.8.4 · Hilt 2.60 · KotlinX Serialization 1.11.0 · Datetime 0.8.0</string>
@@ -144,7 +144,7 @@
     <string name="about_library_version">版本 %1$s</string>
     <string name="about_library_developers">作者 %1$s</string>
     <string name="about_open_source_stack">核心开源组件：Wear Compose 1.6.2、Horologist 0.7.15、Room 2.8.4、Hilt 2.60、KotlinX Serialization 1.11.0 / Datetime 0.8.0、Coroutines 1.11.0、AboutLibraries 15.0.3、MaterialKolor 4.1.1。开源许可证页面由 AboutLibraries 根据实际构建依赖生成。</string>
-    <string name="about_changelog_title">3.5.4 更新</string>
+    <string name="about_changelog_title">3.5.6 更新</string>
     <string name="about_changelog_expand_hint">点击展开</string>
     <string name="about_changelog">
         " · 手机与手表液态玻璃视觉全面增强，并保持可调节的清晰度与性能\n"
