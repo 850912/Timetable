@@ -83,6 +83,7 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 import com.hufeng943.timetable.shared.util.holidayGreeting
+import com.hufeng943.timetable.shared.util.fetchRemoteHolidayGreeting
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
@@ -223,6 +224,12 @@ class MainActivity : AppCompatActivity() {
         emptyText.visibility = if (timetables.isEmpty()) View.VISIBLE else View.GONE
 
         val today = Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
+        uiScope.launch {
+            val greeting = fetchRemoteHolidayGreeting(today) ?: holidayGreeting(today)
+            if (greeting != null && timetableContainer.childCount > 0) {
+                (timetableContainer.getChildAt(0) as? TextView)?.text = "${greeting.name}快乐\n${greeting.message}"
+            }
+        }
         holidayGreeting(today)?.let { greeting ->
             timetableContainer.addView(TextView(this).apply {
                 text = "${greeting.name}快乐\n${greeting.message}"

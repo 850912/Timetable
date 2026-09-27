@@ -80,6 +80,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 import com.hufeng943.timetable.shared.util.holidayGreeting
+import com.hufeng943.timetable.shared.util.fetchRemoteHolidayGreeting
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -102,6 +103,10 @@ fun TimetablePager(
     val selectedSemesterWeekCount by viewModel.selectedSemesterWeekCount.collectAsStateWithLifecycle()
     val selectedDateEvents by viewModel.selectedDateEvents.collectAsStateWithLifecycle()
     val nextCourseState by viewModel.nextCourseState.collectAsStateWithLifecycle()
+    var onlineGreeting by remember { mutableStateOf<com.hufeng943.timetable.shared.util.HolidayGreeting?>(null) }
+    LaunchedEffect(selectedDate) {
+        onlineGreeting = fetchRemoteHolidayGreeting(selectedDate)
+    }
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -404,7 +409,7 @@ private fun CourseListPager(
                 rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
-                holidayGreeting(selectedDate)?.let { greeting ->
+                (onlineGreeting ?: holidayGreeting(selectedDate))?.let { greeting ->
                     item {
                         OneUiCapsuleSurface(
                             title = "${greeting.name}快乐",
