@@ -82,6 +82,8 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
+import com.hufeng943.timetable.shared.util.holidayGreeting
+import com.hufeng943.timetable.shared.util.fetchRemoteHolidayGreeting
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
@@ -221,6 +223,31 @@ class MainActivity : AppCompatActivity() {
         timetableContainer.removeAllViews()
         emptyText.visibility = if (timetables.isEmpty()) View.VISIBLE else View.GONE
 
+        val today = Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
+        uiScope.launch {
+            val greeting = fetchRemoteHolidayGreeting(today) ?: holidayGreeting(today)
+            if (greeting != null && timetableContainer.childCount > 0) {
+                (timetableContainer.getChildAt(0) as? TextView)?.text = "${greeting.name}快乐\n${greeting.message}"
+            }
+        }
+        holidayGreeting(today)?.let { greeting ->
+            timetableContainer.addView(TextView(this).apply {
+                text = "${greeting.name}快乐\n${greeting.message}"
+                textSize = 17f
+                setPadding(dp(16), dp(14), dp(16), dp(14))
+                setTextColor(resolvePrimaryColor())
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(24).toFloat()
+                    setColor(resolveSurfaceColor())
+                    setStroke(dp(1), 0x4433AAFF)
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = dp(12) }
+            })
+        }
+
         timetables.forEach { timetable ->
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -242,7 +269,6 @@ class MainActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dp(12) }
 
-            val today = Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
             val summary = timetable.dailySummary(today)
 
             card.addView(TextView(this).apply {

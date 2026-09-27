@@ -79,6 +79,8 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
+import com.hufeng943.timetable.shared.util.holidayGreeting
+import com.hufeng943.timetable.shared.util.fetchRemoteHolidayGreeting
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -101,6 +103,10 @@ fun TimetablePager(
     val selectedSemesterWeekCount by viewModel.selectedSemesterWeekCount.collectAsStateWithLifecycle()
     val selectedDateEvents by viewModel.selectedDateEvents.collectAsStateWithLifecycle()
     val nextCourseState by viewModel.nextCourseState.collectAsStateWithLifecycle()
+    var onlineGreeting by remember { mutableStateOf<com.hufeng943.timetable.shared.util.HolidayGreeting?>(null) }
+    LaunchedEffect(selectedDate) {
+        onlineGreeting = fetchRemoteHolidayGreeting(selectedDate)
+    }
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -210,6 +216,7 @@ fun TimetablePager(
                 is24HourFormat = config.is24HourFormat,
                 statusSummary = statusSummary,
                 nextCourseState = nextCourseState,
+                onlineGreeting = onlineGreeting,
             ) { courseUi, transformationSpec ->
                 val courseId = courseUi.timeSlot.id
                 CourseCard(
@@ -258,6 +265,7 @@ private fun EmptyCoursePager(
 
     ScreenScaffold {
         PullToDatePicker(
+            state = state,
             dragOffset = state.dragOffset,
             refreshThreshold = state.refreshThreshold,
             selectedDate = selectedDate,
@@ -270,8 +278,7 @@ private fun EmptyCoursePager(
                     .focusable()
                     .onPreRotaryScrollEvent {
                         state.dragOffset > 0
-                    }
-                    .pullToDatePickerDrag(state),
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 androidx.compose.foundation.layout.Column(
@@ -320,6 +327,7 @@ private fun CourseListPager(
     is24HourFormat: Boolean = true,
     statusSummary: CourseStatusSummary = CourseStatusSummary(),
     nextCourseState: NextCourseState? = null,
+    onlineGreeting: com.hufeng943.timetable.shared.util.HolidayGreeting? = null,
     modifier: Modifier = Modifier,
     itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec) -> Unit
 ) {
@@ -376,6 +384,7 @@ private fun CourseListPager(
         }
     ) { contentPadding ->
         PullToDatePicker(
+            state = state,
             dragOffset = state.dragOffset,
             refreshThreshold = state.refreshThreshold,
             selectedDate = selectedDate,
@@ -403,6 +412,20 @@ private fun CourseListPager(
                 rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
+                (onlineGreeting ?: holidayGreeting(selectedDate))?.let { greeting ->
+                    item {
+                        OneUiCapsuleSurface(
+                            title = "${greeting.name}快乐",
+                            subtitle = greeting.message,
+                            icon = Icons.Rounded.EventAvailable,
+                            emphasize = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
+                        )
+                    }
+                }
+
                 if (isToday && nextCourseState != null && !statusSummary.dayFinished) {
                     item {
                         NextCourseSummaryCard(

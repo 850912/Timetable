@@ -7,6 +7,14 @@ import org.junit.Test
 
 class ChinaWearBleProtocolTest {
     @Test
+    fun envelopeFreshnessRejectsStaleMessages() {
+        val now = 1_700_000_000_000L
+        val current = ChinaWearEnvelope("id", "PING", now, ChinaWearProtocol.VERSION)
+        val stale = current.copy(timestamp = now - ChinaWearEnvelopeSecurity.MAX_CLOCK_SKEW_MS - 1)
+        assertEquals(true, ChinaWearEnvelopeSecurity.isFresh(current, now))
+        assertEquals(false, ChinaWearEnvelopeSecurity.isFresh(stale, now))
+    }
+    @Test
     fun frameRoundTripsBinaryPayload() {
         val payload = byteArrayOf(0x00, 0x7f, 0x80.toByte(), 0xff.toByte(), 0x01)
         val encoded = ChinaWearBleProtocol.encode(123456789L, 7, 9, payload)
