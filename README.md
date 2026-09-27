@@ -1,8 +1,8 @@
-# Timetable 3.5.7
+# Timetable 3.5.8
 
 Timetable 是一个 Android 手机 + Wear OS 的本地优先课程表应用。课程数据保存在 Room 中，并通过 Wear Data Layer 在手机与手表之间同步。
 
-## 3.5.7 重点
+## 3.5.8 重点
 
 - 手机与 Wear OS 的液态玻璃视觉全面增强；手表端提供柔和、平衡、流体三种光学档位，并开放模糊、折射、清透度、底色浓度和边缘色散调节。
 - 手机端加入动态主题环境光、半透明渐变卡片和课程色彩高光，让手机与手表保持统一的视觉语言。
@@ -37,6 +37,20 @@ Timetable 是一个 Android 手机 + Wear OS 的本地优先课程表应用。�
 ```
 
 GitHub Actions 工作流位于 `.github/workflows/release.yml`。推送 `v*` 标签或手动触发即可构建并发布手机端和手表端 APK；Debug 验证工作流位于 `.github/workflows/debug.yml`。
+
+发布新版本时，先推送功能分支，再创建并推送版本标签。例如：
+
+```bash
+git push origin codex/restore-latest-ble-security
+git tag v3.5.8
+git push origin v3.5.8
+```
+
+Release 工作流会运行共享模块测试、手机和手表 Debug 单元测试，随后构建签名 APK，并将 `mobile-release.apk`、`wear-universal-release.apk`、`wear-arm64-v8a-release.apk` 和 `wear-armeabi-v7a-release.apk` 上传到 GitHub Releases。
+
+### Windows 本地构建
+
+建议使用 JDK 17 和已安装 Android SDK 的 ASCII 路径。项目已启用 `android.overridePathCheck=true`，因此放在中文目录下也可以构建；如果 Android SDK 未被自动发现，请设置 `ANDROID_HOME`，或在项目根目录的 `local.properties` 中配置 `sdk.dir`。这项本地配置不要提交到 Git。
 
 ### Release 签名
 
