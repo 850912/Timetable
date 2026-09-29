@@ -39,7 +39,10 @@ class TimetableViewModel @Inject constructor(
     // Keep the raw domain stream so every time-sensitive surface can share NextCourseEngine.
     private val timetableList = repository.getAllTimetables().stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000L),
+        // Keep Room observation active for the lifetime of the Home back-stack entry. Schedule
+        // adjustment screens can stay open longer than the old 5 s subscription timeout; with an
+        // eager source, returning to “全天速览” never exposes a stale pre-adjustment snapshot.
+        started = SharingStarted.Eagerly,
         initialValue = emptyList(),
     )
 

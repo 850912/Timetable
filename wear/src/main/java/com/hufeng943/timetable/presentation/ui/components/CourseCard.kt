@@ -104,9 +104,14 @@ fun CourseCard(
         else -> modifier.border(0.8.dp, Color.White.copy(alpha = 0.16f), CourseCapsuleShape)
     }
     val glassActive = glassConfig.isLiquidGlassEnabled
+    // drawBackdrop's custom surface pass is not guaranteed to be clipped by the supplied Shape
+    // on every Wear renderer.  Round watches hide the square corners behind the physical display,
+    // while square watches expose them as a rectangular colour block.  Clip the optical surface
+    // explicitly before applying the glass modifier; keep the border outside the clip.
+    val clippedCardModifier = baseCardModifier.clip(CourseCapsuleShape)
     val cardModifier = if (glassActive) {
-        baseCardModifier.globalLiquidGlass(CourseCapsuleShape, courseColor)
-    } else baseCardModifier
+        clippedCardModifier.globalLiquidGlass(CourseCapsuleShape, courseColor)
+    } else clippedCardModifier
 
     Card(
         onClick = onClick,

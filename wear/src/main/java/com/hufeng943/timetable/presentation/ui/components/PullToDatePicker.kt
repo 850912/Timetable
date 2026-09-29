@@ -58,10 +58,27 @@ fun rememberPullToDatePickerState(
     }
 }
 
-fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this.then(
-    Modifier.pointerInput(state) {
+fun Modifier.pullToDatePickerDrag(
+    state: PullToDatePickerState,
+    allowOpenFromTop: Boolean,
+    topPullStartHeightPx: Float,
+): Modifier = this.then(
+    Modifier.pointerInput(state, allowOpenFromTop, topPullStartHeightPx) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+
+            // Course lists open the picker exclusively through nested scroll, which knows whether
+            // the list is actually at its top.  The direct detector is kept for the empty page and
+            // for gestures that start on the already-revealed picker itself.  This prevents a
+            // downward swipe in the middle of a scrolled timetable from opening the date picker.
+            val startsOnRevealedPicker = state.dragOffset > 0f &&
+                down.position.y <= state.dragOffset + viewConfiguration.touchSlop
+            val startsInTopPullZone = allowOpenFromTop &&
+                state.dragOffset <= 0f && down.position.y <= topPullStartHeightPx
+            if (!startsOnRevealedPicker && !startsInTopPullZone) {
+                return@awaitEachGesture
+            }
+
             var lastX = down.position.x
             var lastY = down.position.y
             var totalX = 0f
@@ -116,7 +133,8 @@ fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this
 fun rememberPullToRefreshConnection(
     scrollState: TransformingLazyColumnState,
     state: PullToDatePickerState,
-    isTouching: () -> Boolean
+    isTouching: () -> Boolean,
+    canOpenFromTouch: () -> Boolean,
 ): NestedScrollConnection {
     return remember(scrollState, state) {
         object : NestedScrollConnection {
@@ -135,7 +153,8 @@ fun rememberPullToRefreshConnection(
                 // At the top of the timetable, pulling down reveals the picker.
                 // When it is already visible, swiping up dismisses it.
                 val isOpening =
-                    available.y > 0 && !scrollState.canScrollBackward && currentOffset < state.maxDragDistance
+                    available.y > 0 && canOpenFromTouch() &&
+                        !scrollState.canScrollBackward && currentOffset < state.maxDragDistance
                 val isCollapsing = available.y < 0 && currentOffset > 0
 
                 if (isOpening || isCollapsing) {
@@ -163,6 +182,7 @@ fun PullToDatePicker(
     refreshThreshold: Float,
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
+    allowDirectTopPull: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
@@ -172,11 +192,16 @@ fun PullToDatePicker(
 
     val density = LocalDensity.current
     val offsetShiftPx = remember(density) { with(density) { 65.dp.toPx() } }
+    val topPullStartHeightPx = remember(density) { with(density) { 64.dp.toPx() } }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pullToDatePickerDrag(state)
+            .pullToDatePickerDrag(
+                state = state,
+                allowOpenFromTop = allowDirectTopPull,
+                topPullStartHeightPx = topPullStartHeightPx,
+            )
     ) {
         Column(
             modifier = Modifier

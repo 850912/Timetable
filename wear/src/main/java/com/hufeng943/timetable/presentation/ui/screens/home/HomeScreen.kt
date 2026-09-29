@@ -26,6 +26,10 @@ fun HomeScreen() {
         HorizontalPager(
             modifier = Modifier.fillMaxSize(),
             state = pagerState,
+            // There are only three lightweight home pages. Keeping one neighbour composed makes
+            // the all-day preview subscribe to schedule changes while the main page is visible and
+            // removes the first-swipe hitch on slower watches.
+            beyondViewportPageCount = 1,
             userScrollEnabled = !isDatePickerOpen
         ) { page ->
             when (page) {

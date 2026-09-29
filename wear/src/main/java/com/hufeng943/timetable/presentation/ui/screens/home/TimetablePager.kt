@@ -62,7 +62,6 @@ import com.hufeng943.timetable.presentation.ui.components.HandleEditUiState
 import com.hufeng943.timetable.presentation.ui.components.PullToDatePicker
 import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.PullToDatePickerState
-import com.hufeng943.timetable.presentation.ui.components.pullToDatePickerDrag
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToDatePickerState
 import com.hufeng943.timetable.presentation.ui.components.rememberPullToRefreshConnection
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
@@ -91,6 +90,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.DisposableEffect
 @Composable
 fun TimetablePager(
@@ -105,7 +105,13 @@ fun TimetablePager(
     val nextCourseState by viewModel.nextCourseState.collectAsStateWithLifecycle()
     var onlineGreeting by remember { mutableStateOf<com.hufeng943.timetable.shared.util.HolidayGreeting?>(null) }
     LaunchedEffect(selectedDate) {
-        onlineGreeting = fetchRemoteHolidayGreeting(selectedDate)
+        // Built-in holidays are instant/offline. Remote lookup is a fallback only and runs on IO
+        // (see HolidayRemote), so scrolling between dates never stalls the Wear UI thread.
+        onlineGreeting = if (holidayGreeting(selectedDate) == null) {
+            fetchRemoteHolidayGreeting(selectedDate)
+        } else {
+            null
+        }
     }
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
@@ -269,7 +275,8 @@ private fun EmptyCoursePager(
             dragOffset = state.dragOffset,
             refreshThreshold = state.refreshThreshold,
             selectedDate = selectedDate,
-            onDateSelected = onDateSelected
+            onDateSelected = onDateSelected,
+            allowDirectTopPull = true,
         ) {
             Box(
                 modifier = modifier
@@ -334,6 +341,9 @@ private fun CourseListPager(
     val scrollState = rememberTransformingLazyColumnState(initialAnchorItemIndex = 0)
     val transformationSpec = rememberTransformationSpec()
     val isTouching = remember { AtomicBoolean(false) }
+    val isTopPullGesture = remember { AtomicBoolean(false) }
+    val density = LocalDensity.current
+    val topPullStartHeightPx = remember(density) { with(density) { 64.dp.toPx() } }
     val focusRequester = remember { FocusRequester() }
     val zone = TimeZone.currentSystemDefault()
     val isToday = selectedDate == Clock.System.todayIn(zone)
@@ -348,7 +358,11 @@ private fun CourseListPager(
     val shouldShowCourseList = !isToday || !statusSummary.dayFinished || showFinishedTimetable
 
     val nestedScrollConnection = rememberPullToRefreshConnection(
-        scrollState = scrollState, state = state, isTouching = { isTouching.get() })
+        scrollState = scrollState,
+        state = state,
+        isTouching = { isTouching.get() },
+        canOpenFromTouch = { isTopPullGesture.get() },
+    )
 
     // Opening the app during class should land on the actual highlighted course card,
     // not on a duplicated summary card. Header occupies index 0.
@@ -397,12 +411,20 @@ private fun CourseListPager(
                     .onPreRotaryScrollEvent { state.dragOffset > 0 }
                     .pointerInput(Unit) {
                         awaitEachGesture {
-                            awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                            val down = awaitFirstDown(
+                                requireUnconsumed = false,
+                                pass = PointerEventPass.Initial,
+                            )
                             isTouching.set(true)
+                            // Opening is intentionally an edge gesture: even when the list is
+                            // already at item 0, a downward swipe that starts in the body should
+                            // scroll/settle normally instead of revealing the date picker.
+                            isTopPullGesture.set(down.position.y <= topPullStartHeightPx)
                             try {
                                 waitForUpOrCancellation(pass = PointerEventPass.Initial)
                             } finally {
                                 isTouching.set(false)
+                                isTopPullGesture.set(false)
                             }
                         }
                     }
@@ -557,6 +579,10 @@ private fun CourseListPager(
                             .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
                     )
                 }
+
+                // Home's page indicator floats above the page. Leave enough tail room for the
+                // final lesson/event to scroll fully above it on compact square displays.
+                item { androidx.compose.foundation.layout.Spacer(Modifier.height(18.dp)) }
             }
         }
     }

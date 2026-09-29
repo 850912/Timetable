@@ -2,6 +2,8 @@ package com.hufeng943.timetable.presentation.ui.screens.home
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.material.icons.rounded.School
@@ -9,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
@@ -85,7 +88,15 @@ fun QuickViewPager(viewModel: TimetableViewModel = hiltViewModel()) {
                                     .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                             )
                         }
-                        items(courses, key = { it.timeSlot.id }) { course ->
+                        // A same-day swap keeps the database slot id but changes its effective
+                        // time. Include the resolved occurrence in the key so TransformingLazyColumn
+                        // cannot reuse a stale visual node when two lessons trade positions.
+                        items(
+                            courses,
+                            key = { course ->
+                                "${course.id}:${course.timeSlot.id}:${course.timeSlot.startTime}:${course.timeSlot.endTime}:${course.location.orEmpty()}"
+                            },
+                        ) { course ->
                             val slot = course.timeSlot
                             val time = listOfNotNull(
                                 slot.startTime?.toDisplayString(config.is24HourFormat),
@@ -126,6 +137,10 @@ fun QuickViewPager(viewModel: TimetableViewModel = hiltViewModel()) {
                 }
                 is UiState.Loading -> Unit
             }
+
+            // The home page indicator is an overlay. Reserve a little tail space so the last
+            // preview card can always scroll fully clear of it on short/square displays.
+            item { Spacer(Modifier.height(18.dp)) }
         }
     }
 }
