@@ -17,14 +17,17 @@ import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeout
 
 /**
  * Wear OS transport using the legacy GoogleApiClient Wearable API.
  *
- * This is intentionally limited to the production sync transport. The rest of
- * the app keeps the existing dependency/API surface. China Wear OS guidance
- * explicitly recommends the GoogleApiClient-related Wearable APIs.
+ * The current Android guidance prefers DataClient / MessageClient / NodeClient, but this
+ * compatibility surface is intentionally preserved because the project's target China
+ * phone/watch pair has verified cold-connection behavior that depends on the legacy path.
+ * Keep protocol/API migration separate from stability work so China-device transfer is not
+ * regressed without real-device verification.
  */
 class WearOsTransport(
     private val context: Context,
@@ -41,12 +44,18 @@ class WearOsTransport(
         const val ACK_TIMEOUT_MILLIS = 20_000L
     }
 
-    override suspend fun isAvailable(): Boolean = runCatching { LegacyWearIo.withClient(context) { client ->
-        Wearable.NodeApi.getConnectedNodes(client)
-            .await(OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .nodes
-            .isNotEmpty()
-    } }.getOrDefault(false)
+    override suspend fun isAvailable(): Boolean = try {
+        LegacyWearIo.withClient(context) { client ->
+            Wearable.NodeApi.getConnectedNodes(client)
+                .await(OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .nodes
+                .isNotEmpty()
+        }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        false
+    }
 
     override suspend fun sendRecords(
         records: List<SyncRecordPayload>,
@@ -76,7 +85,10 @@ class WearOsTransport(
                 // created the same DataItem and timed out only while waiting for the ACK. Delete that
                 // request-scoped item before re-putting it so a retry produces a fresh DataEvent.
                 runCatching {
-                    LegacyWearIo.deleteDataItem(context, android.net.Uri.parse("wear://*/${WearFileTransferProtocol.path(requestId).trimStart('/')}"))
+                    Wearable.DataApi.deleteDataItems(
+                        client,
+                        android.net.Uri.parse("wear://*/${WearFileTransferProtocol.path(requestId).trimStart('/')}"),
+                    ).await(OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 }
                 val envelope = SyncEnvelope(
                     requestId = requestId,
@@ -108,6 +120,9 @@ class WearOsTransport(
                 throw IllegalStateException("Wear OS ACK 未确认全部记录写入")
             }
             SyncResult.Success
+        } catch (cancelled: CancellationException) {
+            SyncAckTracker.cancel(requestId, cancelled)
+            throw cancelled
         } catch (e: Exception) {
             SyncAckTracker.cancel(requestId, e)
             val message = if (e is kotlinx.coroutines.TimeoutCancellationException) {
@@ -165,10 +180,10 @@ class WearOsTransport(
                     throw IllegalStateException("无法获取本机 Wear OS 节点(${sourceNode.status.statusCode})")
                 }
                 runCatching {
-                    LegacyWearIo.deleteDataItem(
-                        context,
-                        android.net.Uri.parse("wear://*/${WearFileTransferProtocol.path(requestId).trimStart('/')}")
-                    )
+                    Wearable.DataApi.deleteDataItems(
+                        client,
+                        android.net.Uri.parse("wear://*/${WearFileTransferProtocol.path(requestId).trimStart('/')}"),
+                    ).await(OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 }
                 val request = PutDataMapRequest.create(WearFileTransferProtocol.path(requestId)).apply {
                     dataMap.putString(WearFileTransferProtocol.KEY_KIND, WearFileTransferProtocol.KIND_PHONE_PUSH_TIMETABLES)
@@ -187,6 +202,9 @@ class WearOsTransport(
             withTimeout(ACK_TIMEOUT_MILLIS) { ackDeferred.await() }
             SyncDiagnosticsReporter.recordSync(context, "wear_google_snapshot_success:$requestId:${bytes.size}")
             SyncResult.Success
+        } catch (cancelled: CancellationException) {
+            SyncAckTracker.cancel(requestId, cancelled)
+            throw cancelled
         } catch (e: Exception) {
             SyncAckTracker.cancel(requestId, e)
             val message = if (e is kotlinx.coroutines.TimeoutCancellationException) {

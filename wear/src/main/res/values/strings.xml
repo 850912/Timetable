@@ -277,4 +277,5 @@
     <string name="quick_view_hint">Scroll once to see the whole day</string>
     <string name="quick_view_next_summary">Next: %1$s · %2$s</string>
     <string name="quick_view_unavailable">Schedule unavailable</string>
+    <string name="quick_view_loading">Loading today’s schedule…</string>
 </resources>

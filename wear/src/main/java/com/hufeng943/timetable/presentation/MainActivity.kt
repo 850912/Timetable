@@ -19,6 +19,7 @@ import com.hufeng943.timetable.presentation.ui.AppNavHost
 import com.hufeng943.timetable.presentation.viewmodel.AppConfigViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.util.Locale
 
 
@@ -83,8 +84,6 @@ class MainActivity : ComponentActivity() {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        startChinaBleTransportIfNeeded()
-        com.hufeng943.timetable.reminder.WearCourseReminderScheduler.rescheduleAsync(this)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 appConfigViewModel.localeRecreateEvent.collect {
@@ -106,6 +105,19 @@ class MainActivity : ComponentActivity() {
             }
             TimetableTheme(themePreset = currentThemePreset, dynamicColorEnabled = config.isDynamicColorEnabled) {
                 AppNavHost()
+            }
+        }
+
+        // Cold start on a watch has a very small CPU / binder budget. Draw the first Compose
+        // frame before touching BLE, Play Services-adjacent transport, alarms, or permission UI.
+        lifecycleScope.launch {
+            delay(2_500L)
+            if (!isFinishing && !isDestroyed) {
+                runCatching { com.hufeng943.timetable.reminder.WearCourseReminderScheduler.rescheduleAsync(this@MainActivity) }
+            }
+            delay(2_500L)
+            if (!isFinishing && !isDestroyed) {
+                runCatching { startChinaBleTransportIfNeeded() }
             }
         }
     }

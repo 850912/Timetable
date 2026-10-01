@@ -85,7 +85,7 @@ class AppConfigViewModel @Inject constructor(
     fun updateCourseReminderMinutes(minutes: Int?) {
         viewModelScope.launch {
             preferenceStorage.setCourseReminderMinutes(minutes)
-            WearCourseReminderScheduler.reschedule(appContext)
+            WearCourseReminderScheduler.rescheduleAsync(appContext)
         }
     }
 

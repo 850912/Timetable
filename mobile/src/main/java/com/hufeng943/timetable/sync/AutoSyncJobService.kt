@@ -40,7 +40,7 @@ class AutoSyncJobService : JobService() {
                 // onStopJob() already tells JobScheduler that this run ended.
                 runningJobs.remove(params.jobId)
                 throw CancellationException("Job ${params.jobId} stopped")
-            } catch (_: Throwable) {
+            } catch (_: Exception) {
                 runningJobs.remove(params.jobId)
                 jobFinished(params, true)
             }

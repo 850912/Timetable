@@ -13,6 +13,7 @@ import com.hufeng943.timetable.data.PreferenceStorage
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.model.NextCourseEngine
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +48,15 @@ object WearCourseReminderScheduler {
             // concurrent cancel/recreate races when settings, sync, and boot events
             // trigger reminders at the same time.
             rescheduleJob?.cancel()
-            rescheduleJob = scope.launch { runCatching { reschedule(app) } }
+            rescheduleJob = scope.launch {
+                try {
+                    reschedule(app)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // Reminder rebuild is best-effort; the next settings/sync/boot event retries it.
+                }
+            }
         }
     }
 

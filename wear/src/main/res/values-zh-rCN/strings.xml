@@ -266,4 +266,5 @@
     <string name="quick_view_hint">一次滑动看完整天安排</string>
     <string name="quick_view_next_summary">下一节：%1$s · %2$s</string>
     <string name="quick_view_unavailable">课表暂不可用</string>
+    <string name="quick_view_loading">正在加载今日课表…</string>
 </resources>

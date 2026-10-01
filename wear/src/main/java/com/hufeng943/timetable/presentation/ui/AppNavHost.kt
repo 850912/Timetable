@@ -51,6 +51,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -231,6 +232,15 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         context.registerReceiver(receiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
         onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
+    // Keep the cold-start rendering path deliberately cheap. Backdrop capture/blur can allocate
+    // a noticeable amount of GPU memory before the first timetable frame exists, especially on
+    // 1 GB watches. Re-enable the user's visual effects after the UI has settled.
+    var startupVisualsSettled by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        delay(1_500L)
+        startupVisualsSettled = true
+    }
+
     // Resolve the user's app power policy against Android's real PowerManager state.
     // In effective power-save mode we avoid backdrop capture/blur, chromatic passes and motion;
     // these are GPU/CPU-heavy on Wear OS and provide no scheduling correctness benefit.
@@ -238,7 +248,7 @@ fun AppNavHost(appConfigViewModel: AppConfigViewModel = hiltViewModel()) {
         AppPowerSaveMode.FOLLOW_SYSTEM -> isPowerSaveMode
         AppPowerSaveMode.ALWAYS_ON -> true
         AppPowerSaveMode.ALWAYS_OFF -> false
-    }
+    } || !startupVisualsSettled
     val config = if (effectivePowerSave) storedConfig.copy(
         uiAnimationsEnabled = false,
         isLiquidGlassEnabled = false,

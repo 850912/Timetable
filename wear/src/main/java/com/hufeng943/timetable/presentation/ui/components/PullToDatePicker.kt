@@ -46,7 +46,7 @@ import kotlin.time.Clock
 
 @Composable
 fun rememberPullToDatePickerState(
-    maxDragDistanceDp: Dp = 120.dp, refreshThresholdDp: Dp = 110.dp
+    maxDragDistanceDp: Dp = 96.dp, refreshThresholdDp: Dp = 72.dp
 ): PullToDatePickerState {
     val density = LocalDensity.current
     val maxDragDistance = remember(density) { with(density) { maxDragDistanceDp.toPx() } }
@@ -191,7 +191,7 @@ fun PullToDatePicker(
     val progress = (dragOffset / refreshThreshold).coerceIn(0f, 1f)
 
     val density = LocalDensity.current
-    val offsetShiftPx = remember(density) { with(density) { 65.dp.toPx() } }
+    val offsetShiftPx = remember(density) { with(density) { 54.dp.toPx() } }
     val topPullStartHeightPx = remember(density) { with(density) { 64.dp.toPx() } }
 
     Box(

@@ -2,9 +2,11 @@ package com.hufeng943.timetable.data
 
 import android.content.Context
 import android.text.format.DateFormat
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.hufeng943.timetable.presentation.ui.common.AppConfig
@@ -15,13 +17,18 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.io.IOException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.DayOfWeek
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.dataStore by preferencesDataStore(name = "timetable_settings")
+private val Context.dataStore by preferencesDataStore(
+    name = "timetable_settings",
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
 
 @Singleton
 class PreferenceStorage @Inject constructor(
@@ -60,7 +67,11 @@ class PreferenceStorage @Inject constructor(
         val COURSE_REMINDER_MINUTES = stringPreferencesKey("course_reminder_minutes")
     }
 
-    val appConfigFlow: Flow<AppConfig> = context.dataStore.data.map { prefs ->
+    val appConfigFlow: Flow<AppConfig> = context.dataStore.data
+        .catch { error ->
+            if (error is IOException) emit(emptyPreferences()) else throw error
+        }
+        .map { prefs ->
         val langSetting = prefs[Keys.APP_LANGUAGE].let { tag -> if (tag == "system") null else tag }
         val formatSetting = runCatching {
             TimeFormat.valueOf(prefs[Keys.TIME_FORMAT] ?: TimeFormat.SYSTEM.name)

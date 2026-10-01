@@ -30,6 +30,7 @@ import com.hufeng943.timetable.presentation.ui.components.OneUiCapsuleSurface
 import com.hufeng943.timetable.presentation.ui.components.toDisplayString
 import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.home.TimetableViewModel
+import com.hufeng943.timetable.shared.util.holidayGreeting
 
 /**
  * Read-only, one-glance view of today's complete schedule.
@@ -57,6 +58,19 @@ fun QuickViewPager(viewModel: TimetableViewModel = hiltViewModel()) {
                         .minimumVerticalContentPadding(ListHeaderDefaults.minimumTopListContentPadding),
                     transformation = SurfaceTransformation(transform),
                 ) { Text(stringResource(R.string.quick_view_title)) }
+            }
+
+            holidayGreeting(nextState.today)?.let { greeting ->
+                item {
+                    OneUiCapsuleSurface(
+                        title = "${greeting.name}快乐",
+                        subtitle = greeting.message,
+                        icon = Icons.Rounded.EventAvailable,
+                        emphasize = true,
+                        modifier = Modifier.fillMaxWidth()
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                    )
+                }
             }
 
             when (val current = uiState) {
@@ -135,7 +149,14 @@ fun QuickViewPager(viewModel: TimetableViewModel = hiltViewModel()) {
                             .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
                     )
                 }
-                is UiState.Loading -> Unit
+                is UiState.Loading -> item {
+                    OneUiCapsuleSurface(
+                        title = stringResource(R.string.quick_view_loading),
+                        icon = Icons.Rounded.EventAvailable,
+                        modifier = Modifier.fillMaxWidth()
+                            .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                    )
+                }
             }
 
             // The home page indicator is an overlay. Reserve a little tail space so the last

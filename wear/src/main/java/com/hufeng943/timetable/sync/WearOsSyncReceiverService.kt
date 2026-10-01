@@ -111,7 +111,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
         }.onFailure { sendResultBroadcast(false, it.message ?: "增量同步失败") }.getOrDefault(false)
     }
 
-    private fun sendSyncAck(targetNodeId: String, requestId: String, appliedIds: List<Long>, records: List<com.hufeng943.timetable.shared.sync.SyncRecordPayload> = emptyList()) {
+    private suspend fun sendSyncAck(targetNodeId: String, requestId: String, appliedIds: List<Long>, records: List<com.hufeng943.timetable.shared.sync.SyncRecordPayload> = emptyList()) {
         val localNodeId = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull() ?: return
         val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds, records = records)
         val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
@@ -125,11 +125,7 @@ class WearOsSyncReceiverService : WearableListenerService() {
         LegacyWearIo.putDataItem(this, request)
     }
 
-    private fun deleteDataItem(event: DataEvent) {
-        runCatching { LegacyWearIo.deleteDataItem(this, event.dataItem.uri) }
-    }
-
-    private fun isForThisNode(dataMap: DataMap): Boolean {
+    private suspend fun isForThisNode(dataMap: DataMap): Boolean {
         val targetNodeId = dataMap.getString(WearFileTransferProtocol.KEY_TARGET_NODE_ID)
             ?: return true
         val localNodeId = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull()

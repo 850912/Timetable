@@ -102,7 +102,7 @@ class PhoneFileTransferActivity : Activity() {
         }
     }
 
-    private fun sendSelectedFile(uri: Uri) {
+    private suspend fun sendSelectedFile(uri: Uri) {
         /*
          * Activity fields are nullable and mutable, so Kotlin cannot
          * smart-cast them after the validation performed in onCreate().
@@ -164,7 +164,7 @@ class PhoneFileTransferActivity : Activity() {
         }
     }
 
-    private fun sendTransferError(message: String) {
+    private suspend fun sendTransferError(message: String) {
         val requestId = requestId
             ?: return
 

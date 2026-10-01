@@ -131,7 +131,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
         return true
     }
 
-    private fun sendSyncAck(targetNodeId: String, requestId: String, appliedIds: List<Long>) {
+    private suspend fun sendSyncAck(targetNodeId: String, requestId: String, appliedIds: List<Long>) {
         val localNodeId = runCatching { LegacyWearIo.localNodeId(this) }.getOrNull() ?: return
         val ack = SyncAck(requestId = requestId, sourceDeviceId = localNodeId, appliedRecordIds = appliedIds)
         val bytes = json.encodeToString(ack).toByteArray(Charsets.UTF_8)
@@ -235,7 +235,7 @@ class PhoneWearDataLayerService : WearableListenerService() {
         }
     }
 
-    private fun readAsset(asset: Asset): InputStream {
+    private suspend fun readAsset(asset: Asset): InputStream {
         return LegacyWearIo.readAsset(this, asset)
     }
 

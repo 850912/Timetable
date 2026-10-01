@@ -79,7 +79,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 import com.hufeng943.timetable.shared.util.holidayGreeting
-import com.hufeng943.timetable.shared.util.fetchRemoteHolidayGreeting
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -103,16 +102,6 @@ fun TimetablePager(
     val selectedSemesterWeekCount by viewModel.selectedSemesterWeekCount.collectAsStateWithLifecycle()
     val selectedDateEvents by viewModel.selectedDateEvents.collectAsStateWithLifecycle()
     val nextCourseState by viewModel.nextCourseState.collectAsStateWithLifecycle()
-    var onlineGreeting by remember { mutableStateOf<com.hufeng943.timetable.shared.util.HolidayGreeting?>(null) }
-    LaunchedEffect(selectedDate) {
-        // Built-in holidays are instant/offline. Remote lookup is a fallback only and runs on IO
-        // (see HolidayRemote), so scrolling between dates never stalls the Wear UI thread.
-        onlineGreeting = if (holidayGreeting(selectedDate) == null) {
-            fetchRemoteHolidayGreeting(selectedDate)
-        } else {
-            null
-        }
-    }
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -185,6 +174,7 @@ fun TimetablePager(
                 events = selectedDateEvents,
                 is24HourFormat = config.is24HourFormat,
                 nextCourseState = nextCourseState,
+                holidayGreeting = holidayGreeting(selectedDate),
             )
         } else {
             val statusSummary = remember(coursesUi, selectedDate, nextCourseState) {
@@ -222,7 +212,6 @@ fun TimetablePager(
                 is24HourFormat = config.is24HourFormat,
                 statusSummary = statusSummary,
                 nextCourseState = nextCourseState,
-                onlineGreeting = onlineGreeting,
             ) { courseUi, transformationSpec ->
                 val courseId = courseUi.timeSlot.id
                 CourseCard(
@@ -261,6 +250,7 @@ private fun EmptyCoursePager(
     events: List<AcademicEvent> = emptyList(),
     is24HourFormat: Boolean = true,
     nextCourseState: NextCourseState? = null,
+    holidayGreeting: com.hufeng943.timetable.shared.util.HolidayGreeting? = null,
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -292,6 +282,15 @@ private fun EmptyCoursePager(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                    holidayGreeting?.let { greeting ->
+                        OneUiCapsuleSurface(
+                            title = "${greeting.name}快乐",
+                            subtitle = greeting.message,
+                            icon = Icons.Rounded.EventAvailable,
+                            emphasize = true,
+                        )
+                        androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
+                    }
                     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
                     if (selectedDate == today && nextCourseState != null) {
                         NextCourseSummaryCard(nextCourseState, is24HourFormat)
@@ -334,7 +333,6 @@ private fun CourseListPager(
     is24HourFormat: Boolean = true,
     statusSummary: CourseStatusSummary = CourseStatusSummary(),
     nextCourseState: NextCourseState? = null,
-    onlineGreeting: com.hufeng943.timetable.shared.util.HolidayGreeting? = null,
     modifier: Modifier = Modifier,
     itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec) -> Unit
 ) {
@@ -434,7 +432,7 @@ private fun CourseListPager(
                 rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
-                (onlineGreeting ?: holidayGreeting(selectedDate))?.let { greeting ->
+                holidayGreeting(selectedDate)?.let { greeting ->
                     item {
                         OneUiCapsuleSurface(
                             title = "${greeting.name}快乐",
