@@ -99,7 +99,9 @@ class PreferenceStorage @Inject constructor(
             isShowTopTime = prefs[Keys.SHOW_TOP_TIME] ?: false,
             uiAnimationsEnabled = prefs[Keys.UI_ANIMATIONS_ENABLED] ?: true,
             powerSaveMode = runCatching { AppPowerSaveMode.valueOf(prefs[Keys.POWER_SAVE_MODE] ?: AppPowerSaveMode.FOLLOW_SYSTEM.name) }.getOrDefault(AppPowerSaveMode.FOLLOW_SYSTEM),
-            isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: false,
+            // New installs use the full glass presentation. An explicitly saved user choice is
+            // always respected, while AppNavHost still follows the system power-save policy.
+            isLiquidGlassEnabled = prefs[Keys.LIQUID_GLASS_ENABLED] ?: true,
             glassOpacity = (prefs[Keys.GLASS_OPACITY] ?: 0.42f).coerceIn(0.05f, 0.95f),
             glassClarity = (prefs[Keys.GLASS_CLARITY] ?: 0.70f).coerceIn(0f, 1f),
             liquidGlassEffect = runCatching { LiquidGlassEffect.valueOf(prefs[Keys.LIQUID_GLASS_EFFECT] ?: LiquidGlassEffect.BALANCED.name) }.getOrDefault(LiquidGlassEffect.BALANCED),

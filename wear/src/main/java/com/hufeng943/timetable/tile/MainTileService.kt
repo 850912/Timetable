@@ -23,11 +23,10 @@ import com.hufeng943.timetable.shared.model.NextCourseEngine
 import com.hufeng943.timetable.shared.model.NextCourseOccurrence
 import com.hufeng943.timetable.shared.model.Timetable
 import dagger.hilt.android.AndroidEntryPoint
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
 import java.time.ZoneId
 import kotlin.time.Clock
@@ -36,8 +35,6 @@ private data class TileCourse(
     val name: String,
     val start: String,
     val end: String,
-    val startMinutes: Int,
-    val endMinutes: Int,
     val location: String?,
     val teacher: String?,
     val startEpochMillis: Long = 0L,
@@ -68,30 +65,21 @@ class MainTileService : Material3TileService() {
         }.getOrDefault(true)
         val tables = runCatching { repository.getAllTimetables().first() }.getOrDefault(emptyList())
         val courses = tables.coursesForDate(today, is24Hour, timeZone)
-        val state = NextCourseEngine.resolve(tables, now, timeZone)
-        val initialStateVisible = listOfNotNull(
-            state.current?.toTileCourse(is24Hour),
-            state.next?.takeIf { it.date == today }?.toTileCourse(is24Hour),
-        ).distinctBy { it.startEpochMillis to it.name }.take(2)
-        // A tile request can race a Room/DataStore update. Still render the day's courses while
-        // the time-sensitive engine catches up; an empty main card is worse than a plain schedule.
-        val initialVisible = (initialStateVisible + courses)
-            .distinctBy { it.startEpochMillis to it.name }
-            .take(2)
-
-        return buildTile(courses, initialVisible)
+        return buildTile(courses, today, timeZone, now.toEpochMilliseconds())
     }
 
     private fun MaterialScope.buildTile(
         courses: List<TileCourse>,
-        initialVisible: List<TileCourse>,
+        today: LocalDate,
+        timeZone: TimeZone,
+        nowMillis: Long,
     ): TileBuilders.Tile {
         val timeline = TimelineBuilders.Timeline.Builder()
         timeline.addTimelineEntry(
             TimelineBuilders.TimelineEntry.Builder()
                 .setLayout(
                     LayoutElementBuilders.Layout.Builder()
-                        .setRoot(tileLayout(initialVisible, courses.isNotEmpty()))
+                        .setRoot(tileLayout(visibleCoursesAt(courses, nowMillis), courses.isNotEmpty(), nowMillis))
                         .build()
                 )
                 .build()
@@ -101,37 +89,21 @@ class MainTileService : Material3TileService() {
             it.startEpochMillis > 0L && it.endEpochMillis > it.startEpochMillis
         }
         if (timelineReady) {
-            val zone = ZoneId.systemDefault()
-            val javaToday = java.time.LocalDate.now(zone)
+            val zone = ZoneId.of(timeZone.id)
+            val javaToday = java.time.LocalDate.parse(today.toString())
             val dayStart = javaToday.atStartOfDay(zone).toInstant().toEpochMilli()
             val dayEnd = javaToday.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            var cursor = dayStart
-
-            courses.forEachIndexed { index, course ->
-                if (cursor < course.startEpochMillis) {
-                    addTimelineEntry(
-                        timeline = timeline,
-                        start = cursor,
-                        end = course.startEpochMillis,
-                        visibleCourses = courses.drop(index).take(2),
-                        hadCoursesToday = true,
-                    )
-                }
+            // Partition at every course boundary so overlapping classes never create
+            // overlapping timeline entries, and each layout reflects its own interval.
+            val boundaries = (listOf(dayStart, dayEnd) + courses.flatMap {
+                listOf(it.startEpochMillis, it.endEpochMillis)
+            }).filter { it in dayStart..dayEnd }.distinct().sorted()
+            boundaries.zipWithNext().forEach { (start, end) ->
                 addTimelineEntry(
                     timeline = timeline,
-                    start = course.startEpochMillis,
-                    end = course.endEpochMillis,
-                    visibleCourses = listOf(course) + courses.drop(index + 1).take(1),
-                    hadCoursesToday = true,
-                )
-                cursor = maxOf(cursor, course.endEpochMillis)
-            }
-            if (cursor < dayEnd) {
-                addTimelineEntry(
-                    timeline = timeline,
-                    start = cursor,
-                    end = dayEnd,
-                    visibleCourses = emptyList(),
+                    start = start,
+                    end = end,
+                    visibleCourses = visibleCoursesAt(courses, start),
                     hadCoursesToday = true,
                 )
             }
@@ -154,7 +126,7 @@ class MainTileService : Material3TileService() {
             TimelineBuilders.TimelineEntry.Builder()
                 .setLayout(
                     LayoutElementBuilders.Layout.Builder()
-                        .setRoot(tileLayout(visibleCourses, hadCoursesToday))
+                        .setRoot(tileLayout(visibleCourses, hadCoursesToday, start))
                         .build()
                 )
                 .setValidity(
@@ -170,8 +142,8 @@ class MainTileService : Material3TileService() {
     private fun MaterialScope.tileLayout(
         courses: List<TileCourse>,
         hadCoursesToday: Boolean,
+        nowMillis: Long,
     ): LayoutElementBuilders.LayoutElement {
-        val nowMillis = System.currentTimeMillis()
         val course = courses.firstOrNull()
         val next = courses.getOrNull(1)
         val isCurrent = course?.let {
@@ -181,16 +153,8 @@ class MainTileService : Material3TileService() {
         val status = when {
             course == null && hadCoursesToday -> getString(R.string.tile_status_finished)
             course == null -> getString(R.string.tile_status_today)
-            isCurrent -> buildString {
-                append(getString(R.string.tile_status_current))
-                val left = ((course.endEpochMillis - nowMillis) / 60_000L).coerceAtLeast(1L)
-                append(" · 余${left}分")
-            }
-            else -> buildString {
-                append(getString(R.string.tile_status_next))
-                val wait = ((course.startEpochMillis - nowMillis) / 60_000L).coerceAtLeast(0L)
-                append(" · ${wait}分后")
-            }
+            isCurrent -> getString(R.string.tile_status_current)
+            else -> getString(R.string.tile_status_next)
         }
 
         val title = course?.name?.ifBlank { getString(R.string.tile_unnamed_course) }
@@ -251,6 +215,9 @@ class MainTileService : Material3TileService() {
     }
 }
 
+private fun visibleCoursesAt(courses: List<TileCourse>, nowMillis: Long): List<TileCourse> =
+    courses.filter { it.endEpochMillis > nowMillis }.take(2)
+
 private fun List<Timetable>.coursesForDate(
     date: LocalDate,
     is24Hour: Boolean,
@@ -265,8 +232,6 @@ private fun NextCourseOccurrence.toTileCourse(is24Hour: Boolean): TileCourse = T
     name = courseName,
     start = startTime.toDisplayString(is24Hour),
     end = endTime.toDisplayString(is24Hour),
-    startMinutes = startTime.hour * 60 + startTime.minute,
-    endMinutes = endTime.hour * 60 + endTime.minute,
     location = location,
     teacher = teacher,
     startEpochMillis = startInstant.toEpochMilliseconds(),

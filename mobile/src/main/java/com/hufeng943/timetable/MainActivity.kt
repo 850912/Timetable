@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.AlarmManager
 import com.hufeng943.timetable.reminder.ReminderSettings
 import com.hufeng943.timetable.reminder.CourseReminderScheduler
+import com.hufeng943.timetable.backup.AutoBackupScheduler
 import android.widget.CheckBox
 import android.text.InputType
 import android.os.Build
@@ -11,7 +12,9 @@ import android.Manifest
 import android.app.TimePickerDialog
 import android.graphics.Color
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -32,12 +35,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import com.hufeng943.timetable.shared.data.repository.TimeSlotMutation
 import com.hufeng943.timetable.shared.importexport.TimetableFileParser
+import com.hufeng943.timetable.shared.importexport.ImportPreviewBuilder
 import com.hufeng943.timetable.shared.model.AcademicEvent
 import com.hufeng943.timetable.shared.model.AcademicEventType
 import com.hufeng943.timetable.shared.model.Course
@@ -78,6 +83,7 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.todayIn
 import com.hufeng943.timetable.shared.util.holidayGreeting
+import com.hufeng943.timetable.shared.util.fetchRemoteHolidayGreeting
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
@@ -145,6 +151,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        findViewById<View>(R.id.main).background = createLiquidAmbientBackground()
+        applyLiquidGlassTheme()
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
@@ -188,6 +197,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.buttonReminderSettings).setOnClickListener {
             showReminderSettingsDialog()
         }
+        findViewById<MaterialButton>(R.id.buttonBackupSettings).setOnClickListener {
+            showAutoBackupSettingsDialog()
+        }
 
         observeTimetables()
         monitorWearConnection()
@@ -212,6 +224,12 @@ class MainActivity : AppCompatActivity() {
         emptyText.visibility = if (timetables.isEmpty()) View.VISIBLE else View.GONE
 
         val today = Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
+        uiScope.launch {
+            val greeting = fetchRemoteHolidayGreeting(today) ?: holidayGreeting(today)
+            if (greeting != null && timetableContainer.childCount > 0) {
+                (timetableContainer.getChildAt(0) as? TextView)?.text = "${greeting.name}快乐\n${greeting.message}"
+            }
+        }
         holidayGreeting(today)?.let { greeting ->
             timetableContainer.addView(TextView(this).apply {
                 text = "${greeting.name}快乐\n${greeting.message}"
@@ -236,8 +254,14 @@ class MainActivity : AppCompatActivity() {
                 setPadding(dp(16), dp(16), dp(16), dp(12))
                 background = GradientDrawable().apply {
                     cornerRadius = dp(24).toFloat()
-                    setColor(resolveSurfaceColor())
-                    setStroke(dp(1), 0x22000000)
+                    setColor(withAlpha(resolveSurfaceColor(), 210))
+                    setStroke(dp(1), withAlpha(resolvePrimaryColor(), 82))
+                    setGradientType(GradientDrawable.LINEAR_GRADIENT)
+                    orientation = GradientDrawable.Orientation.TOP_BOTTOM
+                    colors = intArrayOf(
+                        withAlpha(Color.WHITE, 24),
+                        withAlpha(resolveSurfaceColor(), 210),
+                    )
                 }
             }
             card.layoutParams = LinearLayout.LayoutParams(
@@ -297,6 +321,12 @@ class MainActivity : AppCompatActivity() {
                             cornerRadius = dp(18).toFloat()
                             setColor(withAlpha(accent, if (isCurrent) 46 else 22))
                             setStroke(dp(if (isCurrent) 2 else 1), withAlpha(accent, if (isCurrent) 220 else 92))
+                            setGradientType(GradientDrawable.LINEAR_GRADIENT)
+                            orientation = GradientDrawable.Orientation.TOP_BOTTOM
+                            colors = intArrayOf(
+                                withAlpha(Color.WHITE, if (isCurrent) 20 else 12),
+                                withAlpha(accent, if (isCurrent) 42 else 20),
+                            )
                         }
                     }
                     row.layoutParams = LinearLayout.LayoutParams(
@@ -512,12 +542,17 @@ class MainActivity : AppCompatActivity() {
             AlertDialog.Builder(this@MainActivity)
                 .setTitle("同步诊断中心")
                 .setMessage(message)
-                .setItems(arrayOf("立即同步", "复制诊断", "导出 sync_log.txt", "清除日志", "关闭")) { dialog, which ->
+                .setItems(arrayOf("立即同步", "重试失败变更", "复制诊断", "导出 sync_log.txt", "清除日志", "关闭")) { dialog, which ->
                     when (which) {
                         0 -> syncToWatch(forceFullSnapshot = true)
-                        1 -> copyDiagnostic()
-                        2 -> exportDiagnosticDocument.launch("sync_log.txt")
-                        3 -> { SyncDiagnosticCenter.clear(this@MainActivity); toast("诊断日志已清除") }
+                        1 -> uiScope.launch {
+                            val count = withContext(Dispatchers.IO) { TimetableDatabaseProvider.database(this@MainActivity).syncRecordDao().retryFailed() }
+                            if (count > 0) { AutoSyncJobService.scheduleNow(this@MainActivity); toast("已重新加入 $count 条变更") }
+                            else toast("没有需要重试的变更")
+                        }
+                        2 -> copyDiagnostic()
+                        3 -> exportDiagnosticDocument.launch("sync_log.txt")
+                        4 -> { SyncDiagnosticCenter.clear(this@MainActivity); toast("诊断日志已清除") }
                         else -> dialog.dismiss()
                     }
                 }
@@ -789,14 +824,45 @@ class MainActivity : AppCompatActivity() {
                         ?: throw IllegalStateException("无法读取所选文件")
                 }
                 val timetables = withContext(Dispatchers.Default) { TimetableFileParser.parse(bytes) }
-                withContext(Dispatchers.IO) {
-                    TimetableDatabaseProvider.importService(this@MainActivity).importAtomic(timetables)
-                    val snapshot = repository.getAllTimetables().first()
-                    enqueueSnapshotForIncrementalSync(snapshot)
+                ImportPreviewBuilder.build(timetables, repository.getAllTimetables().first())
+            }.onSuccess { preview ->
+                val details = preview.items.joinToString("\n") { item ->
+                    val status = when (item.disposition) {
+                        com.hufeng943.timetable.shared.importexport.ImportDisposition.NEW -> "新增"
+                        com.hufeng943.timetable.shared.importexport.ImportDisposition.UNCHANGED -> "相同"
+                        com.hufeng943.timetable.shared.importexport.ImportDisposition.CHANGED -> "已有不同内容"
+                    }
+                    "${item.timetable.semesterName} · $status · ${item.courseCount} 门课程 · ${item.eventCount} 项待办"
                 }
-                timetables.size
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("导入预览")
+                    .setMessage(details)
+                    .setNegativeButton("取消", null)
+                    .setNeutralButton("仅新增") { _, _ -> applyImportPreview(preview, false) }
+                    .setPositiveButton("新增并替换不同课表") { _, _ -> applyImportPreview(preview, true) }
+                    .show()
+            }.onFailure { toast(it.message ?: "导入失败") }
+        }
+    }
+
+    private fun applyImportPreview(
+        preview: com.hufeng943.timetable.shared.importexport.ImportPreview,
+        replaceExisting: Boolean,
+    ) {
+        val selected = preview.selected(replaceExisting)
+        if (selected.isEmpty()) {
+            toast("没有需要导入的课表")
+            return
+        }
+        uiScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    TimetableDatabaseProvider.importService(this@MainActivity)
+                        .importReplacingMatchesAtomic(selected)
+                    enqueueSnapshotForIncrementalSync(repository.getAllTimetables().first())
+                }
             }.onSuccess {
-                toast("成功导入 $it 个课表，已加入自动同步队列")
+                toast("已导入 ${selected.size} 个课表，等待同步")
                 AutoSyncJobService.scheduleNow(this@MainActivity)
             }.onFailure { toast(it.message ?: "导入失败") }
         }
@@ -1636,6 +1702,23 @@ class MainActivity : AppCompatActivity() {
             }.show()
     }
 
+    private fun showAutoBackupSettingsDialog() {
+        val enabled = CheckBox(this).apply {
+            text = "每天自动备份到应用存储"
+            isChecked = AutoBackupScheduler.enabled(this@MainActivity)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("自动备份")
+            .setMessage("保留最近 7 份 JSON 备份。备份位于应用专属存储，卸载应用时会被系统删除。")
+            .setView(dialogColumn(enabled))
+            .setNegativeButton("取消", null)
+            .setPositiveButton("保存") { _, _ ->
+                AutoBackupScheduler.setEnabled(this, enabled.isChecked)
+                toast(if (enabled.isChecked) "已开启每日自动备份" else "自动备份已关闭")
+            }
+            .show()
+    }
+
     private fun requestExactAlarmAccessIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
         val alarmManager = getSystemService(AlarmManager::class.java)
@@ -1774,6 +1857,62 @@ class MainActivity : AppCompatActivity() {
         return if (theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainer, value, true)) {
             value.data
         } else Color.WHITE
+    }
+
+    /** Applies a lightweight glass treatment to the XML shell and keeps the content readable. */
+    private fun applyLiquidGlassTheme() {
+        val connection = findViewById<MaterialCardView>(R.id.cardConnection)
+        val quickActions = findViewById<MaterialCardView>(R.id.cardQuickActions)
+        listOf(connection, quickActions).forEach { card ->
+            card.setCardBackgroundColor(withAlpha(resolveSurfaceColor(), 190))
+            card.strokeColor = withAlpha(resolvePrimaryColor(), 82)
+            card.strokeWidth = dp(1)
+        }
+    }
+
+    /** Dynamic-color ambient light behind translucent surfaces, shared with the Wear visual tone. */
+    private fun createLiquidAmbientBackground(): Drawable {
+        val surface = resolveThemeColor(com.google.android.material.R.attr.colorSurface, Color.BLACK)
+        val primary = resolvePrimaryColor()
+        val secondary = resolveThemeColor(
+            com.google.android.material.R.attr.colorSecondary,
+            primary,
+        )
+        val base = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(
+                blendColors(surface, primary, 0.16f),
+                surface,
+                blendColors(surface, secondary, 0.12f),
+            ),
+        )
+        val topGlow = GradientDrawable().apply {
+            gradientType = GradientDrawable.RADIAL_GRADIENT
+            gradientRadius = dp(420).toFloat()
+            setGradientCenter(0.14f, 0.06f)
+            colors = intArrayOf(withAlpha(primary, 88), Color.TRANSPARENT)
+        }
+        val bottomGlow = GradientDrawable().apply {
+            gradientType = GradientDrawable.RADIAL_GRADIENT
+            gradientRadius = dp(480).toFloat()
+            setGradientCenter(0.88f, 0.86f)
+            colors = intArrayOf(withAlpha(secondary, 68), Color.TRANSPARENT)
+        }
+        return LayerDrawable(arrayOf<Drawable>(base, topGlow, bottomGlow))
+    }
+
+    private fun resolveThemeColor(attribute: Int, fallback: Int): Int {
+        val value = android.util.TypedValue()
+        return if (theme.resolveAttribute(attribute, value, true)) value.data else fallback
+    }
+
+    private fun blendColors(background: Int, foreground: Int, amount: Float): Int {
+        val ratio = amount.coerceIn(0f, 1f)
+        return Color.rgb(
+            (Color.red(background) * (1f - ratio) + Color.red(foreground) * ratio).toInt(),
+            (Color.green(background) * (1f - ratio) + Color.green(foreground) * ratio).toInt(),
+            (Color.blue(background) * (1f - ratio) + Color.blue(foreground) * ratio).toInt(),
+        )
     }
 
     private fun resolvePrimaryColor(): Int {

@@ -3,6 +3,7 @@ package com.hufeng943.timetable.shared.importexport
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.UUID
+import java.util.zip.CRC32
 
 /** Small, transport-neutral framing used by the China compatibility BLE channel. */
 object ChinaWearBleProtocol {
@@ -13,7 +14,10 @@ object ChinaWearBleProtocol {
 
     const val DEVICE_NAME_PREFIX = "Timetable-"
     const val FRAME_VERSION: Byte = 1
+    const val CHECKED_FRAME_VERSION: Byte = 2
     const val HEADER_SIZE = 16 // version + kind + transferId + sequence + total
+    const val WIRE_OVERHEAD = HEADER_SIZE
+    const val CHECKED_WIRE_OVERHEAD = HEADER_SIZE + 4
     const val KIND_DATA: Byte = 1
     const val MAX_FRAME_COUNT = 8192
     const val ROLE_PHONE: Byte = 1
@@ -45,17 +49,53 @@ object ChinaWearBleProtocol {
             .array()
     }
 
+    /** Encodes a v2 frame with CRC32. Keep v1 as the default for old devices. */
+    fun encodeChecked(
+        transferId: Long,
+        sequence: Int,
+        total: Int,
+        payload: ByteArray,
+    ): ByteArray {
+        require(sequence in 0 until total) { "无效 BLE 分片序号" }
+        require(total in 1..MAX_FRAME_COUNT) { "BLE 分片总数超出上限" }
+        val body = ByteBuffer.allocate(HEADER_SIZE + payload.size)
+            .order(ByteOrder.BIG_ENDIAN)
+            .put(CHECKED_FRAME_VERSION)
+            .put(KIND_DATA)
+            .putLong(transferId)
+            .putInt(sequence)
+            .putShort(total.toShort())
+            .put(payload)
+            .array()
+        val checksum = CRC32().apply { update(body) }.value.toInt()
+        return ByteBuffer.allocate(body.size + 4)
+            .order(ByteOrder.BIG_ENDIAN)
+            .put(body)
+            .putInt(checksum)
+            .array()
+    }
+
     fun decode(bytes: ByteArray): Frame {
         require(bytes.size >= HEADER_SIZE) { "BLE 数据帧过短" }
         val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN)
-        require(buffer.get() == FRAME_VERSION) { "BLE 帧版本不支持" }
+        val version = buffer.get()
+        require(version == FRAME_VERSION || version == CHECKED_FRAME_VERSION) { "BLE 帧版本不支持" }
         require(buffer.get() == KIND_DATA) { "BLE 帧类型不支持" }
         val transferId = buffer.long
         val sequence = buffer.int
         val total = buffer.short.toInt() and 0xffff
         require(total in 1..MAX_FRAME_COUNT && sequence in 0 until total) { "BLE 帧序列无效" }
-        val payload = ByteArray(buffer.remaining())
+        val payloadSize = if (version == CHECKED_FRAME_VERSION) {
+            require(buffer.remaining() >= 4) { "BLE 校验帧过短" }
+            buffer.remaining() - 4
+        } else buffer.remaining()
+        val payload = ByteArray(payloadSize)
         buffer.get(payload)
+        if (version == CHECKED_FRAME_VERSION) {
+            val expected = buffer.int
+            val actual = CRC32().apply { update(bytes, 0, bytes.size - 4) }.value.toInt()
+            require(expected == actual) { "BLE 帧校验失败" }
+        }
         return Frame(transferId, sequence, total, payload)
     }
 }

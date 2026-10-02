@@ -46,8 +46,8 @@ configure<ApplicationExtension> {
         applicationId = "com.hufeng943.timetable"
         minSdk = 30
         targetSdk = 36
-        versionCode = 3050500
-        versionName = "3.5.5"
+        versionCode = 3050800
+        versionName = "3.5.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

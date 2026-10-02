@@ -174,10 +174,7 @@ class ChinaWearBleService : Service() {
                 currentMtu.remove(device)
             } else if (newState == BluetoothProfile.STATE_CONNECTED) {
                 currentMtu[device] = 23
-                if (device.bondState != BluetoothDevice.BOND_BONDED) {
-                    gattServer?.cancelConnection(device)
-                    return
-                }
+                if (device.bondState != BluetoothDevice.BOND_BONDED) { gattServer?.cancelConnection(device); return }
                 SyncDiagnosticLogger.record(this@ChinaWearBleService, "china_ble_connected:${device.address}")
             }
         }
@@ -226,13 +223,12 @@ class ChinaWearBleService : Service() {
             val key = "${device.address}:${frame.transferId}"
             cleanupAssemblies()
             val assembly = synchronized(assemblies) {
-                assemblies[key] ?: if (assemblies.size >= MAX_ACTIVE_ASSEMBLIES ||
-                    assemblies.keys.count { it.startsWith("${device.address}:") } >= MAX_ACTIVE_ASSEMBLIES_PER_DEVICE) {
-                    null
-                } else {
-                    FrameAssembly(frame.total).also { assemblies[key] = it }
-                }
+                assemblies[key] ?: if (assemblies.size >= MAX_ACTIVE_ASSEMBLIES || assemblies.keys.count { it.startsWith("${device.address}:") } >= MAX_ACTIVE_ASSEMBLIES_PER_DEVICE) null else FrameAssembly(frame.total).also { assemblies[key] = it }
             } ?: return
+            if (assembly.total != frame.total) {
+                assemblies.remove(key)
+                return
+            }
             assembly.parts[frame.sequence] = frame.payload
             assembly.lastUpdatedAt = System.currentTimeMillis()
             if (assembly.parts.values.sumOf { it.size } > MAX_ASSEMBLY_BYTES) {
@@ -329,7 +325,7 @@ class ChinaWearBleService : Service() {
             )
         )
         val mtu = currentMtu[device] ?: 23
-        val chunkSize = (mtu - 3 - ChinaWearBleProtocol.HEADER_SIZE).coerceAtLeast(1)
+        val chunkSize = (mtu - 3 - ChinaWearBleProtocol.WIRE_OVERHEAD).coerceAtLeast(1)
         val total = (bytes.size + chunkSize - 1) / chunkSize
         val transferId = transferCounter.incrementAndGet()
         repeat(total) { sequence ->

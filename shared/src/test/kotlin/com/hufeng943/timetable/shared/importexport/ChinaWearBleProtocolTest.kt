@@ -7,14 +7,13 @@ import org.junit.Test
 
 class ChinaWearBleProtocolTest {
     @Test
-    fun envelopeFreshnessRejectsReplayAndAcceptsCurrentMessages() {
+    fun envelopeFreshnessRejectsStaleMessages() {
         val now = 1_700_000_000_000L
         val current = ChinaWearEnvelope("id", "PING", now, ChinaWearProtocol.VERSION)
-        val replayed = current.copy(timestamp = now - ChinaWearEnvelopeSecurity.MAX_CLOCK_SKEW_MS - 1)
+        val stale = current.copy(timestamp = now - ChinaWearEnvelopeSecurity.MAX_CLOCK_SKEW_MS - 1)
         assertEquals(true, ChinaWearEnvelopeSecurity.isFresh(current, now))
-        assertEquals(false, ChinaWearEnvelopeSecurity.isFresh(replayed, now))
+        assertEquals(false, ChinaWearEnvelopeSecurity.isFresh(stale, now))
     }
-
     @Test
     fun frameRoundTripsBinaryPayload() {
         val payload = byteArrayOf(0x00, 0x7f, 0x80.toByte(), 0xff.toByte(), 0x01)
@@ -37,5 +36,15 @@ class ChinaWearBleProtocolTest {
     fun headerSizeMatchesWireLayout() {
         val encoded = ChinaWearBleProtocol.encode(1L, 0, 1, byteArrayOf(1, 2, 3))
         assertEquals(ChinaWearBleProtocol.HEADER_SIZE + 3, encoded.size)
+    }
+
+    @Test
+    fun checkedFrameRoundTripsAndRejectsCorruption() {
+        val encoded = ChinaWearBleProtocol.encodeChecked(1L, 0, 1, byteArrayOf(1, 2, 3))
+        assertArrayEquals(byteArrayOf(1, 2, 3), ChinaWearBleProtocol.decode(encoded).payload)
+        encoded[encoded.lastIndex - 1] = (encoded[encoded.lastIndex - 1].toInt() xor 1).toByte()
+        assertThrows(IllegalArgumentException::class.java) {
+            ChinaWearBleProtocol.decode(encoded)
+        }
     }
 }

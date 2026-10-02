@@ -62,7 +62,7 @@ fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this
             if (newOffset != currentOffset) {
                 state.snapTo(newOffset)
             }
-        }, onDragEnd = { state.animateToTarget() })
+        }, onDragEnd = { state.animateToTarget() }, onDragCancel = { state.animateToTarget() })
     })
 
 @Composable
@@ -73,6 +73,7 @@ fun rememberPullToRefreshConnection(
     return remember(scrollState, state) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source != NestedScrollSource.UserInput) return Offset.Zero
                 val currentOffset = state.dragOffset
 
                 val isPullingDown =
@@ -94,6 +95,7 @@ fun rememberPullToRefreshConnection(
                 available: Offset,
                 source: NestedScrollSource,
             ): Offset {
+                if (source != NestedScrollSource.UserInput) return Offset.Zero
                 if (available.y > 0f && !scrollState.canScrollBackward && state.dragOffset < state.maxDragDistance) {
                     val currentOffset = state.dragOffset
                     val newOffset = (currentOffset + available.y).coerceIn(0f, state.maxDragDistance)

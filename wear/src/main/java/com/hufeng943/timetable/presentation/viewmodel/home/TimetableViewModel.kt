@@ -9,11 +9,12 @@ import com.hufeng943.timetable.presentation.viewmodel.UiState
 import com.hufeng943.timetable.presentation.viewmodel.toSafeStateFlow
 import com.hufeng943.timetable.shared.data.repository.TimetableRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -114,8 +115,11 @@ class TimetableViewModel @Inject constructor(
 
     // Quick View always follows the current local date and does not mutate the date selected on
     // the main timetable page. This keeps the two home surfaces independent while sharing data.
-    val todayCoursesUi = combine(allTimetables, clockState) { state, now ->
-        val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
+    private val todayDate = clockState.map {
+        it.toLocalDateTime(TimeZone.currentSystemDefault()).date
+    }.distinctUntilChanged()
+
+    val todayCoursesUi = combine(allTimetables, todayDate) { state, today ->
         when (state) {
             is UiState.Loading -> UiState.Loading
             is UiState.Empty -> UiState.Empty

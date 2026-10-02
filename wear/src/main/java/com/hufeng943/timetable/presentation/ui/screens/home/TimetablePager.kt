@@ -74,6 +74,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 import com.hufeng943.timetable.shared.util.holidayGreeting
+import com.hufeng943.timetable.shared.util.fetchRemoteHolidayGreeting
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -96,6 +97,10 @@ fun TimetablePager(
     val selectedSemesterWeekCount by viewModel.selectedSemesterWeekCount.collectAsStateWithLifecycle()
     val selectedDateEvents by viewModel.selectedDateEvents.collectAsStateWithLifecycle()
     val nextCourseState by viewModel.nextCourseState.collectAsStateWithLifecycle()
+    var onlineGreeting by remember(selectedDate) { mutableStateOf<com.hufeng943.timetable.shared.util.HolidayGreeting?>(null) }
+    LaunchedEffect(selectedDate) {
+        onlineGreeting = fetchRemoteHolidayGreeting(selectedDate)
+    }
     val navController = LocalNavController.current
     val config = LocalAppConfig.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -185,6 +190,12 @@ fun TimetablePager(
                     )
                 }
             }
+            val nextCourseUi = remember(coursesUi, statusSummary.nextId) {
+                statusSummary.nextId?.let { id ->
+                    coursesUi.firstOrNull { it.timeSlot.id == id }
+                }
+            }
+            val nextCourseDisplayName = nextCourseUi?.displayName
 
             CourseListPager(
                 coursesUi = coursesUi,
@@ -199,6 +210,7 @@ fun TimetablePager(
                 is24HourFormat = config.is24HourFormat,
                 statusSummary = statusSummary,
                 nextCourseState = nextCourseState,
+                onlineGreeting = onlineGreeting,
             ) { courseUi, transformationSpec ->
                 val courseId = courseUi.timeSlot.id
                 CourseCard(
@@ -207,7 +219,7 @@ fun TimetablePager(
                     isNext = statusSummary.nextId == courseId,
                     minutesLeft = if (statusSummary.currentId == courseId) statusSummary.minutesLeft else null,
                     nextCourseName = if (statusSummary.currentId == courseId) {
-                        coursesUi.firstOrNull { it.timeSlot.id == statusSummary.nextId }?.displayName
+                        nextCourseDisplayName
                     } else null,
                     minutesUntilNext = if (statusSummary.currentId == courseId) statusSummary.minutesUntilNext else null,
                     is24HourFormat = config.is24HourFormat,
@@ -309,6 +321,7 @@ private fun CourseListPager(
     is24HourFormat: Boolean = true,
     statusSummary: CourseStatusSummary = CourseStatusSummary(),
     nextCourseState: NextCourseState? = null,
+    onlineGreeting: com.hufeng943.timetable.shared.util.HolidayGreeting? = null,
     modifier: Modifier = Modifier,
     itemContent: @Composable TransformingLazyColumnItemScope.(CourseUi, TransformationSpec) -> Unit
 ) {
@@ -342,7 +355,9 @@ private fun CourseListPager(
             val sectionHeadersBeforeOrAt = (0..courseIndex).count { index ->
                 index == 0 || isMorningCourse(coursesUi[index]) != isMorningCourse(coursesUi[index - 1])
             }
-            scrollState.scrollToItem(1 + courseIndex + sectionHeadersBeforeOrAt)
+            val greetingItems = if (onlineGreeting != null || holidayGreeting(selectedDate) != null) 1 else 0
+            val summaryItems = if (nextCourseState != null) 1 else 0
+            scrollState.scrollToItem(greetingItems + summaryItems + 1 + courseIndex + sectionHeadersBeforeOrAt)
         }
     }
 
@@ -380,7 +395,7 @@ private fun CourseListPager(
                 rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
-                holidayGreeting(selectedDate)?.let { greeting ->
+                (onlineGreeting ?: holidayGreeting(selectedDate))?.let { greeting ->
                     item {
                         OneUiCapsuleSurface(
                             title = "${greeting.name}快乐",

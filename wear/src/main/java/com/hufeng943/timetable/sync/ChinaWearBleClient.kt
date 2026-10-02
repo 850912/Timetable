@@ -118,7 +118,7 @@ internal class ChinaWearBleClient(private val context: Context) {
 
         suspend fun write(envelope: ByteArray) {
             val bytes = envelope
-            val size = (mtu - 3 - ChinaWearBleProtocol.HEADER_SIZE).coerceAtLeast(1)
+            val size = (mtu - 3 - ChinaWearBleProtocol.WIRE_OVERHEAD).coerceAtLeast(1)
             val total = (bytes.size + size - 1) / size
             require(total in 1..ChinaWearBleProtocol.MAX_FRAME_COUNT) { "导出数据过大" }
             repeat(total) { seq ->

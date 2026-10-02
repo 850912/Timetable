@@ -203,20 +203,6 @@ fun AboutScreen() {
             }
 
             item {
-                OneUiCapsuleSurface(
-                    title = stringResource(R.string.about_donation_title),
-                    subtitle = stringResource(R.string.about_donation_subtitle),
-                    icon = Icons.Rounded.Favorite,
-                    emphasize = true,
-                    onClick = { donationDialogVisible = true },
-                    titleMaxLines = Int.MAX_VALUE,
-                    subtitleMaxLines = Int.MAX_VALUE,
-                    modifier = Modifier.fillMaxWidth()
-                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
-                )
-            }
-
-            item {
                 OneUiInfoCapsule(
                     icon = Icons.Rounded.Info,
                     text = stringResource(R.string.about_description),
@@ -279,6 +265,20 @@ fun AboutScreen() {
                     subtitle = stringResource(R.string.about_developer_subtitle),
                     icon = Icons.Rounded.Person,
                     emphasize = true,
+                    titleMaxLines = Int.MAX_VALUE,
+                    subtitleMaxLines = Int.MAX_VALUE,
+                    modifier = Modifier.fillMaxWidth()
+                        .minimumVerticalContentPadding(ButtonDefaults.minimumVerticalListContentPadding),
+                )
+            }
+
+            item {
+                OneUiCapsuleSurface(
+                    title = stringResource(R.string.about_donation_title),
+                    subtitle = stringResource(R.string.about_donation_subtitle),
+                    icon = Icons.Rounded.Favorite,
+                    emphasize = true,
+                    onClick = { donationDialogVisible = true },
                     titleMaxLines = Int.MAX_VALUE,
                     subtitleMaxLines = Int.MAX_VALUE,
                     modifier = Modifier.fillMaxWidth()

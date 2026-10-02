@@ -16,7 +16,6 @@ data class ChinaWearEnvelope(
 
 object ChinaWearEnvelopeSecurity {
     const val MAX_CLOCK_SKEW_MS = 5 * 60 * 1000L
-
     fun isFresh(envelope: ChinaWearEnvelope, nowMs: Long = System.currentTimeMillis()): Boolean =
         kotlin.math.abs(nowMs - envelope.timestamp) <= MAX_CLOCK_SKEW_MS
 }
