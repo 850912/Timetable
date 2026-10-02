@@ -22,9 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
-import java.util.concurrent.atomic.AtomicBoolean
 import androidx.compose.ui.input.rotary.onPreRotaryScrollEvent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +73,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
+import com.hufeng943.timetable.shared.util.holidayGreeting
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -316,7 +314,6 @@ private fun CourseListPager(
 ) {
     val scrollState = rememberTransformingLazyColumnState(initialAnchorItemIndex = 0)
     val transformationSpec = rememberTransformationSpec()
-    val isTouching = remember { AtomicBoolean(false) }
     val focusRequester = remember { FocusRequester() }
     val zone = TimeZone.currentSystemDefault()
     val isToday = selectedDate == Clock.System.todayIn(zone)
@@ -331,7 +328,7 @@ private fun CourseListPager(
     val shouldShowCourseList = !isToday || !statusSummary.dayFinished || showFinishedTimetable
 
     val nestedScrollConnection = rememberPullToRefreshConnection(
-        scrollState = scrollState, state = state, isTouching = { isTouching.get() })
+        scrollState = scrollState, state = state)
 
     // Opening the app during class should land on the actual highlighted course card,
     // not on a duplicated summary card. Header occupies index 0.
@@ -377,20 +374,26 @@ private fun CourseListPager(
                     .fillMaxSize()
                     .focusRequester(focusRequester)
                     .onPreRotaryScrollEvent { state.dragOffset > 0 }
-                    .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                isTouching.set(event.changes.any { it.pressed })
-                            }
-                        }
-                    }
                     .nestedScroll(nestedScrollConnection),
                 state = scrollState,
                 flingBehavior = TransformingLazyColumnDefaults.snapFlingBehavior(scrollState),
                 rotaryScrollableBehavior = RotaryScrollableDefaults.snapBehavior(scrollState),
                 contentPadding = contentPadding
             ) {
+                holidayGreeting(selectedDate)?.let { greeting ->
+                    item {
+                        OneUiCapsuleSurface(
+                            title = "${greeting.name}快乐",
+                            subtitle = greeting.message,
+                            icon = Icons.Rounded.EventAvailable,
+                            emphasize = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .minimumVerticalContentPadding(CardDefaults.minimumVerticalListContentPadding),
+                        )
+                    }
+                }
+
                 if (isToday && nextCourseState != null && !statusSummary.dayFinished) {
                     item {
                         NextCourseSummaryCard(

@@ -69,14 +69,10 @@ fun Modifier.pullToDatePickerDrag(state: PullToDatePickerState): Modifier = this
 fun rememberPullToRefreshConnection(
     scrollState: TransformingLazyColumnState,
     state: PullToDatePickerState,
-    isTouching: () -> Boolean
 ): NestedScrollConnection {
     return remember(scrollState, state) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (!isTouching()) {
-                    return Offset.Zero
-                }
                 val currentOffset = state.dragOffset
 
                 val isPullingDown =
@@ -89,6 +85,20 @@ fun rememberPullToRefreshConnection(
                     val consumed = newOffset - currentOffset
                     state.snapTo(newOffset)
                     return Offset(0f, consumed)
+                }
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (available.y > 0f && !scrollState.canScrollBackward && state.dragOffset < state.maxDragDistance) {
+                    val currentOffset = state.dragOffset
+                    val newOffset = (currentOffset + available.y).coerceIn(0f, state.maxDragDistance)
+                    state.snapTo(newOffset)
+                    return Offset(0f, newOffset - currentOffset)
                 }
                 return Offset.Zero
             }
@@ -109,7 +119,7 @@ fun PullToDatePicker(
     onDateSelected: (LocalDate) -> Unit,
     content: @Composable () -> Unit
 ) {
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
     val scrollTrigger = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
     val progress = (dragOffset / refreshThreshold).coerceIn(0f, 1f)

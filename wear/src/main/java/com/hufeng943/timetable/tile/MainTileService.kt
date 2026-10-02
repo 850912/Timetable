@@ -1,7 +1,6 @@
 package com.hufeng943.timetable.tile
 
 import androidx.wear.protolayout.ActionBuilders
-import androidx.wear.protolayout.DimensionBuilders.expand
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.TimelineBuilders
@@ -70,10 +69,15 @@ class MainTileService : Material3TileService() {
         val tables = runCatching { repository.getAllTimetables().first() }.getOrDefault(emptyList())
         val courses = tables.coursesForDate(today, is24Hour, timeZone)
         val state = NextCourseEngine.resolve(tables, now, timeZone)
-        val initialVisible = listOfNotNull(
+        val initialStateVisible = listOfNotNull(
             state.current?.toTileCourse(is24Hour),
             state.next?.takeIf { it.date == today }?.toTileCourse(is24Hour),
         ).distinctBy { it.startEpochMillis to it.name }.take(2)
+        // A tile request can race a Room/DataStore update. Still render the day's courses while
+        // the time-sensitive engine catches up; an empty main card is worse than a plain schedule.
+        val initialVisible = (initialStateVisible + courses)
+            .distinctBy { it.startEpochMillis to it.name }
+            .take(2)
 
         return buildTile(courses, initialVisible)
     }
@@ -220,7 +224,6 @@ class MainTileService : Material3TileService() {
                 titleCard(
                     onClick = clickable,
                     modifier = LayoutModifier.contentDescription("$title，$detail"),
-                    height = expand(),
                     colors = filledVariantCardColors(),
                     title = { text(title.layoutString) },
                     time = timeSlot,
