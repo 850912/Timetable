@@ -1,13 +1,19 @@
 name: Debug Validation
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
       - master
+      - "codex/**"
 
 permissions:
   contents: read
+
+concurrency:
+  group: debug-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   debug:

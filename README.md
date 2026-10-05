@@ -36,17 +36,17 @@ Timetable 是一个 Android 手机 + Wear OS 的本地优先课程表应用。�
 ./gradlew :wear:assembleRelease --no-daemon
 ```
 
-GitHub Actions 工作流位于 `.github/workflows/release.yml`。推送 `v*` 标签或手动触发即可构建并发布手机端和手表端 APK；Debug 验证工作流位于 `.github/workflows/debug.yml`。
+GitHub Actions 的 Debug 验证工作流位于 `.github/workflows/debug.yml`，会在 Pull Request、`master` 和 `codex/**` 分支推送时运行测试并构建 Debug APK。正式签名工作流位于 `.github/workflows/release.yml`，仅在推送 `v*` 标签或手动触发时运行，避免开发分支读取生产签名密钥。
 
 发布新版本时，先推送功能分支，再创建并推送版本标签。例如：
 
 ```bash
-git push origin codex/restore-latest-ble-security
+git push origin codex/release-optimization-3.5.8
 git tag v3.5.8
 git push origin v3.5.8
 ```
 
-Release 工作流会运行共享模块测试、手机和手表 Debug 单元测试，随后构建签名 APK，并将 `mobile-release.apk`、`wear-universal-release.apk`、`wear-arm64-v8a-release.apk` 和 `wear-armeabi-v7a-release.apk` 上传到 GitHub Releases。
+Release 工作流会先校验手机、手表和版本标签一致，再运行共享模块测试、手机和手表 Debug 单元测试，并在同一次 Gradle 调用中构建签名 APK。构建产物会进行 ZIP 完整性和 APK 签名校验，同时生成 `SHA256SUMS.txt`；标签构建会发布到 GitHub Releases，手动构建会在 Actions 中保留 14 天。
 
 ### Windows 本地构建
 

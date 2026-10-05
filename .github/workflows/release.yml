@@ -3,17 +3,21 @@ name: Signed Release Build
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
     tags:
       - "v*"
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.version.outputs.artifact-name }}
     env:
       TIMETABLE_RELEASE_STORE_PASSWORD: ${{ secrets.TIMETABLE_RELEASE_STORE_PASSWORD }}
       TIMETABLE_RELEASE_KEY_ALIAS: ${{ secrets.TIMETABLE_RELEASE_KEY_ALIAS }}
@@ -33,6 +37,20 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-provider: basic
+
+      - name: Validate release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          MOBILE_VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' mobile/build.gradle.kts | head -n 1)
+          WEAR_VERSION=$(sed -n 's/val versionPrefix = "\([^"]*\)"/\1/p' wear/build.gradle.kts | head -n 1)
+          test -n "$MOBILE_VERSION"
+          test "$MOBILE_VERSION" = "$WEAR_VERSION"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            test "${GITHUB_REF_NAME#v}" = "$MOBILE_VERSION"
+          fi
+          echo "artifact-name=timetable-$MOBILE_VERSION-release" >> "$GITHUB_OUTPUT"
 
       - name: Validate signing secrets
         shell: bash
@@ -65,32 +83,44 @@ jobs:
             -storepass "$TIMETABLE_RELEASE_STORE_PASSWORD" \
             -alias "$TIMETABLE_RELEASE_KEY_ALIAS" >/dev/null
 
-      - name: Run JVM regression tests
+      - name: Test and build signed release APKs
         shell: bash
         run: |
           set -euo pipefail
           chmod +x ./gradlew
-          ./gradlew --no-daemon :shared:test :mobile:testDebugUnitTest :wear:testDebugUnitTest
+          ./gradlew --no-daemon \
+            :shared:test \
+            :mobile:testDebugUnitTest \
+            :wear:testDebugUnitTest \
+            :mobile:assembleRelease \
+            :wear:assembleRelease
 
-      - name: Build signed release APKs
+      - name: Verify and stage release APKs
         shell: bash
         run: |
           set -euo pipefail
-          ./gradlew --no-daemon :mobile:assembleRelease :wear:assembleRelease
+          mkdir -p dist
+          mapfile -d '' MOBILE_APKS < <(find mobile/build/outputs/apk/release -type f -name '*.apk' -print0)
+          mapfile -d '' WEAR_APKS < <(find wear/build/outputs/apk/release -type f -name '*.apk' -print0)
+          test "${#MOBILE_APKS[@]}" -gt 0
+          test "${#WEAR_APKS[@]}" -gt 0
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          test -x "$APKSIGNER"
+          for apk in "${MOBILE_APKS[@]}" "${WEAR_APKS[@]}"; do
+            unzip -t "$apk" >/dev/null
+            "$APKSIGNER" verify --verbose --print-certs "$apk"
+            cp "$apk" "dist/$(basename "$apk")"
+          done
+          (cd dist && sha256sum ./*.apk > SHA256SUMS.txt)
 
-      - name: Upload mobile release APK
+      - name: Upload verified release bundle
         uses: actions/upload-artifact@v5
         with:
-          name: timetable-mobile-release
-          path: mobile/build/outputs/apk/release/*.apk
+          name: ${{ steps.version.outputs.artifact-name }}
+          path: dist/*
           if-no-files-found: error
-
-      - name: Upload wear release APKs
-        uses: actions/upload-artifact@v5
-        with:
-          name: timetable-wear-release
-          path: wear/build/outputs/apk/release/*.apk
-          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
 
       - name: Remove temporary keystore
         if: always()
@@ -104,87 +134,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download signed mobile APK
+      - name: Download verified release bundle
         uses: actions/download-artifact@v6
         with:
-          name: timetable-mobile-release
-          path: release-assets/mobile
-
-      - name: Download signed Wear APKs
-        uses: actions/download-artifact@v6
-        with:
-          name: timetable-wear-release
-          path: release-assets/wear
+          name: ${{ needs.release.outputs.artifact-name }}
+          path: release-assets
 
       - name: Publish GitHub release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          cat > "$RUNNER_TEMP/release-notes.md" <<'EOF'
-          ## Timetable 3.5.4
-
-          本次更新重点提升手机与 Wear OS 的液态玻璃视觉、滚动流畅度和数据可靠性。
-
-          ### 界面与性能
-
-          - Wear OS 液态玻璃新增柔和、平衡、流体三种效果。
-          - 模糊、折射、清透度、底色浓度和边缘色散可调。
-          - 手机端加入动态主题环境光、半透明玻璃卡片和课程色彩高光。
-          - 优化 Wear OS 首页触摸检测、课程文本缓存和下一节课查找。
-          - About 页面更新为 3.5.4，并加入完全自愿的“赛博乞讨”支持入口。
-
-          ### 课程与数据
-
-          - 导入前预览课程、时间段和重复课表。
-          - 支持新增导入和替换导入模式。
-          - 新增同步中心、失败记录重试和同步恢复。
-          - 新增每日自动 JSON 备份。
-          - 课程通知支持延后 5 分钟。
-
-          ### 中国设备兼容
-
-          - 保留旧 Wear Data Layer 路径。
-          - 保留国行设备 BLE 兼容协议和 CRC32 v2 可选协议。
-          - 保留 Xiaomi / 中国 ROM 触觉反馈安全回退。
-          - 手机与手表 Release APK 使用同一签名证书。
-
-          ### 下载说明
-
-          - `mobile-release.apk`：手机端。
-          - `wear-universal-release.apk`：Wear OS 通用包，通常优先下载此包。
-          - `wear-arm64-v8a-release.apk`：64 位 Wear OS 设备。
-          - `wear-armeabi-v7a-release.apk`：32 位 Wear OS 设备。
-          EOF
-
-          mobile_apk=(release-assets/mobile/*.apk)
-          wear_universal=(release-assets/wear/*universal*.apk)
-          wear_arm64=(release-assets/wear/*arm64-v8a*.apk)
-          wear_arm32=(release-assets/wear/*armeabi-v7a*.apk)
-
-          cp "${mobile_apk[0]}" "$RUNNER_TEMP/mobile-release.apk"
-          cp "${wear_universal[0]}" "$RUNNER_TEMP/wear-universal-release.apk"
-          cp "${wear_arm64[0]}" "$RUNNER_TEMP/wear-arm64-v8a-release.apk"
-          cp "${wear_arm32[0]}" "$RUNNER_TEMP/wear-armeabi-v7a-release.apk"
-
-          assets=(
-            "$RUNNER_TEMP/mobile-release.apk"
-            "$RUNNER_TEMP/wear-universal-release.apk"
-            "$RUNNER_TEMP/wear-arm64-v8a-release.apk"
-            "$RUNNER_TEMP/wear-armeabi-v7a-release.apk"
-          )
-          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit "$GITHUB_REF_NAME" \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "Timetable 3.5.4" \
-              --notes-file "$RUNNER_TEMP/release-notes.md"
-            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" \
-              --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "Timetable 3.5.4" \
-              --notes-file "$RUNNER_TEMP/release-notes.md" \
-              --verify-tag
-          fi
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*
